@@ -1,0 +1,14 @@
+[package]
+name = "application"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+domain = { path = "../domain" }
+anyhow = "1.0.102"
+uuid = { version = "1.21.0", features = ["v4"] }
+async-trait = "0.1.89"
+serde = { version = "1.0.228", features = ["derive"] }
+utoipa = { version = "5.4.0", features = ["axum_extras", "uuid"] }
+utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
+utoipa-scalar = { version = "0.3.0", features = ["axum"] }

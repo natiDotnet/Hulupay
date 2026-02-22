@@ -1,0 +1,12 @@
+[package]
+name = "infrustructure"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+application = { path = "../application" }
+sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio", "macros", "uuid"] }
+async-trait = "0.1.89"
+domain = { path = "../domain" }
+uuid = { version = "1.21.0", features = ["v4"] }
+anyhow = "1.0.102"

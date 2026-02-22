@@ -1,0 +1,54 @@
+use std::sync::Arc;
+use async_trait::async_trait;
+use uuid::Uuid;
+use domain::merchant::Merchant;
+use crate::merchant::dto::{CreateMerchantRequest, MerchantResponse};
+use crate::merchant::repository::MerchantRepository;
+#[derive(Clone)]
+pub struct CreateMerchant {
+    repository: Arc<dyn MerchantRepository + Send + Sync>,
+}
+// impl<R: MerchantRepository> CreateMerchant<R> {
+//     pub fn new(repository: R) -> Self {
+//         Self { repository }
+//     }
+// 
+//     pub async fn execute(&self, request: CreateMerchantRequest)
+//         -> anyhow::Result<MerchantResponse> {
+//         let merchant = Merchant {
+//             id: Uuid::new_v4(),
+//             name: request.name,
+//             is_active: true
+//         };
+//         self.repository.create(merchant.clone()).await?;
+// 
+//         Ok(MerchantResponse {
+//             id: merchant.id,
+//             name: merchant.name,
+//             is_active: merchant.is_active,
+//         })
+//     }
+// }
+
+impl CreateMerchant {
+    pub fn new(repository: Arc<dyn MerchantRepository + Send + Sync>) -> Self {
+        Self { repository }
+    }
+
+    pub async fn execute(&self, request: CreateMerchantRequest)
+                         -> anyhow::Result<MerchantResponse> {
+        let merchant = Merchant {
+            id: Uuid::new_v4(),
+            name: request.name,
+            is_active: true
+        };
+
+        self.repository.create(merchant.clone()).await?;
+
+        Ok(MerchantResponse {
+            id: merchant.id,
+            name: merchant.name,
+            is_active: merchant.is_active,
+        })
+    }
+}

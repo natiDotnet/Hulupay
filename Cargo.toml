@@ -1,0 +1,30 @@
+[package]
+name = "Rust"
+version = "0.1.0"
+edition = "2024"
+
+[workspace]
+members = [
+    "src/domain",
+    "src/application",
+    "src/infrustructure"
+]
+
+resolver = "2"
+[dependencies]
+domain = { path = "src/domain" }
+infrustructure = { path = "src/infrustructure" }
+application = { path = "src/application" }
+tokio = { version = "1.49.0", features = ["full"]}
+axum = "0.8.8"
+sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio", "macros"] }
+uuid = { version = "1.21.0", features = ["v4"] }
+anyhow = "1.0.102"
+dotenvy = "0.15.7"
+utoipa = { version = "5.4.0", features = ["axum_extras"] }
+utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
+utoipa-axum = { version = "0.2.0" }
+utoipa-redoc = { version = "6.0.0", features = ["axum"] }
+utoipa-rapidoc = { version = "6.0.0", features = ["axum"] }
+utoipa-scalar = { version = "0.3.0", features = ["axum"] }
+

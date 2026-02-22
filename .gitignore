@@ -1,0 +1,6 @@
+/target
+*/target
+/src/application/target/
+/src/domain/target/
+/src/infrustructure/.sqlx/
+/.env
