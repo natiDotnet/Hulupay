@@ -1,12 +1,13 @@
+use std::sync::Arc;
 use anyhow::anyhow;
 use uuid::Uuid;
 use crate::merchant::repository::MerchantRepository;
-
-pub struct DeleteMerchant<R: MerchantRepository> {
-    repository: R,
+#[derive(Clone)]
+pub struct DeleteMerchant{
+    repository: Arc<dyn MerchantRepository + Send + Sync>,
 }
-impl<R: MerchantRepository> DeleteMerchant<R> {
-    pub fn new(repository: R) -> Self {
+impl DeleteMerchant {
+    pub fn new(repository: Arc<dyn MerchantRepository + Send + Sync>) -> Self {
         Self { repository }
     }
     

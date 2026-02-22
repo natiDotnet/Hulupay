@@ -1,19 +1,20 @@
+use std::sync::Arc;
 use anyhow::anyhow;
 use uuid::Uuid;
 use domain::merchant::Merchant;
-use crate::merchant::dto::CreateMerchantRequest;
+use crate::merchant::dto::{CreateMerchantRequest, MerchantResponse};
 use crate::merchant::repository::MerchantRepository;
-
-pub struct UpdateMerchant<R: MerchantRepository> {
-    pub repository: R,
+#[derive(Clone)]
+pub struct UpdateMerchant {
+    pub repository: Arc<dyn MerchantRepository + Sync + Send>,
 }
 
-impl<R: MerchantRepository> UpdateMerchant<R> {
-    pub fn new(repository: R) -> Self {
+impl UpdateMerchant {
+    pub fn new(repository: Arc<dyn MerchantRepository + Sync + Send>) -> Self {
         Self { repository }
     }
 
-    pub async fn execute(& mut self, id: Uuid, name: String, is_active: bool)
+    pub async fn execute(&self, id: Uuid, name: String, is_active: bool)
     -> anyhow::Result<()> {
         let mut merchant = self.repository.get_by_id(id).await?
             .ok_or_else(|| anyhow!("Merchant not found"))?;

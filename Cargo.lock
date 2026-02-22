@@ -11,7 +11,7 @@ dependencies = [
  "axum",
  "domain",
  "dotenvy",
- "infrustructure",
+ "infrastructure",
  "sqlx",
  "tokio",
  "utoipa",
@@ -867,7 +867,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "infrustructure"
+name = "infrastructure"
 version = "0.1.0"
 dependencies = [
  "anyhow",

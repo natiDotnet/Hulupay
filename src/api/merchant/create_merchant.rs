@@ -10,6 +10,9 @@ pub async fn create_merchant_handler(State(usecase): State<CreateMerchant>,
     -> Result<Json<MerchantResponse>, StatusCode> {
     let res = usecase.execute(payload)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|e| {
+            eprintln!("Error creating merchant: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
     Ok(Json(res))
 }

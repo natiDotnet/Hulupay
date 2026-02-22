@@ -1,14 +1,15 @@
-use uuid::Uuid;
-use domain::merchant::Merchant;
 use crate::merchant::dto::MerchantResponse;
 use crate::merchant::repository::MerchantRepository;
+use std::sync::Arc;
+use uuid::Uuid;
 
-pub struct GetMerchant<R: MerchantRepository> {
-    repository: R,
+#[derive(Clone)]
+pub struct GetMerchant {
+    repository: Arc<dyn MerchantRepository + Send + Sync>,
 }
 
-impl<R: MerchantRepository> GetMerchant<R> {
-    pub fn new(repository: R) -> Self {
+impl GetMerchant {
+    pub fn new(repository: Arc<dyn MerchantRepository + Send + Sync>) -> Self {
         Self { repository }
     }
 
