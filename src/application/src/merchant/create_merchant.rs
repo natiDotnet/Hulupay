@@ -5,11 +5,11 @@ use crate::merchant::dto::{CreateMerchantRequest, MerchantResponse};
 use crate::merchant::repository::MerchantRepository;
 #[derive(Clone)]
 pub struct CreateMerchant {
-    repository: Arc<dyn MerchantRepository + Send + Sync>,
+    repository: Arc<dyn MerchantRepository>,
 }
 
 impl CreateMerchant {
-    pub fn new(repository: Arc<dyn MerchantRepository + Send + Sync>) -> Self {
+    pub fn new(repository: Arc<dyn MerchantRepository>) -> Self {
         Self { repository }
     }
 

@@ -46,7 +46,7 @@ impl FromRef<MerchantState> for DeleteMerchant {
     }
 }
 
-pub fn router(repo: Arc<dyn MerchantRepository + Send + Sync>) -> UtoipaMethodRouter {
+pub fn router(repo: Arc<dyn MerchantRepository>) -> UtoipaMethodRouter {
     let create_usecase = CreateMerchant::new(repo.clone());
     let get_use_case = GetMerchant::new(repo.clone());
 

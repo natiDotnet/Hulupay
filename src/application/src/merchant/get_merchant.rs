@@ -5,11 +5,11 @@ use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct GetMerchant {
-    repository: Arc<dyn MerchantRepository + Send + Sync>,
+    repository: Arc<dyn MerchantRepository>,
 }
 
 impl GetMerchant {
-    pub fn new(repository: Arc<dyn MerchantRepository + Send + Sync>) -> Self {
+    pub fn new(repository: Arc<dyn MerchantRepository>) -> Self {
         Self { repository }
     }
 

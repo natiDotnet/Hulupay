@@ -4,10 +4,10 @@ use uuid::Uuid;
 use crate::merchant::repository::MerchantRepository;
 #[derive(Clone)]
 pub struct DeleteMerchant{
-    repository: Arc<dyn MerchantRepository + Send + Sync>,
+    repository: Arc<dyn MerchantRepository>,
 }
 impl DeleteMerchant {
-    pub fn new(repository: Arc<dyn MerchantRepository + Send + Sync>) -> Self {
+    pub fn new(repository: Arc<dyn MerchantRepository>) -> Self {
         Self { repository }
     }
     
