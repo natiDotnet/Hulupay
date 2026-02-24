@@ -22,7 +22,7 @@ impl UpdateMerchant {
         merchant.name = name;
         merchant.is_active = is_active;
 
-        self.repository.update(merchant).await?;
+        self.repository.update(&merchant).await?;
         Ok(())
     }
 }

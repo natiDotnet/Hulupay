@@ -17,7 +17,7 @@ impl MerchantRepositoryPostgres {
 
 #[async_trait]
 impl MerchantRepository for MerchantRepositoryPostgres {
-    async fn create(&self, merchant: Merchant) -> anyhow::Result<()> {
+    async fn create(&self, merchant: &Merchant) -> anyhow::Result<()> {
         sqlx::query!(
             r#"
             INSERT INTO merchants (id, name)
@@ -53,7 +53,7 @@ impl MerchantRepository for MerchantRepositoryPostgres {
         }))
     }
 
-    async fn update(&self, merchant: Merchant) -> anyhow::Result<()> {
+    async fn update(&self, merchant: &Merchant) -> anyhow::Result<()> {
         sqlx::query!(
             r#"
             UPDATE merchants

@@ -21,7 +21,7 @@ impl CreateMerchant {
             is_active: true
         };
 
-        self.repository.create(merchant.clone()).await?;
+        self.repository.create(&merchant).await?;
 
         Ok(MerchantResponse {
             id: merchant.id,

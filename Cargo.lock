@@ -12,6 +12,7 @@ dependencies = [
  "domain",
  "dotenvy",
  "infrastructure",
+ "serde",
  "sqlx",
  "tokio",
  "utoipa",
