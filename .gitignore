@@ -1,4 +1,5 @@
 /target
+/.idea
 */target
 /src/application/target/
 /src/domain/target/
