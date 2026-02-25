@@ -7,14 +7,24 @@ use infrastructure::persistence::merchant_repository_impl::MerchantRepositoryPos
 use sqlx::postgres::PgPoolOptions;
 use std::env;
 use std::sync::Arc;
+use tracing_subscriber::{fmt, EnvFilter};
+use tracing_subscriber::layer::SubscriberExt;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_scalar::{Scalar, Servable};
 use utoipa_swagger_ui::SwaggerUi;
+use tracing_subscriber::prelude::*;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     dotenv().ok();
     let db_url = env::var("DATABASE_URL")?;
+
+    tracing_subscriber::registry()
+        .with(EnvFilter::from_default_env())
+        .with(fmt::layer()
+            .json()
+            .with_target(false))
+        .init();
 
     let pool = PgPoolOptions::new()
         .max_connections(10)

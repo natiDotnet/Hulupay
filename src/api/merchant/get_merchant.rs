@@ -11,8 +11,7 @@ pub async fn get_merchant_handler(State(use_case): State<GetMerchant>,
                              Path(id): Path<Uuid>)
     -> Result<Json<MerchantResponse>, ApiError> {
     let res = use_case.execute(id).await
-        .map_err(|_| ApiError::Internal)?
         .map(Json)
-        .ok_or(ApiError::NotFound(format!("Merchant with id {} was not found", id)));
+        .map_err(|err| err.into());
     res
 }

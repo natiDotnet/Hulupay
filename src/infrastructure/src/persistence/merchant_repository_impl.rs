@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use sqlx::PgPool;
 use async_trait::async_trait;
 use uuid::Uuid;
@@ -43,6 +44,8 @@ impl MerchantRepository for MerchantRepositoryPostgres {
         )
             .fetch_optional(&self.pool)
             .await?;
+
+        return Err(anyhow!("no no"));
 
         Ok(record.map(|r| {
             Merchant {

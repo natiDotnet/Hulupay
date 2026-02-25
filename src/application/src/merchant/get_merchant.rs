@@ -3,6 +3,8 @@ use crate::merchant::repository::MerchantRepository;
 use std::sync::Arc;
 use anyhow::anyhow;
 use uuid::Uuid;
+use domain::merchant::Merchant;
+use crate::merchant_error::MerchantError;
 
 #[derive(Clone)]
 pub struct GetMerchant {
@@ -16,15 +18,18 @@ impl GetMerchant {
         Self { repository }
     }
 
-    pub async fn execute(&self, id: Uuid) -> anyhow::Result<Option<MerchantResponse>> {
-        let merchant = self.repository.get_by_id(id).await?;
+    pub async fn execute(&self, id: Uuid) -> Result<MerchantResponse, MerchantError> {
+        let merchant = self.repository.get_by_id(id).await
+            .map_err(|err| MerchantError::Internal(err))?;
 
-        // return anyhow!();
-        
-        Ok(merchant.map(|m| MerchantResponse {
-            id: m.id,
-            name: m.name,
-            is_active: m.is_active,
-        }))
+        match merchant {
+            None => Err(MerchantError::NotFound(format!("merchant not found with id {}", id))),
+            Some(mer) =>
+                Ok(MerchantResponse {
+                    id: mer.id,
+                    name: mer.name,
+                    is_active: mer.is_active,
+                })
+        }
     }
 }
