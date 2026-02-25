@@ -7,7 +7,7 @@ use uuid::Uuid;
 pub async fn delete_merchant_handler(State(use_case): State<DeleteMerchant>,
                                      Path(id): Path<Uuid>)
                                      -> Result<(), StatusCode> {
-    let res = use_case.execute(id).await
+    use_case.execute(id).await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     Ok(())
 }

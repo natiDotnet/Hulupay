@@ -1,7 +1,6 @@
-use std::sync::Arc;
-use anyhow::anyhow;
-use uuid::Uuid;
 use crate::merchant::repository::MerchantRepository;
+use std::sync::Arc;
+use uuid::Uuid;
 #[derive(Clone)]
 pub struct DeleteMerchant{
     repository: Arc<dyn MerchantRepository>,

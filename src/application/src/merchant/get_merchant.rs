@@ -1,18 +1,14 @@
 use crate::merchant::dto::MerchantResponse;
 use crate::merchant::repository::MerchantRepository;
-use std::sync::Arc;
-use anyhow::anyhow;
-use uuid::Uuid;
-use domain::merchant::Merchant;
 use crate::merchant_error::MerchantError;
+use std::sync::Arc;
+use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct GetMerchant {
     repository: Arc<dyn MerchantRepository>,
 }
-enum  AppError {
-    NotFount(String)
-}
+
 impl GetMerchant {
     pub fn new(repository: Arc<dyn MerchantRepository>) -> Self {
         Self { repository }

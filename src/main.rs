@@ -1,18 +1,17 @@
 pub mod api;
 
 use crate::api::merchant;
-use application::merchant::create_merchant::CreateMerchant;
 use dotenvy::dotenv;
 use infrastructure::persistence::merchant_repository_impl::MerchantRepositoryPostgres;
 use sqlx::postgres::PgPoolOptions;
 use std::env;
 use std::sync::Arc;
-use tracing_subscriber::{fmt, EnvFilter};
 use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::prelude::*;
+use tracing_subscriber::{fmt, EnvFilter};
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_scalar::{Scalar, Servable};
 use utoipa_swagger_ui::SwaggerUi;
-use tracing_subscriber::prelude::*;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -35,9 +34,7 @@ async fn main() -> anyhow::Result<()> {
     let (app, doc) = OpenApiRouter::new()
         .routes(merchant::router(repo.clone()))
         .split_for_parts();
-    // let state = AppState {
-    //     create_merchant: CreateMerchant::new(repo.clone()),
-    // };
+
     let app = app
         .merge(SwaggerUi::new("/swagger-ui")
             .url("/api-doc/openapi.json", doc.clone()))
@@ -45,8 +42,4 @@ async fn main() -> anyhow::Result<()> {
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
     axum::serve(listener, app).await?;
     Ok(())
-}
-
-struct AppState {
-    pub create_merchant: CreateMerchant,
 }

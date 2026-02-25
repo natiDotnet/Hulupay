@@ -1,9 +1,7 @@
-use std::sync::Arc;
-use anyhow::anyhow;
-use uuid::Uuid;
-use domain::merchant::Merchant;
-use crate::merchant::dto::{CreateMerchantRequest, MerchantResponse};
 use crate::merchant::repository::MerchantRepository;
+use anyhow::anyhow;
+use std::sync::Arc;
+use uuid::Uuid;
 #[derive(Clone)]
 pub struct UpdateMerchant {
     pub repository: Arc<dyn MerchantRepository>,

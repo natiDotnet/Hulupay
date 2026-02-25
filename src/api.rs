@@ -1,4 +1,4 @@
 
 pub mod merchant;
-mod Error;
+mod error;
 

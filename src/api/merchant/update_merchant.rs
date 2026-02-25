@@ -10,7 +10,7 @@ pub async fn update_merchant_handler(State(use_case): State<UpdateMerchant>,
                                      Path(id): Path<Uuid>,
                                      Json(payload): Json<UpdateMerchantRequest>)
                                      -> Result<(), StatusCode> {
-    let res = use_case.execute(payload.id, payload.name, payload.is_active).await
+    use_case.execute(id, payload.name, payload.is_active).await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     Ok(())
 }
