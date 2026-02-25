@@ -12,7 +12,6 @@ members = [
 
 resolver = "2"
 [dependencies]
-domain = { path = "src/domain" }
 infrastructure = { path = "src/infrastructure" }
 application = { path = "src/application" }
 tokio = { version = "1.49.0", features = ["full"]}
@@ -24,8 +23,6 @@ dotenvy = "0.15.7"
 utoipa = { version = "5.4.0", features = ["axum_extras", "uuid"] }
 utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
 utoipa-axum = { version = "0.2.0" }
-utoipa-redoc = { version = "6.0.0", features = ["axum"] }
-utoipa-rapidoc = { version = "6.0.0", features = ["axum"] }
 utoipa-scalar = { version = "0.3.0", features = ["axum"] }
 serde = { version = "1.0.228", features = ["derive"] }
 tracing = "0.1.44"
