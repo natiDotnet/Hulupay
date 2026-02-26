@@ -3,6 +3,7 @@ pub mod error;
 pub mod payment_method;
 pub mod transaction;
 pub mod provider;
+pub mod arifpay;
 
 pub fn add(left: u64, right: u64) -> u64 {
     left + right

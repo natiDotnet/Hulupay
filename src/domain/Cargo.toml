@@ -8,3 +8,4 @@ uuid = { version = "1.21.0", features = ["v4", "serde"] }
 chrono = "0.4.43"
 async-trait = "0.1.89"
 time = "0.3.47"
+serde = { version = "1.0.228", features = ["derive"] }
