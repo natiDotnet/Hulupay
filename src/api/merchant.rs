@@ -54,12 +54,10 @@ pub fn merchant_router(repo: Arc<dyn MerchantRepository>) -> OpenApiRouter {
         .routes(merchant_list(repo.clone()))
 }
 fn router(repo: Arc<dyn MerchantRepository>) -> UtoipaMethodRouter {
-    let create_usecase = CreateMerchant::new(repo.clone());
-    let get_use_case = GetMerchant::new(repo.clone());
 
     let state = MerchantState {
-        create_use_case: create_usecase,
-        get_use_case,
+        create_use_case: CreateMerchant::new(repo.clone()),
+        get_use_case: GetMerchant::new(repo.clone()),
         update_use_case: UpdateMerchant::new(repo.clone()),
         delete_use_case: DeleteMerchant::new(repo.clone()),
         
