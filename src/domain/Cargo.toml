@@ -7,3 +7,4 @@ edition = "2024"
 uuid = { version = "1.21.0", features = ["v4", "serde"] }
 chrono = "0.4.43"
 async-trait = "0.1.89"
+time = "0.3.47"

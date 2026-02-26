@@ -1,8 +1,7 @@
-use std::sync::Arc;
-use uuid::Uuid;
-use domain::merchant::Merchant;
 use crate::merchant::dto::{CreateMerchantRequest, MerchantResponse};
 use crate::merchant::repository::MerchantRepository;
+use domain::merchant::Merchant;
+use std::sync::Arc;
 #[derive(Clone)]
 pub struct CreateMerchant {
     repository: Arc<dyn MerchantRepository>,
@@ -15,11 +14,7 @@ impl CreateMerchant {
 
     pub async fn execute(&self, request: CreateMerchantRequest)
                          -> anyhow::Result<MerchantResponse> {
-        let merchant = Merchant {
-            id: Uuid::new_v4(),
-            name: request.name,
-            is_active: true
-        };
+        let merchant = Merchant::new(request.name, true);
 
         self.repository.create(&merchant).await?;
 

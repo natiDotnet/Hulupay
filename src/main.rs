@@ -32,7 +32,8 @@ async fn main() -> anyhow::Result<()> {
     let repo= Arc::new(MerchantRepositoryPostgres::new(pool));
 
     let (app, doc) = OpenApiRouter::new()
-        .routes(merchant::router(repo.clone()))
+        .nest("/api", merchant::merchant_router(repo.clone())
+        )
         .split_for_parts();
 
     let app = app
