@@ -6,8 +6,9 @@ use uuid::Uuid;
 use application::merchant::update_merchant::UpdateMerchant;
 
 #[utoipa::path(put, path = "/merchants/{id}", responses((status = OK, body = MerchantResponse)))]
-pub async fn update_merchant_handler(State(use_case): State<UpdateMerchant>,
+pub async fn update_merchant_handler(
                                      Path(id): Path<Uuid>,
+                                     State(use_case): State<UpdateMerchant>,
                                      Json(payload): Json<UpdateMerchantRequest>)
                                      -> Result<(), StatusCode> {
     use_case.execute(id, payload.name, payload.is_active).await

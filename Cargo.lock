@@ -20,6 +20,7 @@ dependencies = [
  "utoipa-axum",
  "utoipa-scalar",
  "utoipa-swagger-ui",
+ "utoipa_auto_discovery",
  "uuid",
 ]
 
@@ -2770,6 +2771,17 @@ dependencies = [
  "url",
  "utoipa",
  "zip",
+]
+
+[[package]]
+name = "utoipa_auto_discovery"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "abbbc25214823fc15c9c87581f81925610f8c348a156b06398ebca66fa332886"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
