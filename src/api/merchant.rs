@@ -65,7 +65,7 @@ impl FromRef<MerchantState> for ListMerchants {
     }
 }
 
-pub fn router(repo: Arc<dyn MerchantRepository>) -> OpenApiRouter {
+pub fn router(repo: &Arc<dyn MerchantRepository>) -> OpenApiRouter {
 
     let state = MerchantState {
         create_use_case: CreateMerchant::new(repo.clone()),

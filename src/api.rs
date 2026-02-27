@@ -1,11 +1,10 @@
-use std::sync::Arc;
+use application::merchant::repository::MerchantRepository;
 use axum::Router;
+use std::sync::Arc;
 use utoipa::OpenApi;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_scalar::{Scalar, Servable};
 use utoipa_swagger_ui::SwaggerUi;
-use application::merchant::repository::MerchantRepository;
-use infrastructure::persistence::merchant_repository_impl::MerchantRepositoryPostgres;
 
 pub mod merchant;
 mod error;
@@ -17,7 +16,7 @@ pub struct ApiDoc;
 
 pub fn api_routes(repo: Arc<dyn MerchantRepository>) -> Router {
     let (app, doc) = OpenApiRouter::with_openapi(ApiDoc::openapi())
-        .nest("/api", merchant::router(repo)
+        .nest("/api", merchant::router(&repo)
         )
         .split_for_parts();
 

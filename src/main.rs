@@ -1,5 +1,5 @@
 pub mod api;
-use crate::api::{api_routes, merchant, ApiDoc};
+use crate::api::{api_routes, merchant};
 use dotenvy::dotenv;
 use infrastructure::persistence::merchant_repository_impl::MerchantRepositoryPostgres;
 use sqlx::postgres::PgPoolOptions;
@@ -8,10 +8,6 @@ use std::sync::Arc;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::{fmt, EnvFilter};
-use utoipa::OpenApi;
-use utoipa_axum::router::OpenApiRouter;
-use utoipa_scalar::{Scalar, Servable};
-use utoipa_swagger_ui::SwaggerUi;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
