@@ -1,10 +1,10 @@
 use crate::merchant::repository::TransactionRepository;
 use crate::payments::arifpay::dto::InitializePaymentCommand;
 use crate::payments::payment_gateway::{PaymentGateway, PaymentInitResult};
-use crate::transactions::error::Error;
 use domain::transaction::Transaction;
 use std::sync::Arc;
 use uuid::Uuid;
+use crate::transactions::error;
 
 pub struct CreateTransaction {
     pub repository: Arc<dyn TransactionRepository>,
@@ -19,7 +19,7 @@ impl CreateTransaction {
         currency: String,
         phone: String,
         email: String,
-    ) -> Result<PaymentInitResult, Error> {
+    ) -> Result<PaymentInitResult, error::Error> {
 
         let mut transaction =
             Transaction::new(merchant_id, amount, currency);
@@ -27,7 +27,7 @@ impl CreateTransaction {
         self.repository
             .save(&transaction)
             .await
-            .map_err(|_| Error::PersistenceFailed)?;
+            .map_err(|_| error::Error::PersistenceFailed)?;
 
         let result = self.gateway
             .initialize_payment(
@@ -40,16 +40,16 @@ impl CreateTransaction {
                 }
             )
             .await
-            .map_err(|_| Error::PaymentFailed)?;
+            .map_err(|_| error::Error::PaymentFailed)?;
 
         transaction.initialize(
             result.provider_reference.clone(),
-        ).map_err(|_| Error::PaymentFailed)?;
+        ).map_err(|_| error::Error::PaymentFailed)?;
 
         self.repository
             .save(&transaction)
             .await
-            .map_err(|_| Error::PersistenceFailed)?;
+            .map_err(|_| error::Error::PersistenceFailed)?;
 
         Ok(result)
     }

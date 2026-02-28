@@ -3,6 +3,8 @@ use crate::payments::payment_gateway::{PaymentGateway, PaymentInitResult, Paymen
 use crate::payments::payment_gateway_error::PaymentGatewayError;
 use domain::arifpay::config::ArifPayConfig;
 pub mod dto;
+pub mod config_request_dto;
+
 pub struct ArifPayProvider {
     client: reqwest::Client,
     config: ArifPayConfig,
