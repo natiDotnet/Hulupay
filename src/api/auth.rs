@@ -1,3 +1,4 @@
+use std::env;
 use crate::api::auth::register::__path_register_user_handler;
 use crate::api::auth::login::__path_login_user_handler;
 use std::sync::Arc;
@@ -31,10 +32,10 @@ impl FromRef<AuthState> for LoginUser {
 }
 pub fn router(pool: Pool<Postgres>) -> OpenApiRouter {
     let repo: Arc<dyn UserRepository> = Arc::new(PgUserRepository::new(pool));
+    let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
     let state = AuthState {
         register_use_case: RegisterUser::new(repo.clone()),
-        login_use_case: LoginUser::new(repo.clone(), "jwt_secret".to_string()),
-        
+        login_use_case: LoginUser::new(repo.clone(), jwt_secret),
     };
 
     OpenApiRouter::new()
