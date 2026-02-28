@@ -3,7 +3,7 @@ use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use uuid::Uuid;
 
-#[utoipa::path(delete, path = "/merchants/{id}", responses((status = OK, body = ())))]
+#[utoipa::path(delete, tag="merchant", path = "/merchants/{id}", responses((status = OK, body = ())))]
 pub async fn delete_merchant_handler(State(use_case): State<DeleteMerchant>,
                                      Path(id): Path<Uuid>)
                                      -> Result<(), StatusCode> {

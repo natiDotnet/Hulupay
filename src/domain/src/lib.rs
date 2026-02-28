@@ -5,6 +5,7 @@ pub mod transaction;
 pub mod provider;
 pub mod arifpay;
 mod provider_configs;
+pub mod user;
 
 pub fn add(left: u64, right: u64) -> u64 {
     left + right

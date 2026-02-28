@@ -1,7 +1,7 @@
 use aes_gcm::{Aes256Gcm, Key, Nonce};
 use aes_gcm::aead::{Aead, KeyInit};
 use base64::{engine::general_purpose, Engine as _};
-use rand::RngCore;
+use rand::Rng;
 use anyhow::Result;
 
 pub trait EncryptionService {

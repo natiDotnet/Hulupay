@@ -26,8 +26,7 @@ async fn main() -> anyhow::Result<()> {
         .connect(&db_url)
         .await?;
     
-    let repo: Arc<MerchantRepositoryPostgres> = Arc::new(MerchantRepositoryPostgres::new(pool));
-    let app = api_routes(repo);
+    let app = api_routes(pool);
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
     axum::serve(listener, app).await?;
     Ok(())

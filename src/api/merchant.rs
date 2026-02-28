@@ -23,8 +23,10 @@ use application::merchant::repository::MerchantRepository;
 use application::merchant::update_merchant::UpdateMerchant;
 use axum::extract::FromRef;
 use std::sync::Arc;
+use sqlx::{Pool, Postgres};
 use utoipa::OpenApi;
 use utoipa_axum::routes;
+use infrastructure::persistence::merchant_repository_impl::MerchantRepositoryPostgres;
 
 #[derive(Clone)]
 struct MerchantState {
@@ -65,8 +67,9 @@ impl FromRef<MerchantState> for ListMerchants {
     }
 }
 
-pub fn router(repo: &Arc<dyn MerchantRepository>) -> OpenApiRouter {
+pub fn router(pool: Pool<Postgres>) -> OpenApiRouter {
 
+    let repo: Arc<dyn MerchantRepository> = Arc::new(MerchantRepositoryPostgres::new(pool));
     let state = MerchantState {
         create_use_case: CreateMerchant::new(repo.clone()),
         get_use_case: GetMerchant::new(repo.clone()),

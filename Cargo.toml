@@ -14,8 +14,9 @@ resolver = "2"
 [dependencies]
 infrastructure = { path = "src/infrastructure" }
 application = { path = "src/application" }
+domain = { path = "src/domain" }
 tokio = { version = "1.49.0", features = ["full"]}
-axum = "0.8.8"
+axum = { version = "0.8.8"}
 sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio", "macros"] }
 uuid = { version = "1.21.0", features = ["v4"] }
 anyhow = "1.0.102"
@@ -27,3 +28,5 @@ utoipa-scalar = { version = "0.3.0", features = ["axum"] }
 serde = { version = "1.0.228", features = ["derive"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.22", features = ["env-filter", "fmt", "json"] }
+async-trait = "0.1.89"
+jsonwebtoken = "10.3.0"

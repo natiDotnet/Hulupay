@@ -1,2 +1,2 @@
 pub mod arifpay;
-mod config_service;
+pub mod config_service;

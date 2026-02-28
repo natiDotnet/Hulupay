@@ -5,7 +5,7 @@ use axum::Json;
 use uuid::Uuid;
 use application::merchant::update_merchant::UpdateMerchant;
 
-#[utoipa::path(put, path = "/merchants/{id}", responses((status = OK, body = MerchantResponse)))]
+#[utoipa::path(put, tag="merchant", path = "/merchants/{id}", responses((status = OK, body = MerchantResponse)))]
 pub async fn update_merchant_handler(
                                      Path(id): Path<Uuid>,
                                      State(use_case): State<UpdateMerchant>,
