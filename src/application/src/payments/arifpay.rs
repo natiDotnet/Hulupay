@@ -41,9 +41,9 @@ impl ArifPayProvider {
         reference: &str,
     ) -> ArifPayInitializeRequest {
         ArifPayInitializeRequest {
-            cancel_url: self.config.cancel_url.clone(),
-            success_url: self.config.success_url.clone(),
-            error_url: self.config.error_url.clone(),
+            cancel_url: self.config.cancel_url.clone().map_or_else(|| "".to_string(), |u| u.clone()),
+            success_url: self.config.success_url.clone().map_or_else(|| "".to_string(), |u| u.clone()),
+            error_url: self.config.error_url.clone().map_or_else(|| "".to_string(), |u| u.clone()),
             notify_url: self.config.notify_url.clone(),
             nonce: reference.to_string(),
             phone: cmd.phone.clone(),
