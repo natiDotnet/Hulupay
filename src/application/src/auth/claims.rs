@@ -3,7 +3,8 @@ use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    pub sub: Uuid,                // user_id
+    pub sub: Uuid, // user_id
+    pub email: String,
     pub merchant_id: Option<Uuid>, // None for master
     pub role: String,
     pub exp: usize,

@@ -1,30 +1,10 @@
-use jsonwebtoken::{encode, EncodingKey, Header};
-use chrono::{Utc, Duration};
-use uuid::Uuid;
 use crate::auth::claims::Claims;
+use crate::auth::error::AuthError;
+use async_trait::async_trait;
+use uuid::Uuid;
 
-pub fn generate_token(
-    user_id: Uuid,
-    merchant_id: Option<Uuid>,
-    role: String,
-    secret: &str,
-) -> anyhow::Result<String> {
-
-    let expiration = Utc::now()
-        .checked_add_signed(Duration::hours(24))
-        .unwrap()
-        .timestamp() as usize;
-
-    let claims = Claims {
-        sub: user_id,
-        merchant_id,
-        role,
-        exp: expiration,
-    };
-
-    Ok(encode(
-        &Header::default(),
-        &claims,
-        &EncodingKey::from_secret(secret.as_bytes()),
-    )?)
+#[async_trait]
+pub trait TokenService: Send + Sync {
+    fn generate(&self, user_id: Uuid, email: &str, role: &str, merchant_id: Option<Uuid>) -> Result<String, AuthError>;
+    fn validate(&self, token: &str) -> Result<Claims, AuthError>;
 }

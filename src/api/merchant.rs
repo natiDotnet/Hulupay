@@ -1,3 +1,4 @@
+use std::env;
 use crate::merchant::create_merchant::__path_create_merchant_handler;
 use crate::merchant::delete_merchant::__path_delete_merchant_handler;
 use crate::merchant::get_merchant::__path_get_merchant_handler;
@@ -23,18 +24,21 @@ use application::merchant::repository::MerchantRepository;
 use application::merchant::update_merchant::UpdateMerchant;
 use axum::extract::FromRef;
 use std::sync::Arc;
+use axum::Extension;
 use sqlx::{Pool, Postgres};
-use utoipa::OpenApi;
 use utoipa_axum::routes;
+use application::auth::token::TokenService;
+use infrastructure::auth::jwt_token_service::JwtTokenService;
 use infrastructure::persistence::merchant_repository_impl::MerchantRepositoryPostgres;
 
 #[derive(Clone)]
-struct MerchantState {
+pub struct MerchantState {
     create_use_case: CreateMerchant,
     get_use_case: GetMerchant,
     update_use_case: UpdateMerchant,
     delete_use_case: DeleteMerchant,
-    list_merchants_use_case: ListMerchants
+    list_merchants_use_case: ListMerchants,
+    // pub token_service: Arc<dyn TokenService>,
 }
 
 impl FromRef<MerchantState> for CreateMerchant {
@@ -67,21 +71,30 @@ impl FromRef<MerchantState> for ListMerchants {
     }
 }
 
+// impl FromRef<MerchantState> for Arc<dyn TokenService> {
+//     fn from_ref(state: &MerchantState) -> Self {
+//         state.token_service.clone()
+//     }
+// }
+
 pub fn router(pool: Pool<Postgres>) -> OpenApiRouter {
 
     let repo: Arc<dyn MerchantRepository> = Arc::new(MerchantRepositoryPostgres::new(pool));
+    let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+    let token_service: Arc<dyn TokenService> = Arc::new(JwtTokenService::new(jwt_secret));
     let state = MerchantState {
         create_use_case: CreateMerchant::new(repo.clone()),
         get_use_case: GetMerchant::new(repo.clone()),
         update_use_case: UpdateMerchant::new(repo.clone()),
         delete_use_case: DeleteMerchant::new(repo.clone()),
-        list_merchants_use_case: ListMerchants::new(repo.clone())
-
+        list_merchants_use_case: ListMerchants::new(repo.clone()),
+        // token_service: token_service.clone(),
     };
 
     OpenApiRouter::new()
         .routes(routes!(create_merchant_handler, list_merchants_handler))
         .routes(routes!(get_merchant_handler, delete_merchant_handler, update_merchant_handler))
+        .layer(Extension(token_service.clone()))
         .with_state(state)
 
 }

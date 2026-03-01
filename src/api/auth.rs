@@ -9,11 +9,12 @@ use application::encryption::EncryptionService;
 use application::payments::arifpay::config_request_dto::ArifPayConfigRequest;
 use domain::user::Role;
 use infrastructure::payments::config_service::ProviderConfigService;
-use crate::api::auth::auth_user::AuthUser;
 
 pub mod auth_user;
 mod login;
 mod register;
+pub mod extractor;
+
 #[derive(Clone)]
 pub struct AuthState {
     register_use_case: RegisterUser,
@@ -33,9 +34,10 @@ impl FromRef<AuthState> for LoginUser {
 pub fn router(pool: Pool<Postgres>) -> OpenApiRouter {
     let repo: Arc<dyn UserRepository> = Arc::new(PgUserRepository::new(pool));
     let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+    let token_service = Arc::new(JwtTokenService::new(jwt_secret));
     let state = AuthState {
         register_use_case: RegisterUser::new(repo.clone()),
-        login_use_case: LoginUser::new(repo.clone(), jwt_secret),
+        login_use_case: LoginUser::new(repo.clone(), token_service),
     };
 
     OpenApiRouter::new()
@@ -44,26 +46,26 @@ pub fn router(pool: Pool<Postgres>) -> OpenApiRouter {
         .with_state(state)
 }
 
-async fn set_arifpay_config(
-    auth: AuthUser,
-    State(service): State<Arc<ProviderConfigService<impl EncryptionService>>>,
-    Json(request): Json<ArifPayConfigRequest>,
-) -> Result<Json<&'static str>, StatusCode> {
-
-    let merchant_id = match auth.role {
-        Role::MasterAdmin => {
-            return Err(StatusCode::BAD_REQUEST);
-        }
-        Role::MerchantAdmin => auth.merchant_id.unwrap(),
-    };
-
-    service
-        .set_arifpay_config(request)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    Ok(Json("Config saved"))
-}
+// async fn set_arifpay_config(
+//     auth: AuthUser,
+//     State(service): State<Arc<ProviderConfigService<impl EncryptionService>>>,
+//     Json(request): Json<ArifPayConfigRequest>,
+// ) -> Result<Json<&'static str>, StatusCode> {
+//
+//     let merchant_id = match auth.role {
+//         Role::MasterAdmin => {
+//             return Err(StatusCode::BAD_REQUEST);
+//         }
+//         Role::MerchantAdmin => auth.merchant_id.unwrap(),
+//     };
+//
+//     service
+//         .set_arifpay_config(request)
+//         .await
+//         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+//
+//     Ok(Json("Config saved"))
+// }
 
 use sqlx::{PgPool, Pool, Postgres};
 use utoipa_axum::router::OpenApiRouter;
@@ -77,8 +79,10 @@ use application::merchant::get_merchant::GetMerchant;
 use application::merchant::list_merchants::ListMerchants;
 use application::merchant::repository::MerchantRepository;
 use application::merchant::update_merchant::UpdateMerchant;
+use infrastructure::auth::jwt_token_service::JwtTokenService;
 use infrastructure::auth::pg_user_repository::PgUserRepository;
 use infrastructure::persistence::merchant_repository_impl::MerchantRepositoryPostgres;
+use crate::api::auth::extractor::AuthUser;
 use crate::api::auth::login::login_user_handler;
 use crate::api::auth::register::register_user_handler;
 

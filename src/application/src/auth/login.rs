@@ -1,20 +1,19 @@
-use crate::auth::claims::Claims;
 use crate::auth::login_request::{LoginRequest, LoginResponse};
 use crate::auth::password::verify_password;
+use crate::auth::token::TokenService;
 use crate::auth::user_repository::UserRepository;
-use chrono::{Duration, Utc};
-use jsonwebtoken::{encode, EncodingKey, Header};
 use std::sync::Arc;
+
 #[derive(Clone)]
 pub struct LoginUser {
     repo: Arc<dyn UserRepository>,
-    jwt_secret: String,
+    token_service: Arc<dyn TokenService>,
     
 }
 
 impl LoginUser {
-    pub fn new(repo: Arc<dyn UserRepository>, jwt_secret: String) -> Self {
-        Self { repo, jwt_secret }
+    pub fn new(repo: Arc<dyn UserRepository>, token_service: Arc<dyn TokenService>) -> Self {
+        Self { repo, token_service }
     }
 
     pub async fn execute(&self, request: LoginRequest) -> anyhow::Result<LoginResponse> {
@@ -30,25 +29,7 @@ impl LoginUser {
             return Err(anyhow::anyhow!("Invalid email or password"));
         }
 
-        // Generate JWT
-        let expiration = Utc::now()
-            .checked_add_signed(Duration::hours(24))
-            .unwrap()
-            .timestamp() as usize;
-
-        let claims = Claims {
-            sub: user.id,
-            merchant_id: Some(user.merchant_id),
-            role: user.role,
-            exp: expiration,
-        };
-
-        let token = encode(
-            &Header::default(),
-            &claims,
-            &EncodingKey::from_secret(self.jwt_secret.as_bytes()),
-        )?;
-            // .map_err(|_| AppError::Internal)?;
+        let token = self.token_service.generate(user.id, &user.email, &user.role, Some(user.merchant_id))?;
 
         Ok(LoginResponse { access_token: token })
     }
