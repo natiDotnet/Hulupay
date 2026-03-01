@@ -5,12 +5,15 @@ use axum::{
     http::StatusCode,
     Json,
 };
+use crate::api::auth::extractor::AuthUser;
 
 #[utoipa::path(post, tag="auth", path = "/auth/register", responses((status = OK, body = RegisterUserResponse)))]
 pub async fn register_user_handler(
+    AuthUser(user): AuthUser,
     State(usecase): State<RegisterUser>,
     Json(payload): Json<RegisterUserRequest>,
 ) -> Result<Json<RegisterUserResponse>, StatusCode> {
+    println!("Registering user: {:?}", user);
     let res = usecase.execute(payload)
         .await
         .map_err(|e| {

@@ -4,7 +4,7 @@ use crate::api::auth::login::__path_login_user_handler;
 use std::sync::Arc;
 use axum::extract::{FromRef, State};
 use axum::http::StatusCode;
-use axum::Json;
+use axum::{Extension, Json};
 use application::encryption::EncryptionService;
 use application::payments::arifpay::config_request_dto::ArifPayConfigRequest;
 use domain::user::Role;
@@ -34,14 +34,15 @@ impl FromRef<AuthState> for LoginUser {
 pub fn router(pool: Pool<Postgres>) -> OpenApiRouter {
     let repo: Arc<dyn UserRepository> = Arc::new(PgUserRepository::new(pool));
     let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
-    let token_service = Arc::new(JwtTokenService::new(jwt_secret));
+    let token_service: Arc<dyn TokenService> = Arc::new(JwtTokenService::new(jwt_secret));
     let state = AuthState {
         register_use_case: RegisterUser::new(repo.clone()),
-        login_use_case: LoginUser::new(repo.clone(), token_service),
+        login_use_case: LoginUser::new(repo.clone(), token_service.clone()),
     };
 
     OpenApiRouter::new()
         .routes(routes!(register_user_handler))
+        .layer(Extension(token_service.clone()))
         .routes(routes!(login_user_handler))
         .with_state(state)
 }
@@ -72,6 +73,7 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 use application::auth::login::LoginUser;
 use application::auth::register_user::RegisterUser;
+use application::auth::token::TokenService;
 use application::auth::user_repository::UserRepository;
 use application::merchant::create_merchant::CreateMerchant;
 use application::merchant::delete_merchant::DeleteMerchant;
