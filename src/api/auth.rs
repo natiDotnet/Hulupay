@@ -1,14 +1,9 @@
-use std::env;
-use crate::api::auth::register::__path_register_user_handler;
 use crate::api::auth::login::__path_login_user_handler;
-use std::sync::Arc;
-use axum::extract::{FromRef, State};
-use axum::http::StatusCode;
-use axum::{Extension, Json};
+use crate::api::auth::register::__path_register_user_handler;
 use application::encryption::EncryptionService;
-use application::payments::arifpay::config_request_dto::ArifPayConfigRequest;
-use domain::user::Role;
-use infrastructure::payments::config_service::ProviderConfigService;
+use axum::extract::FromRef;
+use std::env;
+use std::sync::Arc;
 
 pub mod auth_user;
 mod login;
@@ -67,25 +62,18 @@ pub fn router(pool: Pool<Postgres>) -> OpenApiRouter {
 //     Ok(Json("Config saved"))
 // }
 
-use sqlx::{PgPool, Pool, Postgres};
-use utoipa_axum::router::OpenApiRouter;
-use utoipa_axum::routes;
+use crate::api::auth::login::login_user_handler;
+use crate::api::auth::register::register_user_handler;
 use application::auth::login::LoginUser;
 use application::auth::register_user::RegisterUser;
 use application::auth::token::TokenService;
 use application::auth::user_repository::UserRepository;
-use application::merchant::create_merchant::CreateMerchant;
-use application::merchant::delete_merchant::DeleteMerchant;
-use application::merchant::get_merchant::GetMerchant;
-use application::merchant::list_merchants::ListMerchants;
 use application::merchant::repository::MerchantRepository;
-use application::merchant::update_merchant::UpdateMerchant;
 use infrastructure::auth::jwt_token_service::JwtTokenService;
 use infrastructure::auth::pg_user_repository::PgUserRepository;
-use infrastructure::persistence::merchant_repository_impl::MerchantRepositoryPostgres;
-use crate::api::auth::extractor::AuthUser;
-use crate::api::auth::login::login_user_handler;
-use crate::api::auth::register::register_user_handler;
+use sqlx::{PgPool, Pool, Postgres};
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 
 pub struct AppState {
     pub db: PgPool,

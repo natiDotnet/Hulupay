@@ -1,12 +1,8 @@
 use application::auth::claims::Claims;
-use application::auth::token::TokenService;
 use axum::{
     extract::FromRequestParts,
     http::{request::Parts, StatusCode},
 };
-use axum_extra::TypedHeader;
-use headers::{authorization::Bearer, Authorization};
-use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct AuthUser(pub Claims);

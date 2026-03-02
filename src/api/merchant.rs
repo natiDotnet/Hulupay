@@ -1,4 +1,3 @@
-use std::env;
 use crate::merchant::create_merchant::__path_create_merchant_handler;
 use crate::merchant::delete_merchant::__path_delete_merchant_handler;
 use crate::merchant::get_merchant::__path_get_merchant_handler;
@@ -16,6 +15,8 @@ use crate::api::merchant::delete_merchant::delete_merchant_handler;
 use crate::api::merchant::get_merchant::get_merchant_handler;
 use crate::api::merchant::list_merchants::list_merchants_handler;
 use crate::api::merchant::update_merchant::update_merchant_handler;
+use crate::api::middleware::AuthRouterExt;
+use application::auth::token::TokenService;
 use application::merchant::create_merchant::CreateMerchant;
 use application::merchant::delete_merchant::DeleteMerchant;
 use application::merchant::get_merchant::GetMerchant;
@@ -23,15 +24,11 @@ use application::merchant::list_merchants::ListMerchants;
 use application::merchant::repository::MerchantRepository;
 use application::merchant::update_merchant::UpdateMerchant;
 use axum::extract::FromRef;
-use std::sync::Arc;
-use axum::Extension;
-use sqlx::{Pool, Postgres};
-use utoipa_axum::routes;
-use application::auth::token::TokenService;
 use domain::user::Role;
-use infrastructure::auth::jwt_token_service::JwtTokenService;
 use infrastructure::persistence::merchant_repository_impl::MerchantRepositoryPostgres;
-use crate::api::middleware::AuthRouterExt;
+use sqlx::{Pool, Postgres};
+use std::sync::Arc;
+use utoipa_axum::routes;
 
 #[derive(Clone)]
 pub struct MerchantState {
