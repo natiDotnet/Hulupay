@@ -15,7 +15,7 @@ where
 
     async fn from_request_parts(
         parts: &mut Parts,
-        state: &S,
+        _state: &S,
     ) -> Result<Self, Self::Rejection> {
         parts
             .extensions
