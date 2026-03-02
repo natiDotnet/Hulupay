@@ -28,8 +28,10 @@ use axum::Extension;
 use sqlx::{Pool, Postgres};
 use utoipa_axum::routes;
 use application::auth::token::TokenService;
+use domain::user::Role;
 use infrastructure::auth::jwt_token_service::JwtTokenService;
 use infrastructure::persistence::merchant_repository_impl::MerchantRepositoryPostgres;
+use crate::api::middleware::AuthRouterExt;
 
 #[derive(Clone)]
 pub struct MerchantState {
@@ -80,21 +82,20 @@ impl FromRef<MerchantState> for ListMerchants {
 pub fn router(pool: Pool<Postgres>) -> OpenApiRouter {
 
     let repo: Arc<dyn MerchantRepository> = Arc::new(MerchantRepositoryPostgres::new(pool));
-    let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
-    let token_service: Arc<dyn TokenService> = Arc::new(JwtTokenService::new(jwt_secret));
+    // let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+    // let token_service: Arc<dyn TokenService> = Arc::new(JwtTokenService::new(jwt_secret));
     let state = MerchantState {
         create_use_case: CreateMerchant::new(repo.clone()),
         get_use_case: GetMerchant::new(repo.clone()),
         update_use_case: UpdateMerchant::new(repo.clone()),
         delete_use_case: DeleteMerchant::new(repo.clone()),
         list_merchants_use_case: ListMerchants::new(repo.clone()),
-        // token_service: token_service.clone(),
     };
 
     OpenApiRouter::new()
         .routes(routes!(create_merchant_handler, list_merchants_handler))
         .routes(routes!(get_merchant_handler, delete_merchant_handler, update_merchant_handler))
-        .layer(Extension(token_service.clone()))
+        .require_role(Role::MasterAdmin)
         .with_state(state)
 
 }

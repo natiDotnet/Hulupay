@@ -42,7 +42,6 @@ pub fn router(pool: Pool<Postgres>) -> OpenApiRouter {
 
     OpenApiRouter::new()
         .routes(routes!(register_user_handler))
-        .layer(Extension(token_service.clone()))
         .routes(routes!(login_user_handler))
         .with_state(state)
 }
