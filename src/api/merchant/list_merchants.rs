@@ -6,7 +6,7 @@ use axum::extract::{Query, State};
 use axum::Json;
 use crate::api::auth::extractor::AuthUser;
 
-#[utoipa::path(get, tag="merchant", path = "/merchants", params(("page" = i64, Query),("page_size" = i64, Query)), responses((status = OK, body = PaginatedResponse<MerchantResponse>)))]
+#[utoipa::path(get, tag="merchant", path = "/merchants", security(("bearerAuth" = [])), params(("page" = i64, Query),("page_size" = i64, Query)), responses((status = OK, body = PaginatedResponse<MerchantResponse>)))]
 pub async fn list_merchants_handler(AuthUser(user): AuthUser, Query(query): Query<PaginationQuery>,
                                     State(use_case): State<ListMerchants>
                                   )

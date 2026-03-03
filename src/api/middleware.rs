@@ -91,7 +91,6 @@ where
             .layer(middleware::from_fn_with_state(
                 AuthorizationPolicy::Authenticated,
                 authorization))
-            .layer(middleware::from_fn(authentication))
     }
 
     fn require_role(self, role: Role) -> Self {
@@ -99,6 +98,5 @@ where
             .layer(middleware::from_fn_with_state(
                 AuthorizationPolicy::Role(role),
                 authorization))
-            .layer(middleware::from_fn(authentication))
     }
 }
