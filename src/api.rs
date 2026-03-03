@@ -1,16 +1,15 @@
-use std::env;
 use axum::{Extension, Router};
-use std::sync::Arc;
 use sqlx::{Pool, Postgres};
+use std::env;
+use std::sync::Arc;
 use utoipa::OpenApi;
-use utoipa_axum::router::{OpenApiRouter}; // Import NestedApiConfig
-use utoipa_scalar::{Scalar, Servable};
-use utoipa_swagger_ui::SwaggerUi;
+use utoipa_axum::router::OpenApiRouter;
+use crate::api::middleware::authentication;
 use application::auth::token::TokenService;
 use infrastructure::auth::jwt_token_service::JwtTokenService;
 use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
-use utoipa::openapi::SecurityRequirement;
-use crate::api::middleware::authentication;
+use utoipa_scalar::{Scalar, Servable};
+use utoipa_swagger_ui::SwaggerUi;
 
 pub mod merchant;
 mod error;
