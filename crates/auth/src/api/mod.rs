@@ -7,13 +7,13 @@ pub use extractor::AuthUser;
 pub use state::AuthState;
 
 use axum::extract::FromRef;
-use sqlx::{PgPool, Pool, Postgres};
+use sqlx::PgPool;
 use std::sync::Arc;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use crate::application::{RegisterUser, LoginUser, TokenService, UserRepository};
-use crate::infrastructure::{PgUserRepository, JwtTokenService};
+use crate::application::{LoginUser, RegisterUser, TokenService, UserRepository};
+use crate::infrastructure::{JwtTokenService, PgUserRepository};
 
 impl FromRef<AuthState> for RegisterUser {
     fn from_ref(state: &AuthState) -> Self {

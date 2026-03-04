@@ -1,6 +1,6 @@
-use uuid::Uuid;
-use time::{OffsetDateTime, PrimitiveDateTime};
 use super::Role;
+use time::OffsetDateTime;
+use uuid::Uuid;
 
 #[derive(Clone, Debug)]
 pub struct User {
