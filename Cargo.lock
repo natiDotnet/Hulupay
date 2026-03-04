@@ -7,12 +7,12 @@ name = "Rust"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "application",
+ "auth",
  "axum",
- "domain",
  "dotenvy",
- "infrastructure",
  "jsonwebtoken",
+ "merchant",
+ "payments",
  "serde",
  "sqlx",
  "tokio",

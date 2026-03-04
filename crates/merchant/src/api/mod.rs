@@ -7,7 +7,6 @@ mod list_merchants;
 mod middleware;
 
 pub use state::MerchantState;
-pub use middleware::{authentication, authorization, AuthorizationPolicy, AuthRouterExt};
 
 use auth::Role;
 use axum::extract::FromRef;
@@ -15,7 +14,7 @@ use sqlx::{Pool, Postgres};
 use std::sync::Arc;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
-
+use auth::api::middleware::AuthRouterExt;
 use crate::application::{CreateMerchant, GetMerchant, UpdateMerchant, DeleteMerchant, ListMerchants, MerchantRepository};
 use crate::infrastructure::MerchantRepositoryPostgres;
 

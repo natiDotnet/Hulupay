@@ -24,6 +24,7 @@ fn default_page_size() -> i64 { 20 }
     get,
     tag = "merchant",
     path = "/merchants",
+    security(("bearer_auth" = [])),
     params(PaginationQuery),
     responses((status = OK, body = PaginatedResponse<MerchantResponse>))
 )]

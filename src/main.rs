@@ -1,10 +1,8 @@
 pub mod api;
-use crate::api::{api_routes, merchant};
+use crate::api::api_routes;
 use dotenvy::dotenv;
-use infrastructure::persistence::merchant_repository_impl::MerchantRepositoryPostgres;
 use sqlx::postgres::PgPoolOptions;
 use std::env;
-use std::sync::Arc;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::{fmt, EnvFilter};

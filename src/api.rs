@@ -1,20 +1,19 @@
-use axum::{Extension, Router};
+use axum::Router;
 use sqlx::{Pool, Postgres};
 use std::env;
 use std::sync::Arc;
+use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
 use utoipa::OpenApi;
 use utoipa_axum::router::OpenApiRouter;
-use crate::api::middleware::authentication;
-use application::auth::token::TokenService;
-use infrastructure::auth::jwt_token_service::JwtTokenService;
-use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
 use utoipa_scalar::{Scalar, Servable};
 use utoipa_swagger_ui::SwaggerUi;
 
-pub mod merchant;
-mod error;
-pub mod auth;
-mod middleware;
+// Feature crate routers
+use auth;
+use auth::{JwtTokenService, TokenService};
+use merchant;
+use payments;
+use payments::application::arifpay::ArifPayConfig;
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
@@ -41,14 +40,25 @@ pub fn api_routes(pool: Pool<Postgres>) -> Router {
             ),
         );
 
+    // Create ArifPay provider for payments
+    let arifpay_config = ArifPayConfig::new(
+        env::var("ARIFPAY_API_KEY").unwrap_or_else(|_| "test_key".to_string()),
+        env::var("ARIFPAY_IS_TEST_KEY").unwrap_or_else(|_| "true".to_string()) == "true",
+    );
+    let arifpay_provider = payments::infrastructure::ArifPayProvider::new(arifpay_config);
+
     let (app, doc) = OpenApiRouter::with_openapi(open_api)
         .nest("/api",
               OpenApiRouter::new()
-                  .merge(merchant::router(pool.clone()))
+                  // Auth routes (no auth required for login/register)
                   .merge(auth::router(pool.clone()))
+                  // Merchant routes (requires MasterAdmin role)
+                  .merge(merchant::router(pool.clone()))
+                  // Payment routes (requires authentication)
+                  .merge(payments::router(arifpay_provider))
         )
-        .layer(axum::middleware::from_fn(authentication))
-        .layer(Extension(token_service.clone()))
+        .layer(axum::middleware::from_fn(auth::api::authentication))
+        .layer(axum::Extension(token_service.clone()))
         .split_for_parts();
 
     app.merge(

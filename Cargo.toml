@@ -13,9 +13,16 @@ members = [
 
 resolver = "2"
 [dependencies]
-infrastructure = { path = "src/infrastructure" }
-application = { path = "src/application" }
-domain = { path = "src/domain" }
+# Feature crates
+auth = { path = "crates/auth" }
+merchant = { path = "crates/merchant" }
+payments = { path = "crates/payments" }
+
+# Infrastructure (still needed for DB pool, etc.)
+#infrastructure = { path = "src/infrastructure" }
+#application = { path = "src/application" }
+#domain = { path = "src/domain" }
+
 tokio = { version = "1.49.0", features = ["full"]}
 axum = { version = "0.8.8"}
 sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio", "macros"] }

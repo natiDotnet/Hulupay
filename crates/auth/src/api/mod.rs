@@ -2,9 +2,11 @@ mod extractor;
 mod login;
 mod register;
 mod state;
+pub mod middleware;
 
 pub use extractor::AuthUser;
 pub use state::AuthState;
+pub use middleware::{authentication, authorization, AuthorizationPolicy};
 
 use axum::extract::FromRef;
 use sqlx::PgPool;
