@@ -8,7 +8,7 @@ members = [
     "src/domain",
     "src/application", 
     "src/infrastructure",
-    "crates/auth"
+    "crates/*"
 ]
 
 resolver = "2"
