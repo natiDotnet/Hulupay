@@ -3,6 +3,7 @@ use crate::application::password::verify_password;
 use crate::application::token::TokenService;
 use crate::application::user_repository::UserRepository;
 use std::sync::Arc;
+use crate::DomainAuthError;
 
 #[derive(Clone)]
 pub struct LoginUser {
@@ -17,11 +18,11 @@ impl LoginUser {
 
     pub async fn execute(&self, request: LoginRequest) -> anyhow::Result<LoginResponse> {
         let user = self.repo.find_by_email(&request.email).await?;
-        let user = user.ok_or_else(|| anyhow::anyhow!("Invalid email or password"))?;
+        let user = user.ok_or_else(|| DomainAuthError::InvalidCredentials)?;
 
         let is_password_valid = verify_password(&user.password_hash, &request.password);
         if !is_password_valid {
-            return Err(anyhow::anyhow!("Invalid email or password"));
+            return Err(anyhow::anyhow!(DomainAuthError::InvalidCredentials));
         }
 
         let token = self.token_service.generate(

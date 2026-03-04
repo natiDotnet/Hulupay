@@ -14,12 +14,8 @@ time = "0.3.47"
 # Application layer dependencies
 async-trait = "0.1.89"
 serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.149"
 argon2 = "0.6.0-rc.7"
 password-hash = "0.6.0-rc.12"
-aes-gcm = "0.11.0-rc.3"
-base64 = "0.22.1"
-rand = "0.10.0"
 
 # Infrastructure dependencies
 sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio", "macros", "uuid", "time", "chrono"] }
