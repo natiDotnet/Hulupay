@@ -32,7 +32,7 @@ pub fn api_routes(pool: Pool<Postgres>) -> Router {
         .get_or_insert_default()
         .security_schemes
         .insert(
-            "bearerAuth".to_string(),
+            "bearer_auth".to_string(),
             SecurityScheme::Http(
                 HttpBuilder::new()
                     .scheme(HttpAuthScheme::Bearer)

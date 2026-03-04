@@ -5,3 +5,4 @@
 /src/domain/target/
 /src/infrastructure/.sqlx/
 /.env
+.lingma
