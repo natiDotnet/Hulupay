@@ -6,8 +6,9 @@ edition = "2024"
 [workspace]
 members = [
     "src/domain",
-    "src/application",
-    "src/infrastructure"
+    "src/application", 
+    "src/infrastructure",
+    "crates/auth"
 ]
 
 resolver = "2"
