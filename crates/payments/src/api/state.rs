@@ -1,4 +1,4 @@
-use crate::application::{CreatePaymentProvider, GetPaymentProvider, UpdatePaymentProvider, DeletePaymentProvider, ListPaymentProviders};
+use crate::application::{CreatePaymentProvider, GetPaymentProvider, UpdatePaymentProvider, DeletePaymentProvider, ListPaymentProviders, CreatePaymentProviderConfig, GetPaymentProviderConfig, UpdatePaymentProviderConfig, DeletePaymentProviderConfig, ListPaymentProviderConfigs};
 use crate::infrastructure::ArifPayProvider;
 
 #[derive(Clone)]
@@ -9,4 +9,9 @@ pub struct PaymentsState {
     pub update_payment_provider: UpdatePaymentProvider,
     pub delete_payment_provider: DeletePaymentProvider,
     pub list_payment_providers: ListPaymentProviders,
+    pub create_payment_provider_config: CreatePaymentProviderConfig,
+    pub get_payment_provider_config: GetPaymentProviderConfig,
+    pub update_payment_provider_config: UpdatePaymentProviderConfig,
+    pub delete_payment_provider_config: DeletePaymentProviderConfig,
+    pub list_payment_provider_configs: ListPaymentProviderConfigs,
 }
