@@ -40,4 +40,8 @@ pub trait PaymentProviderConfigRepository: Send + Sync {
         &self,
         merchant_id: Uuid,
     ) -> anyhow::Result<Vec<PaymentProviderConfig>>;
+    async fn list_active_by_provider_code(
+        &self,
+        provider_code: &str,
+    ) -> anyhow::Result<Vec<PaymentProviderConfig>>;
 }

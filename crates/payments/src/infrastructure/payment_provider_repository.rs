@@ -355,4 +355,33 @@ impl PaymentProviderConfigRepository for PgPaymentProviderConfigRepository {
 
         Ok(configs)
     }
+
+    async fn list_active_by_provider_code(
+        &self,
+        provider_code: &str,
+    ) -> anyhow::Result<Vec<PaymentProviderConfig>> {
+        let configs = sqlx::query_as!(
+            PaymentProviderConfig,
+            r#"
+            SELECT 
+                cfg.id as "id: Uuid",
+                cfg.merchant_id as "merchant_id: Uuid",
+                cfg.provider_id as "provider_id: Uuid",
+                cfg.is_test_mode,
+                cfg.config as "config: serde_json::Value",
+                cfg.is_active,
+                cfg.created_at,
+                cfg.updated_at
+            FROM payment_provider_configs cfg
+            INNER JOIN payment_providers prv ON cfg.provider_id = prv.id
+            WHERE prv.code = $1 AND cfg.is_active = true
+            ORDER BY cfg.created_at DESC
+            "#,
+            provider_code
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(configs)
+    }
 }

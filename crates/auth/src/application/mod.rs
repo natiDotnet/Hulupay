@@ -11,6 +11,6 @@ pub use register_user::RegisterUser;
 pub use login::LoginUser;
 pub use user_repository::UserRepository;
 pub use token::TokenService;
-pub use claims::Claims;
+pub use claims::UserContext;
 pub use login_request::{LoginRequest, LoginResponse, RegisterUserRequest, RegisterUserResponse};
 pub use error::ApplicationError;

@@ -8,6 +8,7 @@ mod delete_payment_provider;
 mod list_payment_providers;
 mod create_payment_provider_config;
 mod get_payment_provider_config;
+mod get_payment_provider_config_by_provider;
 mod update_payment_provider_config;
 mod delete_payment_provider_config;
 mod list_payment_provider_configs;
@@ -18,7 +19,7 @@ use axum::extract::FromRef;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use crate::application::{PaymentGateway, CreatePaymentProvider, GetPaymentProvider, UpdatePaymentProvider, DeletePaymentProvider, ListPaymentProviders, PaymentProviderRepository, CreatePaymentProviderConfig, GetPaymentProviderConfig, UpdatePaymentProviderConfig, DeletePaymentProviderConfig, ListPaymentProviderConfigs, PaymentProviderConfigRepository};
+use crate::application::{PaymentGateway, CreatePaymentProvider, GetPaymentProvider, UpdatePaymentProvider, DeletePaymentProvider, ListPaymentProviders, PaymentProviderRepository, CreatePaymentProviderConfig, GetPaymentProviderConfig, GetPaymentProviderConfigByProvider, UpdatePaymentProviderConfig, DeletePaymentProviderConfig, ListPaymentProviderConfigs, PaymentProviderConfigRepository};
 use crate::infrastructure::{ArifPayProvider, PgPaymentProviderRepository};
 use sqlx::Pool;
 use sqlx::Postgres;
@@ -74,6 +75,12 @@ impl FromRef<PaymentsState> for GetPaymentProviderConfig {
     }
 }
 
+impl FromRef<PaymentsState> for GetPaymentProviderConfigByProvider {
+    fn from_ref(state: &PaymentsState) -> Self {
+        state.get_payment_provider_config_by_provider.clone()
+    }
+}
+
 impl FromRef<PaymentsState> for UpdatePaymentProviderConfig {
     fn from_ref(state: &PaymentsState) -> Self {
         state.update_payment_provider_config.clone()
@@ -105,6 +112,7 @@ pub fn router(arifpay_provider: ArifPayProvider, pool: Pool<Postgres>) -> OpenAp
         list_payment_providers: ListPaymentProviders::new(provider_repo.clone()),
         create_payment_provider_config: CreatePaymentProviderConfig::new(config_repo.clone(), provider_repo.clone()),
         get_payment_provider_config: GetPaymentProviderConfig::new(config_repo.clone()),
+        get_payment_provider_config_by_provider: GetPaymentProviderConfigByProvider::new(config_repo.clone()),
         update_payment_provider_config: UpdatePaymentProviderConfig::new(config_repo.clone()),
         delete_payment_provider_config: DeletePaymentProviderConfig::new(config_repo.clone()),
         list_payment_provider_configs: ListPaymentProviderConfigs::new(config_repo.clone()),
@@ -136,7 +144,7 @@ pub fn router(arifpay_provider: ArifPayProvider, pool: Pool<Postgres>) -> OpenAp
                 update_payment_provider_config::update_payment_provider_config_handler,
                 delete_payment_provider_config::delete_payment_provider_config_handler,
             )
-        )
+        ).routes(routes!(get_payment_provider_config_by_provider::get_payment_provider_config_by_provider_handler,))
         .require_role(Role::MerchantAdmin)
         .with_state(state)
 }

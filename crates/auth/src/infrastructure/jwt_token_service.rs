@@ -1,5 +1,5 @@
 use jsonwebtoken::{encode, decode, Header, Validation, EncodingKey, DecodingKey};
-use crate::application::{Claims, TokenService};
+use crate::application::{UserContext, TokenService};
 use uuid::Uuid;
 use std::time::{SystemTime, UNIX_EPOCH};
 use crate::domain::AuthError;
@@ -22,7 +22,7 @@ impl TokenService for JwtTokenService {
             .unwrap()
             .as_secs() + 3600;
 
-        let claims = Claims {
+        let claims = UserContext {
             sub: user_id,
             email: email.to_string(),
             role: role.to_string(),
@@ -38,8 +38,8 @@ impl TokenService for JwtTokenService {
         .map_err(|_| AuthError::InternalError("Failed to encode token".to_string()))
     }
 
-    fn validate(&self, token: &str) -> Result<Claims, AuthError> {
-        decode::<Claims>(
+    fn validate(&self, token: &str) -> Result<UserContext, AuthError> {
+        decode::<UserContext>(
             token,
             &DecodingKey::from_secret(self.secret.as_bytes()),
             &Validation::default(),

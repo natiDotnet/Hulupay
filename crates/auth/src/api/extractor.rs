@@ -1,11 +1,11 @@
-use crate::application::Claims;
+use crate::application::UserContext;
 use axum::{
     extract::FromRequestParts,
     http::{request::Parts, StatusCode},
 };
 
 #[derive(Clone)]
-pub struct AuthUser(pub Claims);
+pub struct AuthUser(pub UserContext);
 
 impl<S> FromRequestParts<S> for AuthUser
 where

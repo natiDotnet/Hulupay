@@ -2,7 +2,7 @@ use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Claims {
+pub struct UserContext {
     pub sub: Uuid,
     pub email: String,
     pub merchant_id: Option<Uuid>,
