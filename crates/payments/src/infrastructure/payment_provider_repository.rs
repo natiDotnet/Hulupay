@@ -358,6 +358,7 @@ impl PaymentProviderConfigRepository for PgPaymentProviderConfigRepository {
 
     async fn list_active_by_provider_code(
         &self,
+        merchant_id: Uuid,
         provider_code: &str,
     ) -> anyhow::Result<Vec<PaymentProviderConfig>> {
         let configs = sqlx::query_as!(
@@ -374,10 +375,11 @@ impl PaymentProviderConfigRepository for PgPaymentProviderConfigRepository {
                 cfg.updated_at
             FROM payment_provider_configs cfg
             INNER JOIN payment_providers prv ON cfg.provider_id = prv.id
-            WHERE prv.code = $1 AND cfg.is_active = true
+            WHERE prv.code = $1 AND merchant_id = $2 AND cfg.is_active = true
             ORDER BY cfg.created_at DESC
             "#,
-            provider_code
+            provider_code,
+            merchant_id
         )
         .fetch_all(&self.pool)
         .await?;
