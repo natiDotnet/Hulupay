@@ -150,7 +150,7 @@ impl PaymentProviderRepository for PgPaymentProviderRepository {
                 created_at
             FROM payment_providers
             WHERE is_active = true
-            ORDER BY name ASC
+            ORDER BY created_at desc
             "#
         )
         .fetch_all(&self.pool)

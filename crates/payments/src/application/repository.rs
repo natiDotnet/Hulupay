@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use uuid::Uuid;
 
-use crate::domain::{PaymentProvider, PaymentProviderConfig, Provider};
+use crate::domain::{PaymentProviderConfig, Provider};
 
 #[async_trait]
 pub trait PaymentProviderRepository: Send + Sync {

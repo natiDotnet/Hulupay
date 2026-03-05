@@ -1,5 +1,4 @@
 use crate::application::repository::PaymentProviderRepository;
-use crate::domain::Provider;
 use std::sync::Arc;
 use uuid::Uuid;
 

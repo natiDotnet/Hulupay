@@ -1,9 +1,8 @@
 use crate::application::repository::PaymentProviderConfigRepository;
-use crate::domain::PaymentProviderConfig;
-use std::sync::Arc;
-use uuid::Uuid;
 use serde_json::Value;
+use std::sync::Arc;
 use time::OffsetDateTime;
+use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct UpdatePaymentProviderConfig {
