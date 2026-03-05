@@ -34,4 +34,3 @@ axum = { version = "0.8.8" }
 
 # Auth dependency
 auth = { path = "../auth" }
-merchant = { path = "../merchant" }

@@ -23,6 +23,8 @@ use crate::infrastructure::{ArifPayProvider, PgPaymentProviderRepository};
 use sqlx::Pool;
 use sqlx::Postgres;
 use std::sync::Arc;
+use auth::api::middleware::AuthRouterExt;
+use auth::Role;
 
 impl FromRef<PaymentsState> for ArifPayProvider {
     fn from_ref(state: &PaymentsState) -> Self {
@@ -121,6 +123,7 @@ pub fn router(arifpay_provider: ArifPayProvider, pool: Pool<Postgres>) -> OpenAp
                 update_payment_provider::update_payment_provider_handler,
                 delete_payment_provider::delete_payment_provider_handler,
             ))
+        .require_role(Role::MasterAdmin)
         .routes(
             routes!(
                 create_payment_provider_config::create_payment_provider_config_handler,
@@ -134,5 +137,6 @@ pub fn router(arifpay_provider: ArifPayProvider, pool: Pool<Postgres>) -> OpenAp
                 delete_payment_provider_config::delete_payment_provider_config_handler,
             )
         )
+        .require_role(Role::MerchantAdmin)
         .with_state(state)
 }
