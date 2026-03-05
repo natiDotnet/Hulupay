@@ -55,7 +55,7 @@ pub fn api_routes(pool: Pool<Postgres>) -> Router {
                   // Merchant routes (requires MasterAdmin role)
                   .merge(merchant::router(pool.clone()))
                   // Payment routes (requires authentication)
-                  .merge(payments::router(arifpay_provider))
+                  .merge(payments::router(arifpay_provider, pool.clone()))
         )
         .layer(axum::middleware::from_fn(auth::api::authentication))
         .layer(axum::Extension(token_service.clone()))
