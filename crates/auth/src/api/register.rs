@@ -1,11 +1,10 @@
 use crate::application::RegisterUser;
+use crate::{RegisterUserRequest, RegisterUserResponse};
 use axum::{
     extract::State,
     http::StatusCode,
     Json,
 };
-use crate::api::extractor::AuthUser;
-use crate::{RegisterUserRequest, RegisterUserResponse};
 
 #[utoipa::path(
     post,
