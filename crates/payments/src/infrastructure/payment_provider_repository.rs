@@ -369,7 +369,7 @@ impl PaymentProviderConfigRepository for PgPaymentProviderConfigRepository {
                 cfg.merchant_id as "merchant_id: Uuid",
                 cfg.provider_id as "provider_id: Uuid",
                 cfg.is_test_mode,
-                cfg.config as "config: serde_json::Value",
+                cfg.config,
                 cfg.is_active,
                 cfg.created_at,
                 cfg.updated_at

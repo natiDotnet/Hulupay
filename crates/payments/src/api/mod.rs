@@ -112,7 +112,7 @@ pub fn router(arifpay_provider: ArifPayProvider, pool: Pool<Postgres>) -> OpenAp
         list_payment_providers: ListPaymentProviders::new(provider_repo.clone()),
         create_payment_provider_config: CreatePaymentProviderConfig::new(config_repo.clone(), provider_repo.clone()),
         get_payment_provider_config: GetPaymentProviderConfig::new(config_repo.clone()),
-        get_payment_provider_config_by_provider: GetPaymentProviderConfigByProvider::new(config_repo.clone()),
+        get_payment_provider_config_by_provider: GetPaymentProviderConfigByProvider::new(config_repo.clone(), provider_repo.clone()),
         update_payment_provider_config: UpdatePaymentProviderConfig::new(config_repo.clone()),
         delete_payment_provider_config: DeletePaymentProviderConfig::new(config_repo.clone()),
         list_payment_provider_configs: ListPaymentProviderConfigs::new(config_repo.clone()),
@@ -145,6 +145,6 @@ pub fn router(arifpay_provider: ArifPayProvider, pool: Pool<Postgres>) -> OpenAp
                 delete_payment_provider_config::delete_payment_provider_config_handler,
             )
         ).routes(routes!(get_payment_provider_config_by_provider::get_payment_provider_config_by_provider_handler,))
-        .require_role(Role::MasterAdmin)
+        .require_role(Role::MerchantAdmin)
         .with_state(state)
 }
