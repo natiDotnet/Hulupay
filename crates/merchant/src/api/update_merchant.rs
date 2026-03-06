@@ -10,6 +10,7 @@ use crate::UpdateMerchantRequest;
 #[utoipa::path(
     put,
     tag = "merchant",
+    security(("bearer_auth" = [])),
     path = "/merchant/{id}",
     request_body = UpdateMerchantRequest,
     responses((status = OK))

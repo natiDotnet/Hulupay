@@ -14,7 +14,6 @@ use crate::{RegisterUserRequest, RegisterUserResponse};
     responses((status = OK, body = RegisterUserResponse))
 )]
 pub async fn register_user_handler(
-    AuthUser(_user): AuthUser,
     State(usecase): State<RegisterUser>,
     Json(payload): Json<RegisterUserRequest>,
 ) -> Result<Json<RegisterUserResponse>, StatusCode> {

@@ -9,6 +9,7 @@ use crate::application::DeleteMerchant;
 #[utoipa::path(
     delete,
     tag = "merchant",
+    security(("bearer_auth" = [])),
     path = "/merchant/{id}",
     responses((status = OK))
 )]

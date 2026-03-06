@@ -145,6 +145,6 @@ pub fn router(arifpay_provider: ArifPayProvider, pool: Pool<Postgres>) -> OpenAp
                 delete_payment_provider_config::delete_payment_provider_config_handler,
             )
         ).routes(routes!(get_payment_provider_config_by_provider::get_payment_provider_config_by_provider_handler,))
-        .require_role(Role::MerchantAdmin)
+        .require_role(Role::MasterAdmin)
         .with_state(state)
 }

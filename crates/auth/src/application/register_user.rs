@@ -3,6 +3,7 @@ use crate::application::password::hash_password;
 use crate::application::user_repository::UserRepository;
 use crate::domain::User;
 use std::sync::Arc;
+use crate::Role;
 
 #[derive(Clone)]
 pub struct RegisterUser {
@@ -21,7 +22,7 @@ impl RegisterUser {
         }
 
         let password_hash = hash_password(&request.password)?;
-        let role = crate::domain::Role::from_str(&request.role)
+        let role = Role::from_str(&request.role)
             .ok_or_else(|| anyhow::anyhow!("Invalid role"))?;
 
         let user = User::new(request.email, password_hash, role, request.merchant_id);

@@ -10,6 +10,7 @@ use crate::MerchantResponse;
 #[utoipa::path(
     get,
     tag = "merchant",
+    security(("bearer_auth" = [])),
     path = "/merchant/{id}",
     responses((status = OK, body = MerchantResponse))
 )]

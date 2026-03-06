@@ -9,6 +9,7 @@ use crate::{CreateMerchantRequest, MerchantResponse};
 #[utoipa::path(
     post,
     tag = "merchant",
+    security(("bearer_auth" = [])),
     path = "/merchant",
     request_body = CreateMerchantRequest,
     responses((status = CREATED, body = MerchantResponse))

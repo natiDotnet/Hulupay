@@ -36,7 +36,7 @@ impl UserRepository for PgUserRepository {
         .bind(user.id)
         .bind(&user.email)
         .bind(&user.password_hash)
-        .bind(format!("{:?}", user.role))
+        .bind(user.role.as_str())
         .bind(user.merchant_id)
         .bind(user.created_at)
         .bind(user.updated_at)
@@ -67,7 +67,7 @@ impl UserRepository for PgUserRepository {
                 merchant_id: r.merchant_id,
                 is_active: true,
                 created_at: r.created_at,
-                updated_at: Some(r.updated_at),
+                updated_at: r.updated_at,
             }
         }))
     }
