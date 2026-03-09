@@ -57,7 +57,7 @@ impl MerchantRepository for MerchantRepositoryPostgres {
             merchant.id,
             merchant.name,
             merchant.is_active,
-            merchant.updated_at.unwrap()
+            merchant.updated_at.ok_or(anyhow::anyhow!("Updated at is required"))?
         )
         .execute(&self.pool)
         .await?;

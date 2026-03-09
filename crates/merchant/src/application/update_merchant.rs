@@ -1,5 +1,6 @@
 use crate::application::repository::MerchantRepository;
 use std::sync::Arc;
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -18,6 +19,7 @@ impl UpdateMerchant {
 
         merchant.name = name;
         merchant.is_active = is_active;
+        merchant.updated_at = Some(OffsetDateTime::now_utc());
 
         self.repository.update(&merchant).await?;
         Ok(())

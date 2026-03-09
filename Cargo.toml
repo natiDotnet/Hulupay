@@ -25,3 +25,4 @@ utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
 utoipa-axum = { version = "0.2.0" }
 utoipa-scalar = { version = "0.3.0", features = ["axum"] }
 tracing-subscriber = { version = "0.3.22", features = ["env-filter", "fmt", "json"] }
+tower-http = { version = "0.6", features = ["cors"] }

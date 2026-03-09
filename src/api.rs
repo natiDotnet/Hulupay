@@ -2,6 +2,7 @@ use axum::Router;
 use sqlx::{Pool, Postgres};
 use std::env;
 use std::sync::Arc;
+use tower_http::cors::{Any, CorsLayer};
 use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
 use utoipa::OpenApi;
 use utoipa_axum::router::OpenApiRouter;
@@ -47,6 +48,14 @@ pub fn api_routes(pool: Pool<Postgres>) -> Router {
     );
     let arifpay_provider = payments::infrastructure::ArifPayProvider::new(arifpay_config);
 
+    // Configure CORS to allow all origins (for development)
+    // In production, you should restrict this to specific origins
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
+        // .allow_credentials(true);
+
     let (app, doc) = OpenApiRouter::with_openapi(open_api)
         .nest("/api",
               OpenApiRouter::new()
@@ -65,4 +74,5 @@ pub fn api_routes(pool: Pool<Postgres>) -> Router {
         SwaggerUi::new("/swagger-ui")
         .url("/api-doc/openapi.json", doc.clone()))
         .merge(Scalar::with_url("/scalar", doc.clone()))
+        .layer(cors)
 }
