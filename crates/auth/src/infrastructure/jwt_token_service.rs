@@ -1,8 +1,8 @@
-use jsonwebtoken::{encode, decode, Header, Validation, EncodingKey, DecodingKey};
-use crate::application::{UserContext, TokenService};
-use uuid::Uuid;
-use std::time::{SystemTime, UNIX_EPOCH};
+use crate::application::{TokenService, UserContext};
 use crate::domain::AuthError;
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
+use std::time::{SystemTime, UNIX_EPOCH};
+use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct JwtTokenService {
@@ -16,11 +16,18 @@ impl JwtTokenService {
 }
 
 impl TokenService for JwtTokenService {
-    fn generate(&self, user_id: Uuid, email: &str, role: &str, merchant_id: Option<Uuid>) -> Result<String, AuthError> {
+    fn generate(
+        &self,
+        user_id: Uuid,
+        email: &str,
+        role: &str,
+        merchant_id: Option<Uuid>,
+    ) -> Result<String, AuthError> {
         let expiration = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
-            .as_secs() + 3600;
+            .as_secs()
+            + 3600;
 
         let claims = UserContext {
             sub: user_id,

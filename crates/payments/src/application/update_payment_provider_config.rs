@@ -23,7 +23,10 @@ impl UpdatePaymentProviderConfig {
         config: Value,
         is_active: bool,
     ) -> anyhow::Result<()> {
-        let mut config_entity = self.repository.get_by_id(id).await?
+        let mut config_entity = self
+            .repository
+            .get_by_id(id)
+            .await?
             .ok_or_else(|| anyhow::anyhow!("Payment provider config not found"))?;
 
         config_entity.merchant_id = merchant_id;

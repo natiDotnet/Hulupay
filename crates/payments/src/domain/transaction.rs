@@ -1,8 +1,8 @@
+use crate::PaymentMethod;
 use crate::domain::error::DomainError;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use uuid::Uuid;
-use crate::PaymentMethod;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TransactionStatus {
@@ -77,7 +77,10 @@ impl Transaction {
     }
 
     pub fn fail(&mut self) -> Result<(), DomainError> {
-        if matches!(self.status, TransactionStatus::Completed | TransactionStatus::Refunded) {
+        if matches!(
+            self.status,
+            TransactionStatus::Completed | TransactionStatus::Refunded
+        ) {
             return Err(DomainError::InvalidStateTransition);
         }
 

@@ -16,12 +16,11 @@ impl PgUserRepository {
 #[async_trait]
 impl UserRepository for PgUserRepository {
     async fn exists_by_email(&self, email: &str) -> anyhow::Result<bool> {
-        let exists: (bool,) = sqlx::query_as(
-            "SELECT EXISTS (SELECT 1 FROM users WHERE email = $1)"
-        )
-        .bind(email)
-        .fetch_one(&self.pool)
-        .await?;
+        let exists: (bool,) =
+            sqlx::query_as("SELECT EXISTS (SELECT 1 FROM users WHERE email = $1)")
+                .bind(email)
+                .fetch_one(&self.pool)
+                .await?;
 
         Ok(exists.0)
     }
@@ -31,7 +30,7 @@ impl UserRepository for PgUserRepository {
             r#"
             INSERT INTO users (id, email, password_hash, role, merchant_id, created_at, updated_at)
             VALUES ($1, $2, $3, $4, $5, $6, $7)
-            "#
+            "#,
         )
         .bind(user.id)
         .bind(&user.email)
@@ -57,8 +56,9 @@ impl UserRepository for PgUserRepository {
         .await?;
 
         Ok(row.map(|r| {
-            let role = crate::domain::Role::from_str(&r.role).unwrap_or(crate::domain::Role::MerchantAdmin);
-            
+            let role = crate::domain::Role::from_str(&r.role)
+                .unwrap_or(crate::domain::Role::MerchantAdmin);
+
             User {
                 id: r.id,
                 email: r.email,

@@ -20,7 +20,10 @@ impl ListPaymentProviderConfigs {
         page_size: i64,
     ) -> anyhow::Result<PaginatedResponse<PaymentProviderConfig>> {
         let offset = (page - 1) * page_size;
-        let (configs, total) = self.repository.list_by_merchant(merchant_id, offset, page_size).await?;
+        let (configs, total) = self
+            .repository
+            .list_by_merchant(merchant_id, offset, page_size)
+            .await?;
 
         Ok(PaginatedResponse {
             items: configs,

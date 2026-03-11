@@ -1,5 +1,10 @@
-use crate::application::dto::{ArifPayBeneficiary, ArifPayInitializeData, ArifPayInitializeRequest, ArifPayInitializeResponse, ArifPayItem, InitializePaymentCommand};
-use crate::application::payment_gateway::{PaymentGateway, PaymentInitResult, PaymentVerificationResult};
+use crate::application::dto::{
+    ArifPayBeneficiary, ArifPayInitializeData, ArifPayInitializeRequest, ArifPayInitializeResponse,
+    ArifPayItem, InitializePaymentCommand,
+};
+use crate::application::payment_gateway::{
+    PaymentGateway, PaymentInitResult, PaymentVerificationResult,
+};
 use crate::application::payment_gateway_error::PaymentGatewayError;
 use serde::{Deserialize, Serialize};
 
@@ -47,25 +52,16 @@ pub struct ArifPayProvider {
 impl ArifPayProvider {
     pub fn new(config: ArifPayConfig) -> Self {
         let mut headers = reqwest::header::HeaderMap::new();
-        headers.insert(
-            "x-arifpay-key",
-            config.api_key.parse().unwrap(),
-        );
+        headers.insert("x-arifpay-key", config.api_key.parse().unwrap());
 
-        headers.insert(
-            "Content-Type",
-            "application/json".parse().unwrap()
-        );
+        headers.insert("Content-Type", "application/json".parse().unwrap());
 
         let client = reqwest::Client::builder()
             .default_headers(headers)
             .build()
             .unwrap();
 
-        Self {
-            client,
-            config,
-        }
+        Self { client, config }
     }
 
     fn build_request(
@@ -74,36 +70,41 @@ impl ArifPayProvider {
         reference: &str,
     ) -> ArifPayInitializeRequest {
         ArifPayInitializeRequest {
-            cancel_url: self.config.cancel_url.clone().map_or_else(|| "".to_string(), |u| u.clone()),
-            success_url: self.config.success_url.clone().map_or_else(|| "".to_string(), |u| u.clone()),
-            error_url: self.config.error_url.clone().map_or_else(|| "".to_string(), |u| u.clone()),
+            cancel_url: self
+                .config
+                .cancel_url
+                .clone()
+                .map_or_else(|| "".to_string(), |u| u.clone()),
+            success_url: self
+                .config
+                .success_url
+                .clone()
+                .map_or_else(|| "".to_string(), |u| u.clone()),
+            error_url: self
+                .config
+                .error_url
+                .clone()
+                .map_or_else(|| "".to_string(), |u| u.clone()),
             notify_url: self.config.notify_url.clone(),
             nonce: reference.to_string(),
             phone: cmd.phone.clone(),
             email: cmd.email.clone(),
-            payment_methods: vec![
-                "TELEBIRR".into(),
-                "AWAASH".into(),
-            ],
+            payment_methods: vec!["TELEBIRR".into(), "AWAASH".into()],
             expire_date: chrono::Utc::now()
                 .checked_add_signed(chrono::Duration::minutes(30))
                 .unwrap()
                 .to_rfc3339(),
-            items: vec![
-                ArifPayItem {
-                    name: "Payment".into(),
-                    quantity: 1,
-                    price: cmd.amount,
-                    description: "Merchant payment".into(),
-                }
-            ],
-            beneficiaries: vec![
-                ArifPayBeneficiary {
-                    account_number: self.config.account_number.clone(),
-                    bank: self.config.bank.clone(),
-                    amount: cmd.amount,
-                }
-            ],
+            items: vec![ArifPayItem {
+                name: "Payment".into(),
+                quantity: 1,
+                price: cmd.amount,
+                description: "Merchant payment".into(),
+            }],
+            beneficiaries: vec![ArifPayBeneficiary {
+                account_number: self.config.account_number.clone(),
+                bank: self.config.bank.clone(),
+                amount: cmd.amount,
+            }],
             lang: "EN".into(),
         }
     }
@@ -119,7 +120,8 @@ impl PaymentGateway for ArifPayProvider {
 
         let request = self.build_request(&cmd, &reference);
 
-        let response = self.client
+        let response = self
+            .client
             .post(format!("{}/checkout/session", self.config.base_url))
             .json(&request)
             .send()
@@ -135,9 +137,7 @@ impl PaymentGateway for ArifPayProvider {
             return Err(PaymentGatewayError::RequestFailed);
         }
 
-        let data = body
-            .data
-            .ok_or(PaymentGatewayError::InvalidResponse)?;
+        let data = body.data.ok_or(PaymentGatewayError::InvalidResponse)?;
 
         Ok(PaymentInitResult {
             checkout_url: data.payment_url,
@@ -149,7 +149,8 @@ impl PaymentGateway for ArifPayProvider {
         &self,
         reference: &str,
     ) -> Result<PaymentVerificationResult, PaymentGatewayError> {
-        let response = self.client
+        let response = self
+            .client
             .get(format!("{}/verify/{}", self.config.base_url, reference))
             .bearer_auth(&self.config.api_key)
             .send()

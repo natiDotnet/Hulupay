@@ -1,12 +1,12 @@
+use super::create_payment_provider_config::PaymentProviderConfigResponse;
+use crate::application::ListPaymentProviderConfigs;
 use axum::{
+    Json,
     extract::{Path, Query, State},
     http::StatusCode,
-    Json,
 };
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
-use crate::application::ListPaymentProviderConfigs;
-use super::create_payment_provider_config::PaymentProviderConfigResponse;
 
 #[derive(Deserialize, IntoParams)]
 pub struct MerchantIdParams {
@@ -22,8 +22,12 @@ pub struct PaginationQuery {
     pub page_size: i64,
 }
 
-fn default_page() -> i64 { 1 }
-fn default_page_size() -> i64 { 20 }
+fn default_page() -> i64 {
+    1
+}
+fn default_page_size() -> i64 {
+    20
+}
 
 #[derive(Serialize, ToSchema)]
 pub struct PaginatedConfigsResponse {
@@ -46,16 +50,22 @@ pub async fn list_payment_provider_configs_handler(
     Path(params): Path<MerchantIdParams>,
     Query(pagination): Query<PaginationQuery>,
 ) -> Result<Json<PaginatedConfigsResponse>, StatusCode> {
-    let merchant_id = uuid::Uuid::parse_str(&params.merchant_id)
-        .map_err(|_| StatusCode::BAD_REQUEST)?;
+    let merchant_id =
+        uuid::Uuid::parse_str(&params.merchant_id).map_err(|_| StatusCode::BAD_REQUEST)?;
 
-    let result = usecase.execute(merchant_id, pagination.page, pagination.page_size).await
+    let result = usecase
+        .execute(merchant_id, pagination.page, pagination.page_size)
+        .await
         .map_err(|e| {
             eprintln!("Error listing payment provider configs: {:?}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
-    let items = result.items.iter().map(|c| PaymentProviderConfigResponse::from(c.clone())).collect();
+    let items = result
+        .items
+        .iter()
+        .map(|c| PaymentProviderConfigResponse::from(c.clone()))
+        .collect();
 
     Ok(Json(PaginatedConfigsResponse {
         items,

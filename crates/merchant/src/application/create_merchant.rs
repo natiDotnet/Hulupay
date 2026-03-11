@@ -13,7 +13,10 @@ impl CreateMerchant {
         Self { repository }
     }
 
-    pub async fn execute(&self, request: CreateMerchantRequest) -> anyhow::Result<MerchantResponse> {
+    pub async fn execute(
+        &self,
+        request: CreateMerchantRequest,
+    ) -> anyhow::Result<MerchantResponse> {
         let merchant = Merchant::new(request.name, true);
 
         self.repository.create(&merchant).await?;

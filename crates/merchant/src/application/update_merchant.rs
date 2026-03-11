@@ -14,7 +14,10 @@ impl UpdateMerchant {
     }
 
     pub async fn execute(&self, id: Uuid, name: String, is_active: bool) -> anyhow::Result<()> {
-        let mut merchant = self.repository.get_by_id(id).await?
+        let mut merchant = self
+            .repository
+            .get_by_id(id)
+            .await?
             .ok_or_else(|| anyhow::anyhow!("Merchant not found"))?;
 
         merchant.name = name;

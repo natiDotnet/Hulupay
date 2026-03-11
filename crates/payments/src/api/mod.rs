@@ -1,17 +1,17 @@
-mod state;
-mod initialize;
-mod verify;
 mod create_payment_provider;
-mod get_payment_provider;
-mod update_payment_provider;
-mod delete_payment_provider;
-mod list_payment_providers;
 mod create_payment_provider_config;
+mod delete_payment_provider;
+mod delete_payment_provider_config;
+mod get_payment_provider;
 mod get_payment_provider_config;
 mod get_payment_provider_config_by_provider;
-mod update_payment_provider_config;
-mod delete_payment_provider_config;
+mod initialize;
 mod list_payment_provider_configs;
+mod list_payment_providers;
+mod state;
+mod update_payment_provider;
+mod update_payment_provider_config;
+mod verify;
 
 pub use state::PaymentsState;
 
@@ -19,13 +19,19 @@ use axum::extract::FromRef;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use crate::application::{PaymentGateway, CreatePaymentProvider, GetPaymentProvider, UpdatePaymentProvider, DeletePaymentProvider, ListPaymentProviders, PaymentProviderRepository, CreatePaymentProviderConfig, GetPaymentProviderConfig, GetPaymentProviderConfigByProvider, UpdatePaymentProviderConfig, DeletePaymentProviderConfig, ListPaymentProviderConfigs, PaymentProviderConfigRepository};
+use crate::application::{
+    CreatePaymentProvider, CreatePaymentProviderConfig, DeletePaymentProvider,
+    DeletePaymentProviderConfig, GetPaymentProvider, GetPaymentProviderConfig,
+    GetPaymentProviderConfigByProvider, ListPaymentProviderConfigs, ListPaymentProviders,
+    PaymentGateway, PaymentProviderConfigRepository, PaymentProviderRepository,
+    UpdatePaymentProvider, UpdatePaymentProviderConfig,
+};
 use crate::infrastructure::{ArifPayProvider, PgPaymentProviderRepository};
+use auth::Role;
+use auth::api::middleware::AuthRouterExt;
 use sqlx::Pool;
 use sqlx::Postgres;
 use std::sync::Arc;
-use auth::api::middleware::AuthRouterExt;
-use auth::Role;
 
 impl FromRef<PaymentsState> for ArifPayProvider {
     fn from_ref(state: &PaymentsState) -> Self {
@@ -100,9 +106,11 @@ impl FromRef<PaymentsState> for ListPaymentProviderConfigs {
 }
 
 pub fn router(arifpay_provider: ArifPayProvider, pool: Pool<Postgres>) -> OpenApiRouter {
-    let provider_repo: Arc<dyn PaymentProviderRepository> = Arc::new(PgPaymentProviderRepository::new(pool.clone()));
-    let config_repo: Arc<dyn PaymentProviderConfigRepository> = Arc::new(crate::infrastructure::PgPaymentProviderConfigRepository::new(pool.clone()));
-    
+    let provider_repo: Arc<dyn PaymentProviderRepository> =
+        Arc::new(PgPaymentProviderRepository::new(pool.clone()));
+    let config_repo: Arc<dyn PaymentProviderConfigRepository> =
+        Arc::new(crate::infrastructure::PgPaymentProviderConfigRepository::new(pool.clone()));
+
     let state = PaymentsState {
         arifpay_provider,
         create_payment_provider: CreatePaymentProvider::new(provider_repo.clone()),
@@ -110,9 +118,15 @@ pub fn router(arifpay_provider: ArifPayProvider, pool: Pool<Postgres>) -> OpenAp
         update_payment_provider: UpdatePaymentProvider::new(provider_repo.clone()),
         delete_payment_provider: DeletePaymentProvider::new(provider_repo.clone()),
         list_payment_providers: ListPaymentProviders::new(provider_repo.clone()),
-        create_payment_provider_config: CreatePaymentProviderConfig::new(config_repo.clone(), provider_repo.clone()),
+        create_payment_provider_config: CreatePaymentProviderConfig::new(
+            config_repo.clone(),
+            provider_repo.clone(),
+        ),
         get_payment_provider_config: GetPaymentProviderConfig::new(config_repo.clone()),
-        get_payment_provider_config_by_provider: GetPaymentProviderConfigByProvider::new(config_repo.clone(), provider_repo.clone()),
+        get_payment_provider_config_by_provider: GetPaymentProviderConfigByProvider::new(
+            config_repo.clone(),
+            provider_repo.clone(),
+        ),
         update_payment_provider_config: UpdatePaymentProviderConfig::new(config_repo.clone()),
         delete_payment_provider_config: DeletePaymentProviderConfig::new(config_repo.clone()),
         list_payment_provider_configs: ListPaymentProviderConfigs::new(config_repo.clone()),

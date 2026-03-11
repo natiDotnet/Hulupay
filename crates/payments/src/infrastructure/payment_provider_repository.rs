@@ -95,21 +95,14 @@ impl PaymentProviderRepository for PgPaymentProviderRepository {
     }
 
     async fn delete(&self, id: Uuid) -> anyhow::Result<()> {
-        sqlx::query!(
-            "DELETE FROM payment_providers WHERE id = $1",
-            id
-        )
-        .execute(&self.pool)
-        .await?;
+        sqlx::query!("DELETE FROM payment_providers WHERE id = $1", id)
+            .execute(&self.pool)
+            .await?;
 
         Ok(())
     }
 
-    async fn list(
-        &self,
-        offset: i64,
-        limit: i64,
-    ) -> anyhow::Result<(Vec<Provider>, i64)> {
+    async fn list(&self, offset: i64, limit: i64) -> anyhow::Result<(Vec<Provider>, i64)> {
         let providers = sqlx::query_as!(
             Provider,
             r#"
@@ -129,11 +122,9 @@ impl PaymentProviderRepository for PgPaymentProviderRepository {
         .fetch_all(&self.pool)
         .await?;
 
-        let total: (i64,) = sqlx::query_as(
-            r#"SELECT COUNT(*) FROM payment_providers"#
-        )
-        .fetch_one(&self.pool)
-        .await?;
+        let total: (i64,) = sqlx::query_as(r#"SELECT COUNT(*) FROM payment_providers"#)
+            .fetch_one(&self.pool)
+            .await?;
 
         Ok((providers, total.0))
     }
@@ -278,12 +269,9 @@ impl PaymentProviderConfigRepository for PgPaymentProviderConfigRepository {
     }
 
     async fn delete(&self, id: Uuid) -> anyhow::Result<()> {
-        sqlx::query!(
-            "DELETE FROM payment_provider_configs WHERE id = $1",
-            id
-        )
-        .execute(&self.pool)
-        .await?;
+        sqlx::query!("DELETE FROM payment_provider_configs WHERE id = $1", id)
+            .execute(&self.pool)
+            .await?;
 
         Ok(())
     }
@@ -319,7 +307,7 @@ impl PaymentProviderConfigRepository for PgPaymentProviderConfigRepository {
         .await?;
 
         let total: (i64,) = sqlx::query_as(
-            r#"SELECT COUNT(*) FROM payment_provider_configs WHERE merchant_id = $1"#
+            r#"SELECT COUNT(*) FROM payment_provider_configs WHERE merchant_id = $1"#,
         )
         .bind(merchant_id)
         .fetch_one(&self.pool)

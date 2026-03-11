@@ -18,12 +18,15 @@ impl GetMerchant {
         let merchant = self.repository.get_by_id(id).await?;
 
         match merchant {
-            None => Err(ApplicationError::NotFound(format!("merchant not found with id {}", id))),
+            None => Err(ApplicationError::NotFound(format!(
+                "merchant not found with id {}",
+                id
+            ))),
             Some(mer) => Ok(MerchantResponse {
                 id: mer.id,
                 name: mer.name,
                 is_active: mer.is_active,
-            })
+            }),
         }
     }
 }

@@ -12,8 +12,17 @@ impl UpdatePaymentProvider {
         Self { repository }
     }
 
-    pub async fn execute(&self, id: Uuid, code: String, name: String, is_active: bool) -> anyhow::Result<()> {
-        let mut provider = self.repository.get_by_id(id).await?
+    pub async fn execute(
+        &self,
+        id: Uuid,
+        code: String,
+        name: String,
+        is_active: bool,
+    ) -> anyhow::Result<()> {
+        let mut provider = self
+            .repository
+            .get_by_id(id)
+            .await?
             .ok_or_else(|| anyhow::anyhow!("Payment provider not found"))?;
 
         provider.code = code;

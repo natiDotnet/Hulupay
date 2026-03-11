@@ -1,9 +1,9 @@
+use crate::DomainAuthError;
 use crate::application::login_request::{LoginRequest, LoginResponse};
 use crate::application::password::verify_password;
 use crate::application::token::TokenService;
 use crate::application::user_repository::UserRepository;
 use std::sync::Arc;
-use crate::DomainAuthError;
 
 #[derive(Clone)]
 pub struct LoginUser {
@@ -13,7 +13,10 @@ pub struct LoginUser {
 
 impl LoginUser {
     pub fn new(repo: Arc<dyn UserRepository>, token_service: Arc<dyn TokenService>) -> Self {
-        Self { repo, token_service }
+        Self {
+            repo,
+            token_service,
+        }
     }
 
     pub async fn execute(&self, request: LoginRequest) -> anyhow::Result<LoginResponse> {
@@ -32,6 +35,8 @@ impl LoginUser {
             user.merchant_id,
         )?;
 
-        Ok(LoginResponse { access_token: token })
+        Ok(LoginResponse {
+            access_token: token,
+        })
     }
 }

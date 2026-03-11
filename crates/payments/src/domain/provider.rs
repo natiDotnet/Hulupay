@@ -1,5 +1,5 @@
-use crate::domain::error::DomainError;
 use crate::domain::PaymentMethod;
+use crate::domain::error::DomainError;
 use async_trait::async_trait;
 
 pub struct InitializePayment {
@@ -19,9 +19,10 @@ pub struct ProviderInitResponse {
 #[async_trait]
 pub trait PaymentProvider: Send + Sync {
     fn name(&self) -> &'static str;
-    async fn initialize_payment(&self, request: InitializePayment)
-        -> Result<ProviderInitResponse, DomainError>;
+    async fn initialize_payment(
+        &self,
+        request: InitializePayment,
+    ) -> Result<ProviderInitResponse, DomainError>;
 
-    async fn verify_payment(&self, external_reference: String)
-        -> Result<bool, DomainError>;
+    async fn verify_payment(&self, external_reference: String) -> Result<bool, DomainError>;
 }

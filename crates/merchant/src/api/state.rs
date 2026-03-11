@@ -1,4 +1,6 @@
-use crate::application::{CreateMerchant, GetMerchant, UpdateMerchant, DeleteMerchant, ListMerchants};
+use crate::application::{
+    CreateMerchant, DeleteMerchant, GetMerchant, ListMerchants, UpdateMerchant,
+};
 
 #[derive(Clone)]
 pub struct MerchantState {

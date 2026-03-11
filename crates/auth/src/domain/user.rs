@@ -15,7 +15,12 @@ pub struct User {
 }
 
 impl User {
-    pub fn new(email: String, password_hash: String, role: Role, merchant_id: Option<Uuid>) -> Self {
+    pub fn new(
+        email: String,
+        password_hash: String,
+        role: Role,
+        merchant_id: Option<Uuid>,
+    ) -> Self {
         let now = OffsetDateTime::now_utc();
         Self {
             id: Uuid::new_v4(),

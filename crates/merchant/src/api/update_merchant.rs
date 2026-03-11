@@ -1,11 +1,11 @@
-use uuid::Uuid;
+use crate::UpdateMerchantRequest;
+use crate::application::UpdateMerchant;
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
-    Json,
 };
-use crate::application::UpdateMerchant;
-use crate::UpdateMerchantRequest;
+use uuid::Uuid;
 
 #[utoipa::path(
     put,
@@ -25,11 +25,13 @@ pub async fn update_merchant_handler(
         return Err(StatusCode::BAD_REQUEST);
     }
 
-    usecase.execute(payload.id, payload.name, payload.is_active).await
+    usecase
+        .execute(payload.id, payload.name, payload.is_active)
+        .await
         .map_err(|e| {
             eprintln!("Error updating merchant: {:?}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
-    
+
     Ok(Json("Merchant updated successfully"))
 }

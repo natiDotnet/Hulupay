@@ -1,9 +1,12 @@
-pub mod domain;
-pub mod application;
-pub mod infrastructure;
 pub mod api;
+pub mod application;
+pub mod domain;
+pub mod infrastructure;
 
-pub use domain::{User, Role, AuthError as DomainAuthError};
-pub use application::{RegisterUser, LoginUser, UserContext, LoginRequest, RegisterUserRequest, RegisterUserResponse, LoginResponse, TokenService};
-pub use infrastructure::{PgUserRepository, JwtTokenService};
-pub use api::{router, AuthState};
+pub use api::{AuthState, router};
+pub use application::{
+    LoginRequest, LoginResponse, LoginUser, RegisterUser, RegisterUserRequest,
+    RegisterUserResponse, TokenService, UserContext,
+};
+pub use domain::{AuthError as DomainAuthError, Role, User};
+pub use infrastructure::{JwtTokenService, PgUserRepository};

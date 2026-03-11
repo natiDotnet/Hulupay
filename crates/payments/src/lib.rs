@@ -1,12 +1,12 @@
-pub mod domain;
-pub mod application;
-pub mod infrastructure;
 pub mod api;
+pub mod application;
+pub mod domain;
+pub mod infrastructure;
 
-pub use domain::{Transaction, TransactionStatus, PaymentMethod, PaymentProviderConfig};
+pub use api::{PaymentsState, router};
 pub use application::{
-    PaymentGateway, PaymentInitResult, PaymentVerificationResult,
-    InitializePaymentCommand, ArifPayProvider, ArifPayConfig,
+    ArifPayConfig, ArifPayProvider, InitializePaymentCommand, PaymentGateway, PaymentInitResult,
+    PaymentVerificationResult,
 };
+pub use domain::{PaymentMethod, PaymentProviderConfig, Transaction, TransactionStatus};
 pub use infrastructure::ArifPayProvider as ArifPayProviderImpl;
-pub use api::{router, PaymentsState};

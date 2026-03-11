@@ -1,9 +1,5 @@
 use crate::application::CreatePaymentProvider;
-use axum::{
-    extract::State,
-    http::StatusCode,
-    Json,
-};
+use axum::{Json, extract::State, http::StatusCode};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use utoipa::ToSchema;
@@ -31,7 +27,9 @@ pub async fn create_payment_provider_handler(
     State(usecase): State<CreatePaymentProvider>,
     Json(payload): Json<CreatePaymentProviderRequest>,
 ) -> Result<Json<ProviderResponse>, StatusCode> {
-    let provider = usecase.execute(payload.code, payload.name, payload.is_active).await
+    let provider = usecase
+        .execute(payload.code, payload.name, payload.is_active)
+        .await
         .map_err(|e| {
             eprintln!("Error creating payment provider: {:?}", e);
             StatusCode::INTERNAL_SERVER_ERROR

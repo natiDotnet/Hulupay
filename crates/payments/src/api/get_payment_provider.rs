@@ -1,12 +1,12 @@
+use super::create_payment_provider::ProviderResponse;
+use crate::application::GetPaymentProvider;
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
-    Json,
 };
 use serde::Deserialize;
 use utoipa::IntoParams;
-use crate::application::GetPaymentProvider;
-use super::create_payment_provider::ProviderResponse;
 
 #[derive(Deserialize, IntoParams)]
 pub struct ProviderIdParams {
@@ -25,10 +25,11 @@ pub async fn get_payment_provider_handler(
     State(usecase): State<GetPaymentProvider>,
     Path(params): Path<ProviderIdParams>,
 ) -> Result<Json<ProviderResponse>, StatusCode> {
-    let id = uuid::Uuid::parse_str(&params.id)
-        .map_err(|_| StatusCode::BAD_REQUEST)?;
+    let id = uuid::Uuid::parse_str(&params.id).map_err(|_| StatusCode::BAD_REQUEST)?;
 
-    let provider = usecase.execute(id).await
+    let provider = usecase
+        .execute(id)
+        .await
         .map_err(|e| {
             eprintln!("Error getting payment provider: {:?}", e);
             StatusCode::INTERNAL_SERVER_ERROR

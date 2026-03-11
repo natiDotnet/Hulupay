@@ -1,8 +1,8 @@
 use crate::application::repository::PaymentProviderRepository;
 use crate::domain::Provider;
 use std::sync::Arc;
-use uuid::Uuid;
 use time::OffsetDateTime;
+use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct CreatePaymentProvider {
@@ -14,7 +14,12 @@ impl CreatePaymentProvider {
         Self { repository }
     }
 
-    pub async fn execute(&self, code: String, name: String, is_active: bool) -> anyhow::Result<Provider> {
+    pub async fn execute(
+        &self,
+        code: String,
+        name: String,
+        is_active: bool,
+    ) -> anyhow::Result<Provider> {
         let provider = Provider {
             id: Uuid::new_v4(),
             code,

@@ -1,10 +1,6 @@
 use crate::application::LoginUser;
-use axum::{
-    extract::State,
-    http::StatusCode,
-    Json,
-};
 use crate::{LoginRequest, LoginResponse};
+use axum::{Json, extract::State, http::StatusCode};
 
 #[utoipa::path(
     post,
@@ -16,10 +12,9 @@ pub async fn login_user_handler(
     State(usecase): State<LoginUser>,
     Json(payload): Json<LoginRequest>,
 ) -> Result<Json<LoginResponse>, StatusCode> {
-    let res = usecase.execute(payload).await
-        .map_err(|e| {
-            eprintln!("Error logging in user: {:?}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+    let res = usecase.execute(payload).await.map_err(|e| {
+        eprintln!("Error logging in user: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
     Ok(Json(res))
 }

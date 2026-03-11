@@ -1,7 +1,7 @@
-mod user;
 mod error;
 mod role;
+mod user;
 
-pub use user::User;
 pub use error::AuthError;
 pub use role::Role;
+pub use user::User;

@@ -1,8 +1,8 @@
+use crate::MerchantRepository;
 use crate::domain::Merchant;
 use async_trait::async_trait;
 use sqlx::PgPool;
 use uuid::Uuid;
-use crate::MerchantRepository;
 
 pub struct MerchantRepositoryPostgres {
     pool: PgPool,
@@ -57,7 +57,9 @@ impl MerchantRepository for MerchantRepositoryPostgres {
             merchant.id,
             merchant.name,
             merchant.is_active,
-            merchant.updated_at.ok_or(anyhow::anyhow!("Updated at is required"))?
+            merchant
+                .updated_at
+                .ok_or(anyhow::anyhow!("Updated at is required"))?
         )
         .execute(&self.pool)
         .await?;
@@ -66,21 +68,14 @@ impl MerchantRepository for MerchantRepositoryPostgres {
     }
 
     async fn delete(&self, id: Uuid) -> anyhow::Result<()> {
-        sqlx::query!(
-            "DELETE FROM merchants WHERE id = $1",
-            id
-        )
-        .execute(&self.pool)
-        .await?;
+        sqlx::query!("DELETE FROM merchants WHERE id = $1", id)
+            .execute(&self.pool)
+            .await?;
 
         Ok(())
     }
 
-    async fn list(
-        &self,
-        offset: i64,
-        limit: i64,
-    ) -> anyhow::Result<(Vec<Merchant>, i64)> {
+    async fn list(&self, offset: i64, limit: i64) -> anyhow::Result<(Vec<Merchant>, i64)> {
         let merchants = sqlx::query_as!(
             Merchant,
             r#"
@@ -95,11 +90,9 @@ impl MerchantRepository for MerchantRepositoryPostgres {
         .fetch_all(&self.pool)
         .await?;
 
-        let total: (i64,) = sqlx::query_as(
-            r#"SELECT COUNT(*) FROM merchants"#
-        )
-        .fetch_one(&self.pool)
-        .await?;
+        let total: (i64,) = sqlx::query_as(r#"SELECT COUNT(*) FROM merchants"#)
+            .fetch_one(&self.pool)
+            .await?;
 
         Ok((merchants, total.0))
     }

@@ -1,9 +1,9 @@
 use crate::application::repository::{PaymentProviderConfigRepository, PaymentProviderRepository};
 use crate::domain::PaymentProviderConfig;
-use std::sync::Arc;
-use uuid::Uuid;
-use time::OffsetDateTime;
 use serde_json::Value;
+use std::sync::Arc;
+use time::OffsetDateTime;
+use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct CreatePaymentProviderConfig {
@@ -31,7 +31,9 @@ impl CreatePaymentProviderConfig {
         is_active: bool,
     ) -> anyhow::Result<PaymentProviderConfig> {
         // Verify that the provider exists
-        self.provider_repository.get_by_id(provider_id).await?
+        self.provider_repository
+            .get_by_id(provider_id)
+            .await?
             .ok_or_else(|| anyhow::anyhow!("Payment provider not found"))?;
 
         let config_entity = PaymentProviderConfig {

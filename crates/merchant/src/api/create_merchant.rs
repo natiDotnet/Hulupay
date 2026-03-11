@@ -1,10 +1,6 @@
 use crate::application::CreateMerchant;
-use axum::{
-    extract::State,
-    http::StatusCode,
-    Json,
-};
 use crate::{CreateMerchantRequest, MerchantResponse};
+use axum::{Json, extract::State, http::StatusCode};
 
 #[utoipa::path(
     post,
@@ -18,10 +14,9 @@ pub async fn create_merchant_handler(
     State(usecase): State<CreateMerchant>,
     Json(payload): Json<CreateMerchantRequest>,
 ) -> Result<Json<MerchantResponse>, StatusCode> {
-    let res = usecase.execute(payload).await
-        .map_err(|e| {
-            eprintln!("Error creating merchant: {:?}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+    let res = usecase.execute(payload).await.map_err(|e| {
+        eprintln!("Error creating merchant: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
     Ok(Json(res))
 }

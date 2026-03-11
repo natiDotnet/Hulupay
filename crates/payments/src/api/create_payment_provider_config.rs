@@ -1,9 +1,5 @@
 use crate::application::CreatePaymentProviderConfig;
-use axum::{
-    extract::State,
-    http::StatusCode,
-    Json,
-};
+use axum::{Json, extract::State, http::StatusCode};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -70,13 +66,15 @@ pub async fn create_payment_provider_config_handler(
     State(usecase): State<CreatePaymentProviderConfig>,
     Json(payload): Json<CreatePaymentProviderConfigRequest>,
 ) -> Result<Json<PaymentProviderConfigResponse>, StatusCode> {
-    let config = usecase.execute(
-        payload.merchant_id,
-        payload.provider_id,
-        payload.is_test_mode,
-        payload.config,
-        payload.is_active,
-    ).await
+    let config = usecase
+        .execute(
+            payload.merchant_id,
+            payload.provider_id,
+            payload.is_test_mode,
+            payload.config,
+            payload.is_active,
+        )
+        .await
         .map_err(|e| {
             eprintln!("Error creating payment provider config: {:?}", e);
             StatusCode::INTERNAL_SERVER_ERROR

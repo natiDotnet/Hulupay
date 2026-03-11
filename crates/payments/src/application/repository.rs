@@ -10,11 +10,7 @@ pub trait PaymentProviderRepository: Send + Sync {
     async fn get_by_code(&self, code: &str) -> anyhow::Result<Option<Provider>>;
     async fn update(&self, provider: &Provider) -> anyhow::Result<()>;
     async fn delete(&self, id: Uuid) -> anyhow::Result<()>;
-    async fn list(
-        &self,
-        offset: i64,
-        limit: i64,
-    ) -> anyhow::Result<(Vec<Provider>, i64)>;
+    async fn list(&self, offset: i64, limit: i64) -> anyhow::Result<(Vec<Provider>, i64)>;
     async fn list_active(&self) -> anyhow::Result<Vec<Provider>>;
 }
 

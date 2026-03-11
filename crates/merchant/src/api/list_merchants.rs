@@ -1,12 +1,12 @@
+use crate::MerchantResponse;
+use crate::application::{ListMerchants, PaginatedResponse};
 use axum::{
+    Json,
     extract::{Query, State},
     http::StatusCode,
-    Json,
 };
 use serde::Deserialize;
 use utoipa::IntoParams;
-use crate::application::{ListMerchants, PaginatedResponse};
-use crate::MerchantResponse;
 
 #[derive(Deserialize, IntoParams)]
 pub struct PaginationQuery {
@@ -17,8 +17,12 @@ pub struct PaginationQuery {
     pub page_size: i64,
 }
 
-fn default_page() -> i64 { 1 }
-fn default_page_size() -> i64 { 20 }
+fn default_page() -> i64 {
+    1
+}
+fn default_page_size() -> i64 {
+    20
+}
 
 #[utoipa::path(
     get,
@@ -32,7 +36,9 @@ pub async fn list_merchants_handler(
     State(usecase): State<ListMerchants>,
     Query(pagination): Query<PaginationQuery>,
 ) -> Result<Json<PaginatedResponse<MerchantResponse>>, StatusCode> {
-    let res = usecase.execute(pagination.page, pagination.page_size).await
+    let res = usecase
+        .execute(pagination.page, pagination.page_size)
+        .await
         .map_err(|e| {
             eprintln!("Error listing merchants: {:?}", e);
             StatusCode::INTERNAL_SERVER_ERROR

@@ -1,10 +1,10 @@
-use uuid::Uuid;
+use crate::application::DeleteMerchant;
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
-    Json,
 };
-use crate::application::DeleteMerchant;
+use uuid::Uuid;
 
 #[utoipa::path(
     delete,
@@ -17,11 +17,10 @@ pub async fn delete_merchant_handler(
     State(usecase): State<DeleteMerchant>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<&'static str>, StatusCode> {
-    usecase.execute(id).await
-        .map_err(|e| {
-            eprintln!("Error deleting merchant: {:?}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-    
+    usecase.execute(id).await.map_err(|e| {
+        eprintln!("Error deleting merchant: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
     Ok(Json("Merchant deleted successfully"))
 }

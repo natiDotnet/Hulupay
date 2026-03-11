@@ -1,22 +1,24 @@
-mod state;
 mod create_merchant;
-mod get_merchant;
-mod update_merchant;
 mod delete_merchant;
+mod get_merchant;
 mod list_merchants;
 mod middleware;
+mod state;
+mod update_merchant;
 
 pub use state::MerchantState;
 
+use crate::application::{
+    CreateMerchant, DeleteMerchant, GetMerchant, ListMerchants, MerchantRepository, UpdateMerchant,
+};
+use crate::infrastructure::MerchantRepositoryPostgres;
 use auth::Role;
+use auth::api::middleware::AuthRouterExt;
 use axum::extract::FromRef;
 use sqlx::{Pool, Postgres};
 use std::sync::Arc;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
-use auth::api::middleware::AuthRouterExt;
-use crate::application::{CreateMerchant, GetMerchant, UpdateMerchant, DeleteMerchant, ListMerchants, MerchantRepository};
-use crate::infrastructure::MerchantRepositoryPostgres;
 
 impl FromRef<MerchantState> for CreateMerchant {
     fn from_ref(state: &MerchantState) -> Self {
@@ -50,7 +52,7 @@ impl FromRef<MerchantState> for ListMerchants {
 
 pub fn router(pool: Pool<Postgres>) -> OpenApiRouter {
     let repo: Arc<dyn MerchantRepository> = Arc::new(MerchantRepositoryPostgres::new(pool));
-    
+
     let state = MerchantState {
         create_use_case: CreateMerchant::new(repo.clone()),
         get_use_case: GetMerchant::new(repo.clone()),
@@ -60,8 +62,15 @@ pub fn router(pool: Pool<Postgres>) -> OpenApiRouter {
     };
 
     OpenApiRouter::new()
-        .routes(routes!(create_merchant::create_merchant_handler, list_merchants::list_merchants_handler))
-        .routes(routes!(get_merchant::get_merchant_handler, delete_merchant::delete_merchant_handler, update_merchant::update_merchant_handler))
+        .routes(routes!(
+            create_merchant::create_merchant_handler,
+            list_merchants::list_merchants_handler
+        ))
+        .routes(routes!(
+            get_merchant::get_merchant_handler,
+            delete_merchant::delete_merchant_handler,
+            update_merchant::update_merchant_handler
+        ))
         .require_role(Role::MasterAdmin)
         .with_state(state)
 }

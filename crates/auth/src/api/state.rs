@@ -1,4 +1,4 @@
-use crate::application::{RegisterUser, LoginUser};
+use crate::application::{LoginUser, RegisterUser};
 
 #[derive(Clone)]
 pub struct AuthState {

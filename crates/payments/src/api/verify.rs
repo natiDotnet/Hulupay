@@ -1,8 +1,8 @@
 use crate::application::{ArifPayProvider, PaymentGateway};
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
-    Json,
 };
 use serde::Serialize;
 use utoipa::ToSchema;
@@ -23,11 +23,10 @@ pub async fn verify_payment_handler(
     State(provider): State<ArifPayProvider>,
     Path(reference): Path<String>,
 ) -> Result<Json<VerifyPaymentResponse>, StatusCode> {
-    let result = provider.verify_payment(&reference).await
-        .map_err(|e| {
-            eprintln!("Error verifying payment: {:?}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+    let result = provider.verify_payment(&reference).await.map_err(|e| {
+        eprintln!("Error verifying payment: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
     Ok(Json(VerifyPaymentResponse {
         success: result.success,

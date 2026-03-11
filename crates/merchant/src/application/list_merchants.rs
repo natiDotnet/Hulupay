@@ -23,11 +23,16 @@ impl ListMerchants {
         Self { repository }
     }
 
-    pub async fn execute(&self, page: i64, page_size: i64) -> Result<PaginatedResponse<MerchantResponse>, ApplicationError> {
+    pub async fn execute(
+        &self,
+        page: i64,
+        page_size: i64,
+    ) -> Result<PaginatedResponse<MerchantResponse>, ApplicationError> {
         let offset = (page - 1) * page_size;
         let (merchants, total) = self.repository.list(offset, page_size).await?;
-        
-        let items = merchants.into_iter()
+
+        let items = merchants
+            .into_iter()
             .map(|m| MerchantResponse {
                 id: m.id,
                 name: m.name,

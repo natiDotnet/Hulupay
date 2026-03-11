@@ -1,12 +1,12 @@
+use crate::application::GetPaymentProviderConfigByProvider;
+use auth::api::AuthUser;
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
-    Json,
 };
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
-use auth::api::AuthUser;
-use crate::application::GetPaymentProviderConfigByProvider;
 
 #[derive(Deserialize, IntoParams)]
 pub struct ProviderNameParams {
@@ -58,7 +58,9 @@ pub async fn get_payment_provider_config_by_provider_handler(
     State(usecase): State<GetPaymentProviderConfigByProvider>,
     Path(params): Path<ProviderNameParams>,
 ) -> Result<Json<PaymentProviderConfigByProviderResponse>, StatusCode> {
-    let config = usecase.execute(user, &params.provider).await
+    let config = usecase
+        .execute(user, &params.provider)
+        .await
         .map_err(|e| {
             eprintln!("Error getting payment provider config by provider: {:?}", e);
             StatusCode::INTERNAL_SERVER_ERROR

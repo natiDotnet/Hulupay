@@ -12,7 +12,11 @@ impl ListPaymentProviders {
         Self { repository }
     }
 
-    pub async fn execute(&self, page: i64, page_size: i64) -> anyhow::Result<PaginatedResponse<Provider>> {
+    pub async fn execute(
+        &self,
+        page: i64,
+        page_size: i64,
+    ) -> anyhow::Result<PaginatedResponse<Provider>> {
         let offset = (page - 1) * page_size;
         let (providers, total) = self.repository.list(offset, page_size).await?;
 

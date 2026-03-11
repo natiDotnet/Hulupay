@@ -1,12 +1,12 @@
-pub mod domain;
-pub mod application;
-pub mod infrastructure;
 pub mod api;
+pub mod application;
+pub mod domain;
+pub mod infrastructure;
 
-pub use domain::Merchant;
+pub use api::{MerchantState, router};
 pub use application::{
-    CreateMerchant, GetMerchant, UpdateMerchant, DeleteMerchant, ListMerchants,
-    MerchantRepository, CreateMerchantRequest, UpdateMerchantRequest, MerchantResponse,
+    CreateMerchant, CreateMerchantRequest, DeleteMerchant, GetMerchant, ListMerchants,
+    MerchantRepository, MerchantResponse, UpdateMerchant, UpdateMerchantRequest,
 };
+pub use domain::Merchant;
 pub use infrastructure::MerchantRepositoryPostgres;
-pub use api::{router, MerchantState};

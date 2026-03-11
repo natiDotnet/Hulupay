@@ -1,9 +1,5 @@
 use crate::application::{ArifPayProvider, InitializePaymentCommand, PaymentGateway};
-use axum::{
-    extract::State,
-    http::StatusCode,
-    Json,
-};
+use axum::{Json, extract::State, http::StatusCode};
 use serde::Deserialize;
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -42,11 +38,10 @@ pub async fn initialize_payment_handler(
         currency: payload.currency,
     };
 
-    let result = provider.initialize_payment(cmd).await
-        .map_err(|e| {
-            eprintln!("Error initializing payment: {:?}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+    let result = provider.initialize_payment(cmd).await.map_err(|e| {
+        eprintln!("Error initializing payment: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
     Ok(Json(InitializePaymentResponse {
         checkout_url: result.checkout_url,
