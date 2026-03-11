@@ -1,0 +1,41 @@
+# Bacon Configuration
+# See: https://github.com/Canop/bacon
+
+# Default job to run when bacon starts
+default_job = "clippy"
+
+# Jobs configuration
+[jobs]
+
+# Run cargo clippy with all targets
+[jobs.clippy]
+command = ["cargo", "clippy", "--workspace", "--all-targets", "--color", "always"]
+need_stdout = false
+
+# Run cargo check (faster, less strict)
+[jobs.check]
+command = ["cargo", "check", "--workspace", "--color", "always"]
+need_stdout = false
+
+# Run tests
+[jobs.test]
+command = ["cargo", "test", "--workspace", "--color", "always"]
+need_stdout = true
+
+# Run clippy with warnings as errors (strict mode)
+[jobs.clippy-strict]
+command = ["cargo", "clippy", "--workspace", "--all-targets", "--color", "always", "--", "-D", "warnings"]
+need_stdout = false
+
+# Check specific crate
+[jobs.check-auth]
+command = ["cargo", "check", "-p", "auth", "--color", "always"]
+need_stdout = false
+
+[jobs.check-merchant]
+command = ["cargo", "check", "-p", "merchant", "--color", "always"]
+need_stdout = false
+
+[jobs.check-payments]
+command = ["cargo", "check", "-p", "payments", "--color", "always"]
+need_stdout = false
