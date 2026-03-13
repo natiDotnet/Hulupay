@@ -20,17 +20,17 @@ use axum::extract::FromRef;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use crate::ArifPayConfig;
 use crate::application::{
     CreatePaymentProvider, CreatePaymentProviderConfig, DeletePaymentProvider,
     DeletePaymentProviderConfig, GetPaymentProvider, GetPaymentProviderConfig,
     GetPaymentProviderConfigByProvider, ListPaymentProviderConfigs, ListPaymentProviders,
-    PaymentGateway, PaymentProviderConfigRepository, PaymentProviderRepository, ProviderEngine,
+    PaymentProviderConfigRepository, PaymentProviderRepository, ProviderEngine,
     UpdatePaymentProvider, UpdatePaymentProviderConfig,
 };
-use crate::infrastructure::{ArifPayProvider, PgPaymentProviderRepository};
-use auth::Role;
+use crate::infrastructure::PgPaymentProviderRepository;
+use crate::ArifPayConfig;
 use auth::api::middleware::AuthRouterExt;
+use auth::Role;
 use sqlx::Pool;
 use sqlx::Postgres;
 use std::sync::Arc;
@@ -156,6 +156,10 @@ pub fn router(pool: Pool<Postgres>) -> OpenApiRouter {
             routes!(
                 create_payment_provider::create_payment_provider_handler,
                 list_payment_providers::list_payment_providers_handler,
+            )
+        )
+        .routes(
+            routes!(
                 get_payment_provider::get_payment_provider_handler,
                 update_payment_provider::update_payment_provider_handler,
                 delete_payment_provider::delete_payment_provider_handler,
@@ -167,9 +171,17 @@ pub fn router(pool: Pool<Postgres>) -> OpenApiRouter {
             routes!(
                 create_payment_provider_config::create_payment_provider_config_handler,
                 list_payment_provider_configs::list_payment_provider_configs_handler,
+                )
+        )
+        .routes(
+            routes!(
                 get_payment_provider_config::get_payment_provider_config_handler,
                 update_payment_provider_config::update_payment_provider_config_handler,
                 delete_payment_provider_config::delete_payment_provider_config_handler,
+            )
+        )
+        .routes(
+            routes!(
                 get_payment_provider_config_by_provider::get_payment_provider_config_by_provider_handler,
             )
         )
