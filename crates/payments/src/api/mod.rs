@@ -108,42 +108,7 @@ impl FromRef<PaymentsState> for ListPaymentProviderConfigs {
 }
 
 pub fn router(pool: Pool<Postgres>) -> OpenApiRouter {
-    let provider_repo: Arc<dyn PaymentProviderRepository> =
-        Arc::new(PgPaymentProviderRepository::new(pool.clone()));
-    let config_repo: Arc<dyn PaymentProviderConfigRepository> =
-        Arc::new(crate::infrastructure::PgPaymentProviderConfigRepository::new(pool.clone()));
-
-    // Create ArifPay provider for payments
-    let arifpay_config = ArifPayConfig::new(
-        env::var("ARIFPAY_API_KEY").unwrap_or_else(|_| "test_key".to_string()),
-        env::var("ARIFPAY_IS_TEST_KEY").unwrap_or_else(|_| "true".to_string()) == "true",
-    );
-    let arifpay_provider = crate::infrastructure::ArifPayProvider::new(arifpay_config);
-
-    // Create provider engine and register providers
-    let mut provider_engine = ProviderEngine::new();
-    provider_engine.register_provider("arifpay", Arc::new(arifpay_provider));
-
-    let state = PaymentsState {
-        provider_engine,
-        create_payment_provider: CreatePaymentProvider::new(provider_repo.clone()),
-        get_payment_provider: GetPaymentProvider::new(provider_repo.clone()),
-        update_payment_provider: UpdatePaymentProvider::new(provider_repo.clone()),
-        delete_payment_provider: DeletePaymentProvider::new(provider_repo.clone()),
-        list_payment_providers: ListPaymentProviders::new(provider_repo.clone()),
-        create_payment_provider_config: CreatePaymentProviderConfig::new(
-            config_repo.clone(),
-            provider_repo.clone(),
-        ),
-        get_payment_provider_config: GetPaymentProviderConfig::new(config_repo.clone()),
-        get_payment_provider_config_by_provider: GetPaymentProviderConfigByProvider::new(
-            config_repo.clone(),
-            provider_repo.clone(),
-        ),
-        update_payment_provider_config: UpdatePaymentProviderConfig::new(config_repo.clone()),
-        delete_payment_provider_config: DeletePaymentProviderConfig::new(config_repo.clone()),
-        list_payment_provider_configs: ListPaymentProviderConfigs::new(config_repo.clone()),
-    };
+    let state = build_state(pool);
 
     OpenApiRouter::new()
         // Public payment endpoints (initialize and verify)
@@ -151,7 +116,7 @@ pub fn router(pool: Pool<Postgres>) -> OpenApiRouter {
             initialize::initialize_payment_handler,
             verify::verify_payment_handler
         ))
-        // MasterAdmin only endpoints
+        // MasterAdmin only endpoints - Payment Providers management
         .routes(
             routes!(
                 create_payment_provider::create_payment_provider_handler,
@@ -166,7 +131,7 @@ pub fn router(pool: Pool<Postgres>) -> OpenApiRouter {
             )
         )
         .require_role(Role::MasterAdmin)
-        // MerchantAdmin only endpoints
+        // MerchantAdmin only endpoints - Payment Provider Configs management
         .routes(
             routes!(
                 create_payment_provider_config::create_payment_provider_config_handler,
@@ -187,4 +152,51 @@ pub fn router(pool: Pool<Postgres>) -> OpenApiRouter {
         )
         .require_role(Role::MerchantAdmin)
         .with_state(state)
+}
+
+fn build_state(pool: Pool<Postgres>) -> PaymentsState {
+    let provider_repo = build_provider_repository(pool.clone());
+    let config_repo = build_config_repository(pool.clone());
+    let provider_engine = build_provider_engine();
+
+    PaymentsState {
+        provider_engine,
+        create_payment_provider: CreatePaymentProvider::new(provider_repo.clone()),
+        get_payment_provider: GetPaymentProvider::new(provider_repo.clone()),
+        update_payment_provider: UpdatePaymentProvider::new(provider_repo.clone()),
+        delete_payment_provider: DeletePaymentProvider::new(provider_repo.clone()),
+        list_payment_providers: ListPaymentProviders::new(provider_repo.clone()),
+        create_payment_provider_config: CreatePaymentProviderConfig::new(
+            config_repo.clone(),
+            provider_repo.clone(),
+        ),
+        get_payment_provider_config: GetPaymentProviderConfig::new(config_repo.clone()),
+        get_payment_provider_config_by_provider: GetPaymentProviderConfigByProvider::new(
+            config_repo.clone(),
+            provider_repo.clone(),
+        ),
+        update_payment_provider_config: UpdatePaymentProviderConfig::new(config_repo.clone()),
+        delete_payment_provider_config: DeletePaymentProviderConfig::new(config_repo.clone()),
+        list_payment_provider_configs: ListPaymentProviderConfigs::new(config_repo.clone()),
+    }
+}
+
+fn build_provider_repository(pool: Pool<Postgres>) -> Arc<dyn PaymentProviderRepository> {
+    Arc::new(PgPaymentProviderRepository::new(pool))
+}
+
+fn build_config_repository(pool: Pool<Postgres>) -> Arc<dyn PaymentProviderConfigRepository> {
+    Arc::new(crate::infrastructure::PgPaymentProviderConfigRepository::new(pool))
+}
+
+fn build_provider_engine() -> ProviderEngine {
+    let arifpay_config = ArifPayConfig::new(
+        env::var("ARIFPAY_API_KEY").unwrap_or_else(|_| "test_key".to_string()),
+        env::var("ARIFPAY_IS_TEST_KEY").unwrap_or_else(|_| "true".to_string()) == "true",
+    );
+    let arifpay_provider = crate::infrastructure::ArifPayProvider::new(arifpay_config);
+
+    let mut provider_engine = ProviderEngine::new();
+    provider_engine.register_provider("arifpay", Arc::new(arifpay_provider));
+    provider_engine
 }
