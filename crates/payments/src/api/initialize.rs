@@ -1,5 +1,6 @@
-use crate::application::{ArifPayProvider, InitializePaymentCommand, PaymentGateway};
-use axum::{Json, extract::State, http::StatusCode};
+use crate::application::{InitializePaymentCommand, ProviderEngine};
+use axum::extract::Path;
+use axum::{extract::State, http::StatusCode, Json};
 use serde::Deserialize;
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -9,7 +10,7 @@ pub struct InitializePaymentRequest {
     pub merchant_id: Uuid,
     pub phone: String,
     pub email: String,
-    pub amount: f64,
+    pub amount: i64,
     pub currency: String,
 }
 
@@ -22,12 +23,13 @@ pub struct InitializePaymentResponse {
 #[utoipa::path(
     post,
     tag = "payments",
-    path = "/payments/initialize",
+    path = "/payments/{provider_name}/initialize",
     request_body = InitializePaymentRequest,
     responses((status = OK, body = InitializePaymentResponse))
 )]
 pub async fn initialize_payment_handler(
-    State(provider): State<ArifPayProvider>,
+    Path(provider_name): Path<String>,
+    State(provider_engine): State<ProviderEngine>,
     Json(payload): Json<InitializePaymentRequest>,
 ) -> Result<Json<InitializePaymentResponse>, StatusCode> {
     let cmd = InitializePaymentCommand {
@@ -37,6 +39,14 @@ pub async fn initialize_payment_handler(
         amount: payload.amount,
         currency: payload.currency,
     };
+
+    // Get the provider from the engine based on provider_name
+    let provider = provider_engine
+        .get_provider(&provider_name)
+        .ok_or_else(|| {
+            eprintln!("Provider '{}' not found", provider_name);
+            StatusCode::NOT_FOUND
+        })?;
 
     let result = provider.initialize_payment(cmd).await.map_err(|e| {
         eprintln!("Error initializing payment: {:?}", e);

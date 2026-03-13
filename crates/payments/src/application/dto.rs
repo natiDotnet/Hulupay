@@ -5,7 +5,7 @@ pub struct InitializePaymentCommand {
     pub merchant_id: Uuid,
     pub phone: String,
     pub email: String,
-    pub amount: f64,
+    pub amount: i64,
     pub currency: String,
 }
 
@@ -39,7 +39,7 @@ pub struct ArifPayItem {
 pub struct ArifPayBeneficiary {
     pub account_number: String,
     pub bank: String,
-    pub amount: f64,
+    pub amount: i64,
 }
 
 #[derive(Deserialize)]
@@ -55,5 +55,5 @@ pub struct ArifPayInitializeData {
     pub session_id: String,
     pub payment_url: String,
     pub cancel_url: String,
-    pub total_amount: f64,
+    pub total_amount: i64,
 }

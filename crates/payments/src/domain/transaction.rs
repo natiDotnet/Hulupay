@@ -18,7 +18,7 @@ pub enum TransactionStatus {
 pub struct Transaction {
     pub id: Uuid,
     pub merchant_id: Uuid,
-    pub amount: f64,
+    pub amount: i64,
     pub currency: String,
     pub payment_method: Option<PaymentMethod>,
     pub status: TransactionStatus,
@@ -28,7 +28,7 @@ pub struct Transaction {
 }
 
 impl Transaction {
-    pub fn new(merchant_id: Uuid, amount: f64, currency: String) -> Self {
+    pub fn new(merchant_id: Uuid, amount: i64, currency: String) -> Self {
         let now = OffsetDateTime::now_utc();
 
         Self {

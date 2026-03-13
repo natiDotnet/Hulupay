@@ -1,4 +1,4 @@
-use crate::application::{ArifPayProvider, PaymentGateway};
+use crate::application::{PaymentGateway, ProviderEngine};
 use axum::{
     Json,
     extract::{Path, State},
@@ -16,13 +16,21 @@ pub struct VerifyPaymentResponse {
 #[utoipa::path(
     get,
     tag = "payments",
-    path = "/payments/verify/{reference}",
+    path = "/payments/{provider_name}/verify/{reference}",
     responses((status = OK, body = VerifyPaymentResponse))
 )]
 pub async fn verify_payment_handler(
-    State(provider): State<ArifPayProvider>,
-    Path(reference): Path<String>,
+    State(provider_engine): State<ProviderEngine>,
+    Path((provider_name, reference)): Path<(String, String)>,
 ) -> Result<Json<VerifyPaymentResponse>, StatusCode> {
+    // Get the provider from the engine based on provider_name
+    let provider = provider_engine
+        .get_provider(&provider_name)
+        .ok_or_else(|| {
+            eprintln!("Provider '{}' not found", provider_name);
+            StatusCode::NOT_FOUND
+        })?;
+
     let result = provider.verify_payment(&reference).await.map_err(|e| {
         eprintln!("Error verifying payment: {:?}", e);
         StatusCode::INTERNAL_SERVER_ERROR

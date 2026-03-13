@@ -20,6 +20,8 @@ assign_op_pattern = "warn"
 print_stdout = "allow"
 print_stderr = "allow"
 
+unwrap_used = "deny"
+
 # Allow unwrap in tests
 unwrap_in_test = "allow"
 

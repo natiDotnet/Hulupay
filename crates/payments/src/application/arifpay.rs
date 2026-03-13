@@ -1,6 +1,6 @@
 use crate::application::dto::{
-    ArifPayBeneficiary, ArifPayInitializeData, ArifPayInitializeRequest, ArifPayInitializeResponse,
-    ArifPayItem, InitializePaymentCommand,
+    ArifPayBeneficiary, ArifPayInitializeRequest, ArifPayInitializeResponse, ArifPayItem,
+    InitializePaymentCommand,
 };
 use crate::application::payment_gateway::{
     PaymentGateway, PaymentInitResult, PaymentVerificationResult,
@@ -97,7 +97,7 @@ impl ArifPayProvider {
             items: vec![ArifPayItem {
                 name: "Payment".into(),
                 quantity: 1,
-                price: cmd.amount,
+                price: cmd.amount as f64 / 100.0,
                 description: "Merchant payment".into(),
             }],
             beneficiaries: vec![ArifPayBeneficiary {

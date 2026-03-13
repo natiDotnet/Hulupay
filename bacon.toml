@@ -4,6 +4,8 @@
 # Default job to run when bacon starts
 default_job = "clippy"
 
+watch = ["src", "crates"]
+
 # Jobs configuration
 [jobs]
 

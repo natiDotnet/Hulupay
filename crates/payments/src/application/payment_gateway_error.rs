@@ -2,4 +2,5 @@
 pub enum PaymentGatewayError {
     RequestFailed,
     InvalidResponse,
+    ProviderNotFound,
 }

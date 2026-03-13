@@ -6,7 +6,7 @@ pub mod infrastructure;
 pub use api::{PaymentsState, router};
 pub use application::{
     ArifPayConfig, ArifPayProvider, InitializePaymentCommand, PaymentGateway, PaymentInitResult,
-    PaymentVerificationResult,
+    PaymentVerificationResult, ProviderEngine,
 };
 pub use domain::{PaymentMethod, PaymentProviderConfig, Transaction, TransactionStatus};
 pub use infrastructure::ArifPayProvider as ArifPayProviderImpl;

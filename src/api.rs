@@ -14,7 +14,6 @@ use auth;
 use auth::{JwtTokenService, TokenService};
 use merchant;
 use payments;
-use payments::application::arifpay::ArifPayConfig;
 
 #[derive(utoipa::OpenApi)]
 #[openapi(info(title = "My API", version = "1.0", description = "An example API"))]
@@ -39,13 +38,6 @@ pub fn api_routes(pool: Pool<Postgres>) -> Router {
             ),
         );
 
-    // Create ArifPay provider for payments
-    let arifpay_config = ArifPayConfig::new(
-        env::var("ARIFPAY_API_KEY").unwrap_or_else(|_| "test_key".to_string()),
-        env::var("ARIFPAY_IS_TEST_KEY").unwrap_or_else(|_| "true".to_string()) == "true",
-    );
-    let arifpay_provider = payments::infrastructure::ArifPayProvider::new(arifpay_config);
-
     // Configure CORS to allow all origins (for development)
     // In production, you should restrict this to specific origins
     let cors = CorsLayer::new()
@@ -63,7 +55,7 @@ pub fn api_routes(pool: Pool<Postgres>) -> Router {
                 // Merchant routes (requires MasterAdmin role)
                 .merge(merchant::router(pool.clone()))
                 // Payment routes (requires authentication)
-                .merge(payments::router(arifpay_provider, pool.clone())),
+                .merge(payments::router(pool.clone())),
         )
         .layer(axum::middleware::from_fn(auth::api::authentication))
         .layer(axum::Extension(token_service.clone()))
