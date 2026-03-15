@@ -1,6 +1,6 @@
 use crate::application::payment_gateway::PaymentGateway;
 use crate::application::PaymentProviderConfigRepository;
-use crate::ArifPayProvider;
+use crate::{ArifPayConfig, ArifPayProvider};
 use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -30,20 +30,28 @@ impl ProviderEngine {
         &self,
         merchant_id: Uuid,
         name: &str,
-    ) -> Option<Arc<dyn PaymentGateway>> {
+    ) -> anyhow::Result<Arc<dyn PaymentGateway>> {
         let my_config = self
             .config
             .list_active_by_provider_code(merchant_id, name)
-            .await
-            .unwrap();
-        if name == "arifpay" {
-            let arif_config = serde::Deserialize::deserialize(&my_config.first()?.config).unwrap();
-            let payment_gateway: Arc<dyn PaymentGateway> =
-                Arc::new(ArifPayProvider::new(arif_config));
-            return Some(payment_gateway);
+            .await?;
+        if my_config.is_empty() {
+            return Err(anyhow::anyhow!("Provider config not found"));
         }
-        self.providers.get(name).cloned()
+        let my_config = my_config.first().ok_or(anyhow::anyhow!("Provider config not found"))?;
+        
+        match name {
+            "arifpay" => {
+                let arif_config = serde_json::from_value::<ArifPayConfig>(my_config.config.clone())?;
+                let payment_gateway: Arc<dyn PaymentGateway> =
+                    Arc::new(ArifPayProvider::new(arif_config));
+                Ok(payment_gateway)
+            },
+            _ => Err(anyhow::anyhow!("Provider not found")),
+        }
     }
+    
+    
 
     /// Check if a provider exists
     pub fn has_provider(&self, name: &str) -> bool {
