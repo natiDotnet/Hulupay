@@ -14,7 +14,6 @@ mod update_payment_provider_config;
 mod verify;
 
 pub use state::PaymentsState;
-use std::env;
 
 use axum::extract::FromRef;
 use utoipa_axum::router::OpenApiRouter;
@@ -28,7 +27,6 @@ use crate::application::{
     UpdatePaymentProvider, UpdatePaymentProviderConfig,
 };
 use crate::infrastructure::PgPaymentProviderRepository;
-use crate::ArifPayConfig;
 use auth::api::middleware::AuthRouterExt;
 use auth::Role;
 use sqlx::Pool;
@@ -111,11 +109,6 @@ pub fn router(pool: Pool<Postgres>) -> OpenApiRouter {
     let state = build_state(pool);
 
     OpenApiRouter::new()
-        // Public payment endpoints (initialize and verify)
-        .routes(routes!(
-            initialize::initialize_payment_handler,
-            verify::verify_payment_handler
-        ))
         // MasterAdmin only endpoints - Payment Providers management
         .routes(
             routes!(
@@ -151,13 +144,19 @@ pub fn router(pool: Pool<Postgres>) -> OpenApiRouter {
             )
         )
         .require_role(Role::MerchantAdmin)
+        // Public payment endpoints (initialize and verify)
+        .routes(routes!(
+            initialize::initialize_payment_handler,
+            verify::verify_payment_handler
+        ))
+        .require_auth()
         .with_state(state)
 }
 
 fn build_state(pool: Pool<Postgres>) -> PaymentsState {
     let provider_repo = build_provider_repository(pool.clone());
     let config_repo = build_config_repository(pool.clone());
-    let provider_engine = build_provider_engine();
+    let provider_engine = build_provider_engine(&config_repo);
 
     PaymentsState {
         provider_engine,
@@ -189,14 +188,14 @@ fn build_config_repository(pool: Pool<Postgres>) -> Arc<dyn PaymentProviderConfi
     Arc::new(crate::infrastructure::PgPaymentProviderConfigRepository::new(pool))
 }
 
-fn build_provider_engine() -> ProviderEngine {
-    let arifpay_config = ArifPayConfig::new(
-        env::var("ARIFPAY_API_KEY").unwrap_or_else(|_| "test_key".to_string()),
-        env::var("ARIFPAY_IS_TEST_KEY").unwrap_or_else(|_| "true".to_string()) == "true",
-    );
-    let arifpay_provider = crate::infrastructure::ArifPayProvider::new(arifpay_config);
+fn build_provider_engine(config_repo: &Arc<dyn PaymentProviderConfigRepository>) -> ProviderEngine {
+    // let arifpay_config = ArifPayConfig::new(
+    //     env::var("ARIFPAY_API_KEY").unwrap_or_else(|_| "test_key".to_string()),
+    //     env::var("ARIFPAY_IS_TEST_KEY").unwrap_or_else(|_| "true".to_string()) == "true",
+    // );
+    // let arifpay_provider = crate::infrastructure::ArifPayProvider::new(arifpay_config);
 
-    let mut provider_engine = ProviderEngine::new();
-    provider_engine.register_provider("arifpay", Arc::new(arifpay_provider));
+    let mut provider_engine = ProviderEngine::new(config_repo.clone());
+    // provider_engine.register_provider("arifpay", Arc::new(arifpay_provider));
     provider_engine
 }

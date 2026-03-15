@@ -8,7 +8,7 @@ use crate::application::payment_gateway::{
 use crate::application::payment_gateway_error::PaymentGatewayError;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ArifPayConfig {
     pub api_key: String,
     pub base_url: String,
@@ -53,8 +53,8 @@ impl ArifPayProvider {
     pub fn new(config: ArifPayConfig) -> Self {
         let mut headers = reqwest::header::HeaderMap::new();
         headers.insert("x-arifpay-key", config.api_key.parse().unwrap());
-
         headers.insert("Content-Type", "application/json".parse().unwrap());
+        dbg!(&headers.values());
 
         let client = reqwest::Client::builder()
             .default_headers(headers)
@@ -91,13 +91,14 @@ impl ArifPayProvider {
             email: cmd.email.clone(),
             payment_methods: vec!["TELEBIRR".into(), "AWAASH".into()],
             expire_date: chrono::Utc::now()
-                .checked_add_signed(chrono::Duration::minutes(30))
+                .checked_add_signed(chrono::Duration::days(1))
                 .unwrap()
-                .to_rfc3339(),
+                .format("%Y-%m-%dT%H:%M:%S")
+                .to_string(),
             items: vec![ArifPayItem {
                 name: "Payment".into(),
                 quantity: 1,
-                price: cmd.amount as f64 / 100.0,
+                price: cmd.amount as f64,
                 description: "Merchant payment".into(),
             }],
             beneficiaries: vec![ArifPayBeneficiary {
@@ -120,6 +121,14 @@ impl PaymentGateway for ArifPayProvider {
 
         let request = self.build_request(&cmd, &reference);
 
+        // Serialize and log the request body
+        let request_json = serde_json::to_string_pretty(&request).unwrap_or_else(|e| {
+            eprintln!("Failed to serialize request: {:?}", e);
+            "{}".to_string()
+        });
+        println!("REQUEST BODY:\n{}", request_json);
+        dbg!(&self.config);
+
         let response = self
             .client
             .post(format!("{}/checkout/session", self.config.base_url))
@@ -128,10 +137,10 @@ impl PaymentGateway for ArifPayProvider {
             .await
             .map_err(|_| PaymentGatewayError::RequestFailed)?;
 
-        let body: ArifPayInitializeResponse = response
-            .json()
-            .await
-            .map_err(|_| PaymentGatewayError::InvalidResponse)?;
+        let body: ArifPayInitializeResponse = response.json().await.map_err(|e| {
+            dbg!(e);
+            PaymentGatewayError::InvalidResponse
+        })?;
 
         if body.error {
             return Err(PaymentGatewayError::RequestFailed);
@@ -157,9 +166,13 @@ impl PaymentGateway for ArifPayProvider {
             .await
             .map_err(|_| PaymentGatewayError::RequestFailed)?;
 
-        let body: serde_json::Value = response
-            .json()
-            .await
+        // Log the response body as string
+        let response_text = response.text().await.unwrap_or_else(|e| {
+            eprintln!("Failed to read response text: {:?}", e);
+            "".to_string()
+        });
+        
+        let body: serde_json::Value = serde_json::from_str(&response_text)
             .map_err(|_| PaymentGatewayError::InvalidResponse)?;
 
         Ok(PaymentVerificationResult {

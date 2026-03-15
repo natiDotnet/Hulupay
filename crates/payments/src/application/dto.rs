@@ -9,7 +9,7 @@ pub struct InitializePaymentCommand {
     pub currency: String,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ArifPayInitializeRequest {
     pub cancel_url: String,
@@ -26,7 +26,7 @@ pub struct ArifPayInitializeRequest {
     pub lang: String,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct ArifPayItem {
     pub name: String,
     pub quantity: u32,
@@ -34,7 +34,7 @@ pub struct ArifPayItem {
     pub description: String,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ArifPayBeneficiary {
     pub account_number: String,
@@ -55,5 +55,5 @@ pub struct ArifPayInitializeData {
     pub session_id: String,
     pub payment_url: String,
     pub cancel_url: String,
-    pub total_amount: i64,
+    pub total_amount: f64,
 }

@@ -23,6 +23,7 @@ pub struct InitializePaymentResponse {
 #[utoipa::path(
     post,
     tag = "payments",
+    security(("bearer_auth" = [])),
     path = "/payments/{provider_name}/initialize",
     request_body = InitializePaymentRequest,
     responses((status = OK, body = InitializePaymentResponse))
@@ -42,7 +43,8 @@ pub async fn initialize_payment_handler(
 
     // Get the provider from the engine based on provider_name
     let provider = provider_engine
-        .get_provider(&provider_name)
+        .get_provider(payload.merchant_id, &provider_name)
+        .await
         .ok_or_else(|| {
             eprintln!("Provider '{}' not found", provider_name);
             StatusCode::NOT_FOUND

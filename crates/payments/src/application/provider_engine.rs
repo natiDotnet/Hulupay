@@ -1,17 +1,22 @@
 use crate::application::payment_gateway::PaymentGateway;
+use crate::application::PaymentProviderConfigRepository;
+use crate::ArifPayProvider;
 use std::collections::HashMap;
 use std::sync::Arc;
+use uuid::Uuid;
 
 /// A routing engine that selects the appropriate payment provider based on provider name
 #[derive(Clone)]
 pub struct ProviderEngine {
     providers: HashMap<&'static str, Arc<dyn PaymentGateway>>,
+    config: Arc<dyn PaymentProviderConfigRepository>,
 }
 
 impl ProviderEngine {
-    pub fn new() -> Self {
+    pub fn new(config_repo: Arc<dyn PaymentProviderConfigRepository>) -> Self {
         Self {
             providers: HashMap::new(),
+            config: config_repo,
         }
     }
 
@@ -21,8 +26,23 @@ impl ProviderEngine {
     }
 
     /// Get a provider by name
-    pub fn get_provider(&self, name: &str) -> Option<&Arc<dyn PaymentGateway>> {
-        self.providers.get(name)
+    pub async fn get_provider(
+        &self,
+        merchant_id: Uuid,
+        name: &str,
+    ) -> Option<Arc<dyn PaymentGateway>> {
+        let my_config = self
+            .config
+            .list_active_by_provider_code(merchant_id, name)
+            .await
+            .unwrap();
+        if name == "arifpay" {
+            let arif_config = serde::Deserialize::deserialize(&my_config.first()?.config).unwrap();
+            let payment_gateway: Arc<dyn PaymentGateway> =
+                Arc::new(ArifPayProvider::new(arif_config));
+            return Some(payment_gateway);
+        }
+        self.providers.get(name).cloned()
     }
 
     /// Check if a provider exists
@@ -33,11 +53,5 @@ impl ProviderEngine {
     /// Get all registered provider names
     pub fn provider_names(&self) -> Vec<&'static str> {
         self.providers.keys().copied().collect()
-    }
-}
-
-impl Default for ProviderEngine {
-    fn default() -> Self {
-        Self::new()
     }
 }
