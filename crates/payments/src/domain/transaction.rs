@@ -1,5 +1,5 @@
-use crate::PaymentMethod;
 use crate::domain::error::DomainError;
+use crate::PaymentMethod;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use uuid::Uuid;
@@ -21,6 +21,8 @@ pub struct Transaction {
     pub amount: i64,
     pub currency: String,
     pub payment_method: Option<PaymentMethod>,
+    pub provider_id: Uuid,
+    pub response: serde_json::Value,
     pub status: TransactionStatus,
     pub external_reference: Option<String>,
     pub created_at: OffsetDateTime,
@@ -28,7 +30,13 @@ pub struct Transaction {
 }
 
 impl Transaction {
-    pub fn new(merchant_id: Uuid, amount: i64, currency: String) -> Self {
+    pub fn new(
+        merchant_id: Uuid,
+        amount: i64,
+        currency: String,
+        provider_id: Uuid,
+        response: serde_json::Value,
+    ) -> Self {
         let now = OffsetDateTime::now_utc();
 
         Self {
@@ -37,6 +45,8 @@ impl Transaction {
             amount,
             currency,
             payment_method: None,
+            provider_id,
+            response,
             external_reference: None,
             status: TransactionStatus::Pending,
             created_at: now,

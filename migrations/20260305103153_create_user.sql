@@ -1,4 +1,3 @@
--- Add migration script here
 -- Auth crate migration: Create users table
 CREATE TABLE IF NOT EXISTS users (
      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
