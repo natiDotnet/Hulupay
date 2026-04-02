@@ -1,4 +1,5 @@
 use crate::application::ProviderEngine;
+use crate::PaymentVerificationResult;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -28,15 +29,16 @@ pub async fn verify_payment_handler(
     let provider = provider_engine
         .get_provider(Uuid::nil(), &provider_name)
         .await
-        .ok_or_else(|| {
+        .map_err(|_| {
             eprintln!("Provider '{}' not found", provider_name);
             StatusCode::NOT_FOUND
         })?;
 
-    let result = provider.verify_payment(&reference).await.map_err(|e| {
-        eprintln!("Error verifying payment: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
+    let result: PaymentVerificationResult =
+        provider.verify_payment(&reference).await.map_err(|e| {
+            eprintln!("Error verifying payment: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
 
     Ok(Json(VerifyPaymentResponse {
         success: result.success,

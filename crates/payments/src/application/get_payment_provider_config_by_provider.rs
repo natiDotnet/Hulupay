@@ -1,7 +1,8 @@
-use crate::ArifPayConfig;
-use crate::application::PaymentProviderRepository;
 use crate::application::repository::PaymentProviderConfigRepository;
+use crate::application::PaymentGatewayError::ProviderNotFound;
+use crate::application::PaymentProviderRepository;
 use crate::domain::PaymentProviderConfig;
+use crate::ArifPayConfig;
 use anyhow::anyhow;
 use auth::UserContext;
 use std::sync::Arc;
@@ -29,7 +30,7 @@ impl GetPaymentProviderConfigByProvider {
         &self,
         user_context: UserContext,
         provider_code: &str,
-    ) -> anyhow::Result<Option<PaymentProviderConfig>> {
+    ) -> anyhow::Result<PaymentProviderConfig> {
         let merchant_id = user_context
             .merchant_id
             .ok_or_else(|| anyhow!("Merchant ID not found"))?;
@@ -41,22 +42,29 @@ impl GetPaymentProviderConfigByProvider {
             .repository
             .list_active_by_provider_code(merchant_id, provider_code)
             .await?;
+        if !result.is_empty() {
+            return result
+                .into_iter()
+                .next()
+                .ok_or_else(|| anyhow!(ProviderNotFound));
+        }
 
-        if result.is_empty() {
-            if provider_code == "arifpay" {
-                return Ok(Some(PaymentProviderConfig {
-                    id: Uuid::nil(),
-                    merchant_id,
-                    provider_id: provider.id,
-                    config: serde_json::json!(ArifPayConfig::new(String::new(), true)),
-                    is_test_mode: true,
-                    is_active: false,
-                    created_at: OffsetDateTime::now_utc(),
-                    updated_at: OffsetDateTime::now_utc(),
-                }));
-            }
+        if provider_code == "arifpay" {
+            return Ok(PaymentProviderConfig {
+                id: Uuid::nil(),
+                merchant_id,
+                provider_id: provider.id,
+                config: serde_json::json!(ArifPayConfig::new(String::new(), true)),
+                is_test_mode: true,
+                is_active: false,
+                created_at: OffsetDateTime::now_utc(),
+                updated_at: OffsetDateTime::now_utc(),
+            });
         }
         // Return the first matching config
-        Ok(result.into_iter().next())
+        result
+            .into_iter()
+            .next()
+            .ok_or_else(|| anyhow!(ProviderNotFound))
     }
 }

@@ -1,8 +1,8 @@
-use crate::Role;
 use crate::application::login_request::{RegisterUserRequest, RegisterUserResponse};
 use crate::application::password::hash_password;
 use crate::application::user_repository::UserRepository;
 use crate::domain::User;
+use crate::Role;
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -25,7 +25,8 @@ impl RegisterUser {
         }
 
         let password_hash = hash_password(&request.password)?;
-        let role = Role::from_str(&request.role).ok_or_else(|| anyhow::anyhow!("Invalid role"))?;
+        let role =
+            Role::from_string(&request.role).ok_or_else(|| anyhow::anyhow!("Invalid role"))?;
 
         let user = User::new(request.email, password_hash, role, request.merchant_id);
 
@@ -34,7 +35,7 @@ impl RegisterUser {
         Ok(RegisterUserResponse {
             id: user.id,
             email: user.email,
-            role: user.role.as_str().to_string(),
+            role: user.role.to_string(),
         })
     }
 }

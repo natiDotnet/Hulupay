@@ -6,7 +6,7 @@ pub fn hash_password(password: &str) -> anyhow::Result<String> {
     let salt = SaltString::generate();
     let argon2 = Argon2::default();
 
-    let hash = argon2.hash_password_with_salt(password.as_bytes(), &salt.as_bytes())?;
+    let hash = argon2.hash_password_with_salt(password.as_bytes(), salt.as_bytes())?;
     Ok(hash.to_string())
 }
 

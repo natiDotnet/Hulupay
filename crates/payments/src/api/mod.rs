@@ -195,7 +195,5 @@ fn build_provider_engine(config_repo: &Arc<dyn PaymentProviderConfigRepository>)
     // );
     // let arifpay_provider = crate::infrastructure::ArifPayProvider::new(arifpay_config);
 
-    let mut provider_engine = ProviderEngine::new(config_repo.clone());
-    // provider_engine.register_provider("arifpay", Arc::new(arifpay_provider));
-    provider_engine
+    ProviderEngine::new(config_repo.clone())
 }

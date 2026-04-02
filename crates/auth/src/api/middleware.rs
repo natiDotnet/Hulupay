@@ -54,7 +54,7 @@ pub async fn authorization(
     match policy {
         AuthorizationPolicy::Authenticated => {}
         AuthorizationPolicy::Role(required_role) => {
-            if user.0.role != required_role.as_str() {
+            if user.0.role != required_role.to_string() {
                 return Err(StatusCode::FORBIDDEN);
             }
         }

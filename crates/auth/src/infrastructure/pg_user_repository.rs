@@ -1,5 +1,6 @@
 use crate::application::user_repository::UserRepository;
 use crate::domain::User;
+use crate::Role;
 use async_trait::async_trait;
 use sqlx::PgPool;
 
@@ -35,7 +36,7 @@ impl UserRepository for PgUserRepository {
         .bind(user.id)
         .bind(&user.email)
         .bind(&user.password_hash)
-        .bind(user.role.as_str())
+        .bind(user.role.to_string())
         .bind(user.merchant_id)
         .bind(user.created_at)
         .bind(user.updated_at)
@@ -56,8 +57,7 @@ impl UserRepository for PgUserRepository {
         .await?;
 
         Ok(row.map(|r| {
-            let role = crate::domain::Role::from_str(&r.role)
-                .unwrap_or(crate::domain::Role::MerchantAdmin);
+            let role = Role::from_string(&r.role).unwrap_or(crate::domain::Role::MerchantAdmin);
 
             User {
                 id: r.id,
