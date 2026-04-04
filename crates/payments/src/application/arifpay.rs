@@ -7,8 +7,10 @@ use crate::application::payment_gateway::{
 };
 use crate::application::payment_gateway_error::PaymentGatewayError;
 use crate::application::TransactionRepository;
+use crate::domain::{ArifPayment, ArifTransactionStatus};
 use crate::Transaction;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -124,6 +126,14 @@ impl ArifPayProvider {
             lang: "EN".into(),
         }
     }
+
+    fn on_success(&self, request: ArifPayment) {
+        println!("Payment successful: {:?}", request);
+    }
+
+    fn on_failure(&self, request: ArifPayment) {
+        println!("Payment failed: {:?}", request);
+    }
 }
 
 #[async_trait::async_trait]
@@ -186,6 +196,27 @@ impl PaymentGateway for ArifPayProvider {
         Ok(PaymentInitResult {
             checkout_url: data.payment_url,
             provider_reference: transaction.external_reference.unwrap(),
+        })
+    }
+
+    async fn handle_webhook(
+        &self,
+        webhook: Value,
+    ) -> Result<PaymentInitResult, PaymentGatewayError> {
+        let request: ArifPayment =
+            serde_json::from_value(webhook).map_err(|_| PaymentGatewayError::InvalidResponse)?;
+
+        match request.transaction_status {
+            ArifTransactionStatus::Success => self.on_success(request),
+            ArifTransactionStatus::Pending => self.on_failure(request),
+            ArifTransactionStatus::Failed => self.on_failure(request),
+        }
+
+        todo!("notify the users via webhook...");
+
+        Ok(PaymentInitResult {
+            checkout_url: request.notification_url,
+            provider_reference: request.session_id,
         })
     }
 

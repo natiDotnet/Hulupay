@@ -8,6 +8,11 @@ pub trait PaymentGateway: Send + Sync {
         cmd: InitializePaymentCommand,
     ) -> Result<PaymentInitResult, PaymentGatewayError>;
 
+    async fn handle_webhook(
+        &self,
+        webhook: serde_json::Value,
+    ) -> Result<PaymentInitResult, PaymentGatewayError>;
+
     async fn verify_payment(
         &self,
         reference: &str,
