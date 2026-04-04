@@ -13,6 +13,7 @@ mod payment_gateway;
 mod payment_gateway_error;
 mod provider_engine;
 mod repository;
+mod transaction_repository;
 mod update_payment_provider;
 mod update_payment_provider_config;
 
@@ -32,5 +33,6 @@ pub use payment_gateway::{PaymentGateway, PaymentInitResult, PaymentVerification
 pub use payment_gateway_error::PaymentGatewayError;
 pub use provider_engine::ProviderEngine;
 pub use repository::{PaymentProviderConfigRepository, PaymentProviderRepository};
+pub use transaction_repository::TransactionRepository;
 pub use update_payment_provider::UpdatePaymentProvider;
 pub use update_payment_provider_config::UpdatePaymentProviderConfig;

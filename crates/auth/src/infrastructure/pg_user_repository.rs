@@ -57,7 +57,7 @@ impl UserRepository for PgUserRepository {
         .await?;
 
         Ok(row.map(|r| {
-            let role = Role::from_string(&r.role).unwrap_or(crate::domain::Role::MerchantAdmin);
+            let role = Role::from_string(&r.role).unwrap_or(Role::MerchantAdmin);
 
             User {
                 id: r.id,

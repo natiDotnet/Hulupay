@@ -19,14 +19,8 @@ use axum::extract::FromRef;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use crate::application::{
-    CreatePaymentProvider, CreatePaymentProviderConfig, DeletePaymentProvider,
-    DeletePaymentProviderConfig, GetPaymentProvider, GetPaymentProviderConfig,
-    GetPaymentProviderConfigByProvider, ListPaymentProviderConfigs, ListPaymentProviders,
-    PaymentProviderConfigRepository, PaymentProviderRepository, ProviderEngine,
-    UpdatePaymentProvider, UpdatePaymentProviderConfig,
-};
-use crate::infrastructure::PgPaymentProviderRepository;
+use crate::application::{CreatePaymentProvider, CreatePaymentProviderConfig, DeletePaymentProvider, DeletePaymentProviderConfig, GetPaymentProvider, GetPaymentProviderConfig, GetPaymentProviderConfigByProvider, ListPaymentProviderConfigs, ListPaymentProviders, PaymentProviderConfigRepository, PaymentProviderRepository, ProviderEngine, TransactionRepository, UpdatePaymentProvider, UpdatePaymentProviderConfig};
+use crate::infrastructure::{PgPaymentProviderRepository, PgTransactionRepository};
 use auth::api::middleware::AuthRouterExt;
 use auth::Role;
 use sqlx::Pool;
@@ -156,7 +150,8 @@ pub fn router(pool: Pool<Postgres>) -> OpenApiRouter {
 fn build_state(pool: Pool<Postgres>) -> PaymentsState {
     let provider_repo = build_provider_repository(pool.clone());
     let config_repo = build_config_repository(pool.clone());
-    let provider_engine = build_provider_engine(&config_repo);
+    let transaction_repository = Arc::new(PgTransactionRepository::new(pool.clone()));
+    let provider_engine = build_provider_engine(&config_repo, transaction_repository);
 
     PaymentsState {
         provider_engine,
@@ -188,12 +183,12 @@ fn build_config_repository(pool: Pool<Postgres>) -> Arc<dyn PaymentProviderConfi
     Arc::new(crate::infrastructure::PgPaymentProviderConfigRepository::new(pool))
 }
 
-fn build_provider_engine(config_repo: &Arc<dyn PaymentProviderConfigRepository>) -> ProviderEngine {
+fn build_provider_engine(config_repo: &Arc<dyn PaymentProviderConfigRepository>, transaction_repository: Arc<dyn TransactionRepository>) -> ProviderEngine {
     // let arifpay_config = ArifPayConfig::new(
     //     env::var("ARIFPAY_API_KEY").unwrap_or_else(|_| "test_key".to_string()),
     //     env::var("ARIFPAY_IS_TEST_KEY").unwrap_or_else(|_| "true".to_string()) == "true",
     // );
     // let arifpay_provider = crate::infrastructure::ArifPayProvider::new(arifpay_config);
 
-    ProviderEngine::new(config_repo.clone())
+    ProviderEngine::new(config_repo.clone(), transaction_repository.clone())
 }

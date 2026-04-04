@@ -42,14 +42,14 @@ pub struct ArifPayBeneficiary {
     pub amount: i64,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct ArifPayInitializeResponse {
     pub error: bool,
     pub msg: String,
     pub data: Option<ArifPayInitializeData>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ArifPayInitializeData {
     pub session_id: String,

@@ -1,12 +1,16 @@
 use crate::application::dto::{
-    ArifPayBeneficiary, ArifPayInitializeRequest, ArifPayInitializeResponse, ArifPayItem,
-    InitializePaymentCommand,
+    ArifPayBeneficiary, ArifPayInitializeData, ArifPayInitializeRequest, ArifPayInitializeResponse,
+    ArifPayItem, InitializePaymentCommand,
 };
 use crate::application::payment_gateway::{
     PaymentGateway, PaymentInitResult, PaymentVerificationResult,
 };
 use crate::application::payment_gateway_error::PaymentGatewayError;
+use crate::application::TransactionRepository;
+use crate::Transaction;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ArifPayConfig {
@@ -47,10 +51,16 @@ impl ArifPayConfig {
 pub struct ArifPayProvider {
     client: reqwest::Client,
     config: ArifPayConfig,
+    provider_id: Uuid,
+    transaction_repository: Arc<dyn TransactionRepository>,
 }
 
 impl ArifPayProvider {
-    pub fn new(config: ArifPayConfig) -> Self {
+    pub fn new(
+        config: ArifPayConfig,
+        provider_id: Uuid,
+        transaction_repository: Arc<dyn TransactionRepository>,
+    ) -> Self {
         let mut headers = reqwest::header::HeaderMap::new();
         headers.insert("x-arifpay-key", config.api_key.parse().unwrap());
         headers.insert("Content-Type", "application/json".parse().unwrap());
@@ -61,7 +71,12 @@ impl ArifPayProvider {
             .build()
             .unwrap();
 
-        Self { client, config }
+        Self {
+            client,
+            config,
+            provider_id,
+            transaction_repository,
+        }
     }
 
     fn build_request(
@@ -117,7 +132,7 @@ impl PaymentGateway for ArifPayProvider {
         &self,
         cmd: InitializePaymentCommand,
     ) -> Result<PaymentInitResult, PaymentGatewayError> {
-        let reference = uuid::Uuid::new_v4().to_string();
+        let reference = Uuid::new_v4().to_string();
 
         let request = self.build_request(&cmd, &reference);
 
@@ -146,11 +161,31 @@ impl PaymentGateway for ArifPayProvider {
             return Err(PaymentGatewayError::RequestFailed);
         }
 
-        let data = body.data.ok_or(PaymentGatewayError::InvalidResponse)?;
+        let data: ArifPayInitializeData = body
+            .data
+            .clone()
+            .ok_or(PaymentGatewayError::InvalidResponse)?;
+
+        let mut transaction = Transaction::new(
+            cmd.merchant_id,
+            (data.total_amount * 100_f64) as i64,
+            cmd.currency,
+            self.provider_id,
+            reference,
+            serde_json::to_value(body).map_err(|_| PaymentGatewayError::InvalidResponse)?,
+        );
+        transaction
+            .initialize(data.session_id)
+            .map_err(|_| PaymentGatewayError::InvalidResponse)?;
+
+        self.transaction_repository
+            .create(&transaction)
+            .await
+            .map_err(|_| PaymentGatewayError::InvalidResponse)?;
 
         Ok(PaymentInitResult {
             checkout_url: data.payment_url,
-            provider_reference: data.session_id,
+            provider_reference: transaction.external_reference.unwrap(),
         })
     }
 
@@ -171,7 +206,7 @@ impl PaymentGateway for ArifPayProvider {
             eprintln!("Failed to read response text: {:?}", e);
             "".to_string()
         });
-        
+
         let body: serde_json::Value = serde_json::from_str(&response_text)
             .map_err(|_| PaymentGatewayError::InvalidResponse)?;
 

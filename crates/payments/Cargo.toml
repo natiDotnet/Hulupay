@@ -34,3 +34,8 @@ axum = { version = "0.8.8" }
 
 # Auth dependency
 auth = { path = "../auth" }
+clap = { version = "4.6.0", features = ["derive"] }
+
+strum = "0.28.0"
+strum_macros = "0.28.0"
+axum-debug-macros = "0.1.0"

@@ -5,7 +5,7 @@ use sqlx::postgres::PgPoolOptions;
 use std::env;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::prelude::*;
-use tracing_subscriber::{EnvFilter, fmt};
+use tracing_subscriber::{fmt, EnvFilter};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -25,5 +25,6 @@ async fn main() -> anyhow::Result<()> {
     let app = api_routes(pool);
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
     axum::serve(listener, app).await?;
+    println!("Server started");
     Ok(())
 }

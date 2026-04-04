@@ -1,5 +1,5 @@
 use crate::application::payment_gateway::PaymentGateway;
-use crate::application::PaymentProviderConfigRepository;
+use crate::application::{PaymentProviderConfigRepository, TransactionRepository};
 use crate::{ArifPayConfig, ArifPayProvider};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -10,13 +10,15 @@ use uuid::Uuid;
 pub struct ProviderEngine {
     providers: HashMap<&'static str, Arc<dyn PaymentGateway>>,
     config: Arc<dyn PaymentProviderConfigRepository>,
+    transaction_repository: Arc<dyn TransactionRepository>,
 }
 
 impl ProviderEngine {
-    pub fn new(config_repo: Arc<dyn PaymentProviderConfigRepository>) -> Self {
+    pub fn new(config_repo: Arc<dyn PaymentProviderConfigRepository>, transaction_repository: Arc<dyn TransactionRepository>) -> Self {
         Self {
             providers: HashMap::new(),
             config: config_repo,
+            transaction_repository,
         }
     }
 
@@ -44,7 +46,7 @@ impl ProviderEngine {
             "arifpay" => {
                 let arif_config = serde_json::from_value::<ArifPayConfig>(my_config.config.clone())?;
                 let payment_gateway: Arc<dyn PaymentGateway> =
-                    Arc::new(ArifPayProvider::new(arif_config));
+                    Arc::new(ArifPayProvider::new(arif_config, my_config.provider_id, self.transaction_repository.clone()));
                 Ok(payment_gateway)
             },
             _ => Err(anyhow::anyhow!("Provider not found")),

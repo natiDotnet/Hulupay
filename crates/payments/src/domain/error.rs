@@ -2,6 +2,8 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum DomainError {
+    #[error("Database error")]
+    DatabaseError(#[from] sqlx::Error),
     #[error("Invalid state transition")]
     InvalidStateTransition,
 

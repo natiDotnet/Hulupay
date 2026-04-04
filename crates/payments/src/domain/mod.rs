@@ -8,4 +8,4 @@ pub use error::DomainError;
 pub use payment_method::PaymentMethod;
 pub use provider::{InitializePayment, PaymentProvider, ProviderInitResponse};
 pub use provider_configs::{PaymentProvider as Provider, PaymentProviderConfig};
-pub use transaction::{Transaction, TransactionStatus};
+pub use transaction::{Transaction, TransactionRow, TransactionStatus};
