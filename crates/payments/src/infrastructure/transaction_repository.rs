@@ -48,7 +48,7 @@ impl TransactionRepository for PgTransactionRepository {
         let record = sqlx::query_as!(
             TransactionRow,
             r#"
-            SELECT 
+            SELECT
                 id,
                 merchant_id,
                 amount,
@@ -68,7 +68,6 @@ impl TransactionRepository for PgTransactionRepository {
         )
         .fetch_optional(&self.pool)
         .await?;
-
         Ok(record.map(TryInto::try_into).transpose()?)
     }
 
