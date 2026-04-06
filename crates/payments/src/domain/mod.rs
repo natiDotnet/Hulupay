@@ -4,6 +4,7 @@ mod payment_method;
 mod provider;
 mod provider_configs;
 mod transaction;
+mod transaction_display_test;
 
 pub use error::DomainError;
 pub use payment::{ArifPayment, ArifTransactionStatus};

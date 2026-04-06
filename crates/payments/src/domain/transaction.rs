@@ -8,6 +8,7 @@ use time::OffsetDateTime;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Display, EnumString)]
+#[strum(serialize_all = "snake_case")]
 pub enum TransactionStatus {
     Pending,
     Initialized,
@@ -80,16 +81,21 @@ impl TryFrom<TransactionRow> for Transaction {
     type Error = DomainError;
 
     fn try_from(row: TransactionRow) -> Result<Self, Self::Error> {
+        let status = TransactionStatus::from_str(&row.status)
+            .map_err(|_| DomainError::InvalidStateTransition)?;
+
+        let payment_method =
+            PaymentMethod::from_str(&row.payment_method.unwrap_or("none".to_string()))
+                .map_err(|_| DomainError::InvalidStateTransition)?;
         Ok(Transaction {
             id: row.id,
             merchant_id: row.merchant_id,
             amount: row.amount,
             currency: row.currency,
-            payment_method: row.payment_method.and_then(|s| s.parse().ok()), // 👈 clean conversion
+            payment_method: Some(payment_method),
             provider_id: row.provider_id,
             response: row.response,
-            status: TransactionStatus::from_str(&row.status)
-                .unwrap_or_else(|x| TransactionStatus::Pending),
+            status,
             nonce: row.nonce,
             external_reference: row.external_reference,
             created_at: row.created_at,

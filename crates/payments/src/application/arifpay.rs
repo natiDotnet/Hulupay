@@ -8,9 +8,10 @@ use crate::application::payment_gateway::{
 use crate::application::payment_gateway_error::PaymentGatewayError;
 use crate::application::TransactionRepository;
 use crate::domain::{ArifPayment, ArifTransactionStatus};
-use crate::Transaction;
+use crate::{PaymentMethod, Transaction, TransactionStatus};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::str::FromStr;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -127,12 +128,40 @@ impl ArifPayProvider {
         }
     }
 
-    fn on_success(&self, request: ArifPayment) {
-        println!("Payment successful: {:?}", request);
+    async fn change_status(&self, request: ArifPayment, status: TransactionStatus) {
+        match self
+            .transaction_repository
+            .get_by_nonce(&request.nonce)
+            .await
+        {
+            Ok(Some(mut transaction)) => {
+                // Update transaction status and payment method
+                transaction.status = status;
+                transaction.payment_method =
+                    Some(PaymentMethod::from_str(&request.payment_method).unwrap_or_default());
+
+                // Save updated transaction to database
+                let _ = self.transaction_repository.update(&transaction).await;
+
+                println!("Payment successful: {:?}", request);
+            }
+            Ok(None) => {
+                // Handle case where transaction is not found
+                println!("Transaction not found: {:?}", request.nonce);
+            }
+            Err(e) => {
+                // Handle repository error
+                println!("Error getting transaction: {:?}", e);
+            }
+        };
+    }
+    async fn on_success(&self, request: ArifPayment) {
+        self.change_status(request, TransactionStatus::Completed)
+            .await;
     }
 
-    fn on_failure(&self, request: ArifPayment) {
-        println!("Payment failed: {:?}", request);
+    async fn on_failure(&self, request: ArifPayment) {
+        self.change_status(request, TransactionStatus::Failed).await;
     }
 }
 
@@ -207,9 +236,9 @@ impl PaymentGateway for ArifPayProvider {
             serde_json::from_value(webhook).map_err(|_| PaymentGatewayError::InvalidResponse)?;
 
         match request.transaction_status {
-            ArifTransactionStatus::Success => self.on_success(request),
-            ArifTransactionStatus::Pending => self.on_failure(request),
-            ArifTransactionStatus::Failed => self.on_failure(request),
+            ArifTransactionStatus::Success => self.on_success(request).await,
+            ArifTransactionStatus::Pending => self.on_failure(request).await,
+            ArifTransactionStatus::Failed => self.on_failure(request).await,
         }
 
         todo!("notify the users via webhook...");
@@ -238,7 +267,7 @@ impl PaymentGateway for ArifPayProvider {
             "".to_string()
         });
 
-        let body: serde_json::Value = serde_json::from_str(&response_text)
+        let body: Value = serde_json::from_str(&response_text)
             .map_err(|_| PaymentGatewayError::InvalidResponse)?;
 
         Ok(PaymentVerificationResult {
