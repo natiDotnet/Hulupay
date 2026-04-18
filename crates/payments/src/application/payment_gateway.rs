@@ -1,5 +1,7 @@
 use crate::application::dto::InitializePaymentCommand;
 use crate::application::payment_gateway_error::PaymentGatewayError;
+use crate::TransactionStatus;
+use async_trait::async_trait;
 
 #[async_trait::async_trait]
 pub trait PaymentGateway: Send + Sync {
@@ -8,15 +10,29 @@ pub trait PaymentGateway: Send + Sync {
         cmd: InitializePaymentCommand,
     ) -> Result<PaymentInitResult, PaymentGatewayError>;
 
-    async fn handle_webhook(
-        &self,
-        webhook: serde_json::Value,
-    ) -> Result<PaymentInitResult, PaymentGatewayError>;
+    // async fn handle_webhook(
+    //     &self,
+    //     webhook: serde_json::Value,
+    // ) -> Result<PaymentInitResult, PaymentGatewayError>;
 
     async fn verify_payment(
         &self,
         reference: &str,
     ) -> Result<PaymentVerificationResult, PaymentGatewayError>;
+}
+
+#[async_trait]
+pub trait WebhookHandler: Send + Sync {
+    async fn handle_webhook(&self, webhook: serde_json::Value) -> Result<(), PaymentGatewayError>;
+
+    async fn success_handler(&self, request: serde_json::Value) -> Result<(), PaymentGatewayError>;
+    async fn failure_handler(&self, request: serde_json::Value) -> Result<(), PaymentGatewayError>;
+
+    async fn change_status(
+        &self,
+        request: serde_json::Value,
+        status: TransactionStatus,
+    ) -> Result<(), PaymentGatewayError>;
 }
 
 pub struct PaymentInitResult {

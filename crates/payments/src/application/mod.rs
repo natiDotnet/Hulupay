@@ -1,3 +1,4 @@
+mod arif_webhook;
 pub mod arifpay;
 mod create_payment_provider;
 mod create_payment_provider_config;
@@ -7,6 +8,7 @@ mod dto;
 mod get_payment_provider;
 mod get_payment_provider_config;
 mod get_payment_provider_config_by_provider;
+mod handle_webhook;
 mod list_payment_provider_configs;
 mod list_payment_providers;
 mod payment_gateway;
@@ -17,6 +19,7 @@ mod transaction_repository;
 mod update_payment_provider;
 mod update_payment_provider_config;
 
+pub use arif_webhook::ArifWebhook;
 pub use arifpay::{ArifPayConfig, ArifPayProvider};
 pub use create_payment_provider::CreatePaymentProvider;
 pub use create_payment_provider_config::CreatePaymentProviderConfig;
@@ -26,10 +29,13 @@ pub use dto::InitializePaymentCommand;
 pub use get_payment_provider::GetPaymentProvider;
 pub use get_payment_provider_config::GetPaymentProviderConfig;
 pub use get_payment_provider_config_by_provider::GetPaymentProviderConfigByProvider;
+pub use handle_webhook::HandleProviderWebhook;
 pub use list_payment_provider_configs::ListPaymentProviderConfigs;
 pub use list_payment_providers::ListPaymentProviders;
 pub use list_payment_providers::PaginatedResponse;
-pub use payment_gateway::{PaymentGateway, PaymentInitResult, PaymentVerificationResult};
+pub use payment_gateway::{
+    PaymentGateway, PaymentInitResult, PaymentVerificationResult, WebhookHandler,
+};
 pub use payment_gateway_error::PaymentGatewayError;
 pub use provider_engine::ProviderEngine;
 pub use repository::{PaymentProviderConfigRepository, PaymentProviderRepository};

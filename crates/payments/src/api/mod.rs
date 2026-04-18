@@ -12,14 +12,23 @@ mod state;
 mod update_payment_provider;
 mod update_payment_provider_config;
 mod verify;
+mod webhook;
 
 pub use state::PaymentsState;
+use std::collections::HashMap;
 
 use axum::extract::FromRef;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use crate::application::{CreatePaymentProvider, CreatePaymentProviderConfig, DeletePaymentProvider, DeletePaymentProviderConfig, GetPaymentProvider, GetPaymentProviderConfig, GetPaymentProviderConfigByProvider, ListPaymentProviderConfigs, ListPaymentProviders, PaymentProviderConfigRepository, PaymentProviderRepository, ProviderEngine, TransactionRepository, UpdatePaymentProvider, UpdatePaymentProviderConfig};
+use crate::application::{
+    ArifWebhook, CreatePaymentProvider, CreatePaymentProviderConfig, DeletePaymentProvider,
+    DeletePaymentProviderConfig, GetPaymentProvider, GetPaymentProviderConfig,
+    GetPaymentProviderConfigByProvider, HandleProviderWebhook, ListPaymentProviderConfigs,
+    ListPaymentProviders, PaymentProviderConfigRepository, PaymentProviderRepository,
+    ProviderEngine, TransactionRepository, UpdatePaymentProvider, UpdatePaymentProviderConfig,
+    WebhookHandler,
+};
 use crate::infrastructure::{PgPaymentProviderRepository, PgTransactionRepository};
 use auth::api::middleware::AuthRouterExt;
 use auth::Role;
@@ -99,6 +108,12 @@ impl FromRef<PaymentsState> for ListPaymentProviderConfigs {
     }
 }
 
+impl FromRef<PaymentsState> for HandleProviderWebhook {
+    fn from_ref(state: &PaymentsState) -> Self {
+        state.handle_provider_webhook.clone()
+    }
+}
+
 pub fn router(pool: Pool<Postgres>) -> OpenApiRouter {
     let state = build_state(pool);
 
@@ -141,9 +156,10 @@ pub fn router(pool: Pool<Postgres>) -> OpenApiRouter {
         // Public payment endpoints (initialize and verify)
         .routes(routes!(
             initialize::initialize_payment_handler,
-            verify::verify_payment_handler
+            verify::verify_payment_handler,
         ))
         .require_auth()
+        .routes(routes!(webhook::webhook_payment_handler))
         .with_state(state)
 }
 
@@ -151,7 +167,13 @@ fn build_state(pool: Pool<Postgres>) -> PaymentsState {
     let provider_repo = build_provider_repository(pool.clone());
     let config_repo = build_config_repository(pool.clone());
     let transaction_repository = Arc::new(PgTransactionRepository::new(pool.clone()));
-    let provider_engine = build_provider_engine(&config_repo, transaction_repository);
+    let provider_engine = build_provider_engine(&config_repo, transaction_repository.clone());
+
+    let mut webhook_handlers: HashMap<String, Arc<dyn WebhookHandler>> = HashMap::new();
+    webhook_handlers.insert(
+        "arifpay".to_string(),
+        Arc::new(ArifWebhook::new(transaction_repository.clone())),
+    );
 
     PaymentsState {
         provider_engine,
@@ -172,6 +194,7 @@ fn build_state(pool: Pool<Postgres>) -> PaymentsState {
         update_payment_provider_config: UpdatePaymentProviderConfig::new(config_repo.clone()),
         delete_payment_provider_config: DeletePaymentProviderConfig::new(config_repo.clone()),
         list_payment_provider_configs: ListPaymentProviderConfigs::new(config_repo.clone()),
+        handle_provider_webhook: HandleProviderWebhook::new(webhook_handlers),
     }
 }
 
@@ -183,7 +206,10 @@ fn build_config_repository(pool: Pool<Postgres>) -> Arc<dyn PaymentProviderConfi
     Arc::new(crate::infrastructure::PgPaymentProviderConfigRepository::new(pool))
 }
 
-fn build_provider_engine(config_repo: &Arc<dyn PaymentProviderConfigRepository>, transaction_repository: Arc<dyn TransactionRepository>) -> ProviderEngine {
+fn build_provider_engine(
+    config_repo: &Arc<dyn PaymentProviderConfigRepository>,
+    transaction_repository: Arc<dyn TransactionRepository>,
+) -> ProviderEngine {
     // let arifpay_config = ArifPayConfig::new(
     //     env::var("ARIFPAY_API_KEY").unwrap_or_else(|_| "test_key".to_string()),
     //     env::var("ARIFPAY_IS_TEST_KEY").unwrap_or_else(|_| "true".to_string()) == "true",
