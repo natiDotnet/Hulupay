@@ -1,9 +1,6 @@
-use crate::application::{HandleProviderWebhook, InitializePaymentCommand, WebhookHandler};
+use crate::application::HandleProviderWebhook;
 use axum::extract::Path;
 use axum::{extract::State, http::StatusCode, Json};
-use serde::Deserialize;
-use utoipa::ToSchema;
-use uuid::Uuid;
 
 #[utoipa::path(
     post,
@@ -17,9 +14,10 @@ pub async fn webhook_payment_handler(
     State(use_case): State<HandleProviderWebhook>,
     Json(payload): Json<serde_json::Value>,
 ) -> Result<StatusCode, StatusCode> {
-
-    use_case.execute(payload, provider_name).await
+    use_case
+        .execute(payload, provider_name)
+        .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    
+
     Ok(StatusCode::OK)
 }
