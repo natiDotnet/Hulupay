@@ -21,8 +21,10 @@ impl ArifWebhook {
 #[async_trait]
 impl WebhookHandler for ArifWebhook {
     async fn handle_webhook(&self, webhook: Value) -> Result<(), PaymentGatewayError> {
-        let request: ArifPayment = serde_json::from_value(webhook.clone())
-            .map_err(|_| PaymentGatewayError::InvalidResponse)?;
+        let request: ArifPayment = serde_json::from_value(webhook.clone()).map_err(|e| {
+            println!("Error parsing webhook: {:?}", e);
+            PaymentGatewayError::InvalidResponse
+        })?;
 
         let result = match request.transaction_status {
             ArifTransactionStatus::Success => self.success_handler(webhook).await,
@@ -30,7 +32,8 @@ impl WebhookHandler for ArifWebhook {
             ArifTransactionStatus::Failed => self.failure_handler(webhook).await,
         };
 
-        todo!("notify the users via rabbitmq ...{:?}", result);
+        println!("notify the users via rabbitmq ...{:?}", request);
+        Ok(())
     }
 
     async fn success_handler(&self, request: Value) -> Result<(), PaymentGatewayError> {

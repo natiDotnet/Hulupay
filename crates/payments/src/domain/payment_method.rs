@@ -1,7 +1,9 @@
-use std::str::FromStr;
+use serde::{Deserialize, Serialize};
+use sqlx::{Decode, Type};
 use strum_macros::{Display, EnumString};
 
-#[derive(Debug, Clone, PartialEq, Display, EnumString, Default)]
+#[derive(Debug, Clone, Display, EnumString, Default, Deserialize, Serialize, Type)]
+#[sqlx(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
 pub enum PaymentMethod {
     #[default]

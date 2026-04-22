@@ -15,6 +15,7 @@ pub struct ArifPayment {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "UPPERCASE")]
 pub enum ArifTransactionStatus {
     Success,
     Pending,

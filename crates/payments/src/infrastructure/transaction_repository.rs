@@ -1,6 +1,8 @@
 use crate::application::TransactionRepository;
-use crate::domain::{DomainError, TransactionRow};
+use crate::domain::DomainError;
+use crate::PaymentMethod;
 use crate::Transaction;
+use crate::TransactionStatus;
 use async_trait::async_trait;
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -46,17 +48,17 @@ impl TransactionRepository for PgTransactionRepository {
 
     async fn get_by_id(&self, id: Uuid) -> Result<Option<Transaction>, DomainError> {
         let record = sqlx::query_as!(
-            TransactionRow,
+            Transaction,
             r#"
 SELECT
                 id,
                 merchant_id,
                 amount,
                 currency,
-                payment_method,
+                payment_method as "payment_method: PaymentMethod",
                 provider_id,
                 response,
-                status,
+                status as "status: TransactionStatus",
                 nonce,
                 external_reference,
                 created_at,
@@ -66,39 +68,39 @@ SELECT
             "#,
             id
         )
-       .fetch_optional(&self.pool)
+        .fetch_optional(&self.pool)
         .await?;
-        Ok(record.map(TryInto::try_into).transpose()?)
+        Ok(record)
     }
 
     async fn get_by_nonce(&self, nonce: &str) -> Result<Option<Transaction>, DomainError> {
         let record = sqlx::query_as!(
-            TransactionRow,
+            Transaction,
             r#"
                 SELECT
                     id,
                     merchant_id,
                     amount,
                     currency,
-                    payment_method,
+                    payment_method as "payment_method: PaymentMethod",
                     provider_id,
                     response,
-                    status,
-nonce,
+                    status as "status: TransactionStatus",
+                    nonce,
                     external_reference,
                     created_at,
                     updated_at
                 FROM transactions
-                WHERE nonce = $1
+                WHERE id = $1
             "#,
-            nonce
+            Uuid::parse_str(nonce).unwrap()
         )
         .fetch_optional(&self.pool)
         .await?;
-        Ok(record.map(TryInto::try_into).transpose()?)
+        Ok(record)
     }
 
-async fn update(&self, transaction: &Transaction) -> Result<(), DomainError> {
+    async fn update(&self, transaction: &Transaction) -> Result<(), DomainError> {
         sqlx::query!(
             r#"
             UPDATE transactions
