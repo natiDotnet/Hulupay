@@ -50,29 +50,30 @@ impl WebhookHandler for ArifWebhook {
         request: Value,
         status: TransactionStatus,
     ) -> Result<(), PaymentGatewayError> {
-        let request: ArifPayment = serde_json::from_value(request.clone())
+        let webhook: ArifPayment = serde_json::from_value(request.clone())
             .map_err(|_| PaymentGatewayError::InvalidResponse)?;
 
         match self
             .transaction_repository
-            .get_by_nonce(&request.nonce)
+            .get_by_nonce(&webhook.nonce)
             .await
         {
             Ok(Some(mut transaction)) => {
                 // Update transaction status and payment method
                 transaction.status = status;
+                transaction.webhook_body = Some(request);
                 transaction.payment_method =
-                    Some(PaymentMethod::from_str(&request.payment_method).unwrap_or_default());
+                    Some(PaymentMethod::from_str(&webhook.payment_method).unwrap_or_default());
 
                 // Save updated transaction to database
                 let _ = self.transaction_repository.update(&transaction).await;
 
-                println!("Payment successful: {:?}", request);
+                println!("Payment successful: {:?}", webhook);
                 Ok(())
             }
             Ok(None) => {
                 // Handle case where transaction is not found
-                println!("Transaction not found: {:?}", request.nonce);
+                println!("Transaction not found: {:?}", webhook.nonce);
                 Err(PaymentGatewayError::InvalidResponse)
             }
             Err(e) => {

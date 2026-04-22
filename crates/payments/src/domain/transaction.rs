@@ -1,8 +1,7 @@
 use crate::domain::error::DomainError;
 use crate::PaymentMethod;
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, Type};
-use std::str::FromStr;
+use sqlx::Type;
 use strum_macros::{Display, EnumString};
 use time::OffsetDateTime;
 use uuid::Uuid;
@@ -30,6 +29,7 @@ pub struct Transaction {
     pub status: TransactionStatus,
     pub nonce: String,
     pub external_reference: Option<String>,
+    pub webhook_body: Option<serde_json::Value>,
     pub created_at: OffsetDateTime,
     pub updated_at: Option<OffsetDateTime>,
 }
@@ -56,54 +56,12 @@ impl Transaction {
             nonce,
             external_reference: None,
             status: TransactionStatus::Pending,
+            webhook_body: None,
             created_at: now,
             updated_at: Some(now),
         }
     }
 }
-
-#[derive(FromRow)]
-pub struct TransactionRow {
-    pub id: Uuid,
-    pub merchant_id: Uuid,
-    pub amount: i64,
-    pub currency: String,
-    pub payment_method: Option<String>,
-    pub provider_id: Uuid,
-    pub response: serde_json::Value,
-    pub status: String,
-    pub nonce: String,
-    pub external_reference: Option<String>,
-    pub created_at: OffsetDateTime,
-    pub updated_at: Option<OffsetDateTime>,
-}
-impl TryFrom<TransactionRow> for Transaction {
-    type Error = DomainError;
-
-    fn try_from(row: TransactionRow) -> Result<Self, Self::Error> {
-        let status = TransactionStatus::from_str(&row.status)
-            .map_err(|_| DomainError::InvalidStateTransition)?;
-
-        let payment_method =
-            PaymentMethod::from_str(&row.payment_method.unwrap_or("none".to_string()))
-                .map_err(|_| DomainError::InvalidStateTransition)?;
-        Ok(Transaction {
-            id: row.id,
-            merchant_id: row.merchant_id,
-            amount: row.amount,
-            currency: row.currency,
-            payment_method: Some(payment_method),
-            provider_id: row.provider_id,
-            response: row.response,
-            status,
-            nonce: row.nonce,
-            external_reference: row.external_reference,
-            created_at: row.created_at,
-            updated_at: row.updated_at,
-        })
-    }
-}
-
 impl Transaction {
     pub fn initialize(&mut self, external_reference: String) -> Result<(), DomainError> {
         if self.status != TransactionStatus::Pending {
