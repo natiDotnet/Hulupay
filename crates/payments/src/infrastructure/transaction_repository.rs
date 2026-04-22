@@ -50,7 +50,7 @@ impl TransactionRepository for PgTransactionRepository {
         let record = sqlx::query_as!(
             Transaction,
             r#"
-SELECT
+            SELECT
                 id,
                 merchant_id,
                 amount,
@@ -61,6 +61,7 @@ SELECT
                 status as "status: TransactionStatus",
                 nonce,
                 external_reference,
+                webhook_body,
                 created_at,
                 updated_at
             FROM transactions
@@ -77,21 +78,22 @@ SELECT
         let record = sqlx::query_as!(
             Transaction,
             r#"
-                SELECT
-                    id,
-                    merchant_id,
-                    amount,
-                    currency,
-                    payment_method as "payment_method: PaymentMethod",
-                    provider_id,
-                    response,
-                    status as "status: TransactionStatus",
-                    nonce,
-                    external_reference,
-                    created_at,
-                    updated_at
-                FROM transactions
-                WHERE id = $1
+            SELECT
+                id,
+                merchant_id,
+                amount,
+                currency,
+                payment_method as "payment_method: PaymentMethod",
+                provider_id,
+                response,
+                status as "status: TransactionStatus",
+                nonce,
+                external_reference,
+                webhook_body,
+                created_at,
+                updated_at
+            FROM transactions
+            WHERE id = $1
             "#,
             Uuid::parse_str(nonce).unwrap()
         )

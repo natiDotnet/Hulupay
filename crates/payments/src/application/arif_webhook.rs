@@ -32,7 +32,7 @@ impl WebhookHandler for ArifWebhook {
             ArifTransactionStatus::Failed => self.failure_handler(webhook).await,
         };
 
-        println!("notify the users via rabbitmq ...{:?}", request);
+        println!("notify the users via rabbitmq ...{:?}", result);
         Ok(())
     }
 
