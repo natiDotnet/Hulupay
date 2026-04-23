@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{Decode, Type};
+use sqlx::Type;
 use strum_macros::{Display, EnumString};
 
 #[derive(Debug, Clone, Display, EnumString, Default, Deserialize, Serialize, Type)]
