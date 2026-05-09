@@ -1,8 +1,8 @@
 use crate::application::DeleteMerchant;
 use axum::{
-    Json,
     extract::{Path, State},
     http::StatusCode,
+    Json,
 };
 use uuid::Uuid;
 
@@ -10,7 +10,7 @@ use uuid::Uuid;
     delete,
     tag = "merchant",
     security(("bearer_auth" = [])),
-    path = "/merchant/{id}",
+    path = "/merchants/{id}",
     responses((status = OK))
 )]
 pub async fn delete_merchant_handler(

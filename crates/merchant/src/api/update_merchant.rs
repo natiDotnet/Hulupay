@@ -11,7 +11,7 @@ use uuid::Uuid;
     put,
     tag = "merchant",
     security(("bearer_auth" = [])),
-    path = "/merchant/{id}",
+    path = "/merchants/{id}",
     request_body = UpdateMerchantRequest,
     responses((status = OK))
 )]

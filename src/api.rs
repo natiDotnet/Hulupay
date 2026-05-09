@@ -1,10 +1,11 @@
+use axum::routing::get;
 use axum::Router;
 use sqlx::{Pool, Postgres};
 use std::env;
 use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
-use utoipa::OpenApi;
 use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
+use utoipa::OpenApi;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_scalar::{Scalar, Servable};
 use utoipa_swagger_ui::SwaggerUi;
@@ -55,7 +56,8 @@ pub fn api_routes(pool: Pool<Postgres>) -> Router {
                 // Merchant routes (requires MasterAdmin role)
                 .merge(merchant::router(pool.clone()))
                 // Payment routes (requires authentication)
-                .merge(payments::router(pool.clone())),
+                .merge(payments::router(pool.clone()))
+                .merge(OpenApiRouter::new().route("/test", get(|| async { "Hello, World!" }))),
         )
         .layer(axum::middleware::from_fn(auth::api::authentication))
         .layer(axum::Extension(token_service.clone()))

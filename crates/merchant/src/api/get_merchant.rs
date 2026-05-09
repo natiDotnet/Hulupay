@@ -1,9 +1,9 @@
-use crate::MerchantResponse;
 use crate::application::{ApplicationError, GetMerchant};
+use crate::MerchantResponse;
 use axum::{
-    Json,
     extract::{Path, State},
     http::StatusCode,
+    Json,
 };
 use uuid::Uuid;
 
@@ -11,7 +11,7 @@ use uuid::Uuid;
     get,
     tag = "merchant",
     security(("bearer_auth" = [])),
-    path = "/merchant/{id}",
+    path = "/merchants/{id}",
     responses((status = OK, body = MerchantResponse))
 )]
 pub async fn get_merchant_handler(

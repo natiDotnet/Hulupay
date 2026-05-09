@@ -6,7 +6,7 @@ use axum::{Json, extract::State, http::StatusCode};
     post,
     tag = "merchant",
     security(("bearer_auth" = [])),
-    path = "/merchant",
+    path = "/merchants",
     request_body = CreateMerchantRequest,
     responses((status = CREATED, body = MerchantResponse))
 )]

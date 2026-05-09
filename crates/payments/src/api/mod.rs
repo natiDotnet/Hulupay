@@ -117,49 +117,51 @@ impl FromRef<PaymentsState> for HandleProviderWebhook {
 pub fn router(pool: Pool<Postgres>) -> OpenApiRouter {
     let state = build_state(pool);
 
-    OpenApiRouter::new()
-        // MasterAdmin only endpoints - Payment Providers management
-        .routes(
-            routes!(
-                create_payment_provider::create_payment_provider_handler,
-                list_payment_providers::list_payment_providers_handler,
-            )
-        )
-        .routes(
-            routes!(
-                get_payment_provider::get_payment_provider_handler,
-                update_payment_provider::update_payment_provider_handler,
-                delete_payment_provider::delete_payment_provider_handler,
-            )
-        )
-        .require_role(Role::MasterAdmin)
-        // MerchantAdmin only endpoints - Payment Provider Configs management
-        .routes(
-            routes!(
-                create_payment_provider_config::create_payment_provider_config_handler,
-                list_payment_provider_configs::list_payment_provider_configs_handler,
-                )
-        )
-        .routes(
-            routes!(
-                get_payment_provider_config::get_payment_provider_config_handler,
-                update_payment_provider_config::update_payment_provider_config_handler,
-                delete_payment_provider_config::delete_payment_provider_config_handler,
-            )
-        )
-        .routes(
-            routes!(
-                get_payment_provider_config_by_provider::get_payment_provider_config_by_provider_handler,
-            )
-        )
-        .require_role(Role::MerchantAdmin)
-        // Public payment endpoints (initialize and verify)
+    let master_admin_routes = OpenApiRouter::new()
         .routes(routes!(
-            initialize::initialize_payment_handler,
-            verify::verify_payment_handler,
-        ))
-        .require_auth()
-        .routes(routes!(webhook::webhook_payment_handler))
+        create_payment_provider::create_payment_provider_handler,
+        // list_payment_providers::list_payment_providers_handler,
+    ))
+        .routes(routes!(
+        get_payment_provider::get_payment_provider_handler,
+        update_payment_provider::update_payment_provider_handler,
+        delete_payment_provider::delete_payment_provider_handler,
+    ))
+        .require_role(Role::MasterAdmin);
+
+    let merchant_admin_routes = OpenApiRouter::new()
+        .routes(routes!(
+        create_payment_provider_config::create_payment_provider_config_handler,
+        list_payment_provider_configs::list_payment_provider_configs_handler,
+    ))
+        .routes(routes!(
+        get_payment_provider_config::get_payment_provider_config_handler,
+        update_payment_provider_config::update_payment_provider_config_handler,
+        delete_payment_provider_config::delete_payment_provider_config_handler,
+    ))
+        .routes(routes!(
+        get_payment_provider_config_by_provider::get_payment_provider_config_by_provider_handler,
+    ))
+        .require_role(Role::MerchantAdmin);
+
+    let authenticated_payment_routes = OpenApiRouter::new()
+        .routes(routes!(list_payment_providers::list_payment_providers_handler,))
+        .routes(routes!(
+        initialize::initialize_payment_handler,
+        verify::verify_payment_handler,
+    ))
+        .require_auth();
+
+    let public_routes = OpenApiRouter::new()
+        .routes(routes!(
+        webhook::webhook_payment_handler
+    ));
+
+    OpenApiRouter::new()
+        .merge(master_admin_routes)
+        .merge(merchant_admin_routes)
+        .merge(authenticated_payment_routes)
+        .merge(public_routes)
         .with_state(state)
 }
 
