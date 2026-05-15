@@ -1,4 +1,4 @@
-use crate::domain::User;
+use crate::domain::user::User;
 
 #[async_trait::async_trait]
 pub trait UserRepository: Send + Sync {

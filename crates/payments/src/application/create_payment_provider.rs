@@ -3,7 +3,6 @@ use crate::domain::Provider;
 use std::sync::Arc;
 use time::OffsetDateTime;
 use uuid::Uuid;
-
 #[derive(Clone)]
 pub struct CreatePaymentProvider {
     repository: Arc<dyn PaymentProviderRepository>,
@@ -27,7 +26,6 @@ impl CreatePaymentProvider {
             is_active,
             created_at: OffsetDateTime::now_utc(),
         };
-
         self.repository.create(&provider).await?;
 
         Ok(provider)

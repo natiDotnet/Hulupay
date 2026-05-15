@@ -1,6 +1,29 @@
-use crate::domain::PaymentMethod;
 use crate::domain::error::DomainError;
+use crate::domain::PaymentMethod;
 use async_trait::async_trait;
+
+#[derive(Debug, Clone, PartialEq, sqlx::Type, serde::Serialize, serde::Deserialize)]
+#[sqlx(type_name = "provider", rename_all = "snake_case")]
+pub enum Provider {
+    Stripe,
+    Chapa,
+    ArifPay,
+}
+
+impl Provider {
+    pub fn max_retries(&self) -> i32 {
+        3
+    }
+
+    // SLA window in seconds before the watchdog kicks in
+    pub fn sla_timeout_secs(&self) -> i64 {
+        match self {
+            Self::Stripe => 300,   //  5 min
+            Self::Chapa => 900,    // 15 min
+            Self::ArifPay => 1200, // 20 min
+        }
+    }
+}
 
 pub struct InitializePayment {
     pub amount: f64,

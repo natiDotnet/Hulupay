@@ -1,5 +1,5 @@
 use crate::application::user_repository::UserRepository;
-use crate::domain::User;
+use crate::domain::user::User;
 use crate::Role;
 use async_trait::async_trait;
 use sqlx::PgPool;

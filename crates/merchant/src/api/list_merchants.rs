@@ -1,9 +1,9 @@
-use crate::MerchantResponse;
 use crate::application::{ListMerchants, PaginatedResponse};
+use crate::MerchantResponse;
 use axum::{
-    Json,
     extract::{Query, State},
     http::StatusCode,
+    Json,
 };
 use serde::Deserialize;
 use utoipa::IntoParams;
@@ -11,16 +11,16 @@ use utoipa::IntoParams;
 #[derive(Deserialize, IntoParams)]
 pub struct PaginationQuery {
     #[serde(default = "default_page")]
-    pub page: i64,
+    pub page: u64,
 
     #[serde(default = "default_page_size")]
-    pub page_size: i64,
+    pub page_size: u64,
 }
 
-fn default_page() -> i64 {
+fn default_page() -> u64 {
     1
 }
-fn default_page_size() -> i64 {
+fn default_page_size() -> u64 {
     20
 }
 

@@ -31,3 +31,5 @@ utoipa-axum = { version = "0.2.0" }
 
 # HTTP framework (for API layer)
 axum = { version = "0.8.8" }
+
+sea-orm = { version = "2.0.0-rc.38" }

@@ -1,30 +1,30 @@
-use crate::application::repository::MerchantRepository;
-use std::sync::Arc;
-use time::OffsetDateTime;
+use crate::domain::merchant;
+use crate::domain::merchant::ActiveModel;
+use anyhow::anyhow;
+use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
+use sqlx::types::chrono::Utc;
 use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct UpdateMerchant {
-    pub repository: Arc<dyn MerchantRepository>,
+    db: DatabaseConnection,
 }
 
 impl UpdateMerchant {
-    pub fn new(repository: Arc<dyn MerchantRepository>) -> Self {
-        Self { repository }
+    pub fn new(db: DatabaseConnection) -> Self {
+        Self { db }
     }
 
     pub async fn execute(&self, id: Uuid, name: String, is_active: bool) -> anyhow::Result<()> {
-        let mut merchant = self
-            .repository
-            .get_by_id(id)
+        let merchant = merchant::Entity::find_by_id(id)
+            .one(&self.db)
             .await?
-            .ok_or_else(|| anyhow::anyhow!("Merchant not found"))?;
-
-        merchant.name = name;
-        merchant.is_active = is_active;
-        merchant.updated_at = Some(OffsetDateTime::now_utc());
-
-        self.repository.update(&merchant).await?;
+            .ok_or_else(|| anyhow!("Merchant not found with given id"))?;
+        let mut merchant: ActiveModel = merchant.into();
+        merchant.name = Set(name);
+        merchant.is_active = Set(is_active);
+        merchant.updated_at = Set(Some(Utc::now()));
+        merchant.update(&self.db).await?;
         Ok(())
     }
 }

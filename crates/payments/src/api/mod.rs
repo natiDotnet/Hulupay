@@ -32,6 +32,7 @@ use crate::application::{
 use crate::infrastructure::{PgPaymentProviderRepository, PgTransactionRepository};
 use auth::api::middleware::AuthRouterExt;
 use auth::Role;
+use sea_orm::DatabaseConnection;
 use sqlx::Pool;
 use sqlx::Postgres;
 use std::sync::Arc;
@@ -114,48 +115,47 @@ impl FromRef<PaymentsState> for HandleProviderWebhook {
     }
 }
 
-pub fn router(pool: Pool<Postgres>) -> OpenApiRouter {
-    let state = build_state(pool);
+pub fn router(pool: Pool<Postgres>, db: &DatabaseConnection) -> OpenApiRouter {
+    let state = build_state(pool, db);
 
     let master_admin_routes = OpenApiRouter::new()
         .routes(routes!(
-        create_payment_provider::create_payment_provider_handler,
-        // list_payment_providers::list_payment_providers_handler,
-    ))
+            create_payment_provider::create_payment_provider_handler,
+            // list_payment_providers::list_payment_providers_handler,
+        ))
         .routes(routes!(
-        get_payment_provider::get_payment_provider_handler,
-        update_payment_provider::update_payment_provider_handler,
-        delete_payment_provider::delete_payment_provider_handler,
-    ))
+            get_payment_provider::get_payment_provider_handler,
+            update_payment_provider::update_payment_provider_handler,
+            delete_payment_provider::delete_payment_provider_handler,
+        ))
         .require_role(Role::MasterAdmin);
 
     let merchant_admin_routes = OpenApiRouter::new()
         .routes(routes!(
-        create_payment_provider_config::create_payment_provider_config_handler,
-        list_payment_provider_configs::list_payment_provider_configs_handler,
-    ))
+            create_payment_provider_config::create_payment_provider_config_handler,
+            list_payment_provider_configs::list_payment_provider_configs_handler,
+        ))
         .routes(routes!(
-        get_payment_provider_config::get_payment_provider_config_handler,
-        update_payment_provider_config::update_payment_provider_config_handler,
-        delete_payment_provider_config::delete_payment_provider_config_handler,
-    ))
+            get_payment_provider_config::get_payment_provider_config_handler,
+            update_payment_provider_config::update_payment_provider_config_handler,
+            delete_payment_provider_config::delete_payment_provider_config_handler,
+        ))
         .routes(routes!(
         get_payment_provider_config_by_provider::get_payment_provider_config_by_provider_handler,
     ))
         .require_role(Role::MerchantAdmin);
 
     let authenticated_payment_routes = OpenApiRouter::new()
-        .routes(routes!(list_payment_providers::list_payment_providers_handler,))
         .routes(routes!(
-        initialize::initialize_payment_handler,
-        verify::verify_payment_handler,
-    ))
+            list_payment_providers::list_payment_providers_handler,
+        ))
+        .routes(routes!(
+            initialize::initialize_payment_handler,
+            verify::verify_payment_handler,
+        ))
         .require_auth();
 
-    let public_routes = OpenApiRouter::new()
-        .routes(routes!(
-        webhook::webhook_payment_handler
-    ));
+    let public_routes = OpenApiRouter::new().routes(routes!(webhook::webhook_payment_handler));
 
     OpenApiRouter::new()
         .merge(master_admin_routes)
@@ -165,8 +165,8 @@ pub fn router(pool: Pool<Postgres>) -> OpenApiRouter {
         .with_state(state)
 }
 
-fn build_state(pool: Pool<Postgres>) -> PaymentsState {
-    let provider_repo = build_provider_repository(pool.clone());
+fn build_state(pool: Pool<Postgres>, db: &DatabaseConnection) -> PaymentsState {
+    let provider_repo = build_provider_repository(pool.clone(), db);
     let config_repo = build_config_repository(pool.clone());
     let transaction_repository = Arc::new(PgTransactionRepository::new(pool.clone()));
     let provider_engine = build_provider_engine(&config_repo, transaction_repository.clone());
@@ -200,8 +200,11 @@ fn build_state(pool: Pool<Postgres>) -> PaymentsState {
     }
 }
 
-fn build_provider_repository(pool: Pool<Postgres>) -> Arc<dyn PaymentProviderRepository> {
-    Arc::new(PgPaymentProviderRepository::new(pool))
+fn build_provider_repository(
+    pool: Pool<Postgres>,
+    db: &DatabaseConnection,
+) -> Arc<dyn PaymentProviderRepository> {
+    Arc::new(PgPaymentProviderRepository::new(pool, db.clone()))
 }
 
 fn build_config_repository(pool: Pool<Postgres>) -> Arc<dyn PaymentProviderConfigRepository> {

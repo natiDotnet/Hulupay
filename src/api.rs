@@ -1,5 +1,6 @@
 use axum::routing::get;
 use axum::Router;
+use sea_orm::DatabaseConnection;
 use sqlx::{Pool, Postgres};
 use std::env;
 use std::sync::Arc;
@@ -20,7 +21,7 @@ use payments;
 #[openapi(info(title = "My API", version = "1.0", description = "An example API"))]
 pub struct ApiDoc;
 
-pub fn api_routes(pool: Pool<Postgres>) -> Router {
+pub fn api_routes(pool: Pool<Postgres>, db: &DatabaseConnection) -> Router {
     let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
     let token_service: Arc<dyn TokenService> = Arc::new(JwtTokenService::new(jwt_secret));
 
@@ -52,11 +53,11 @@ pub fn api_routes(pool: Pool<Postgres>) -> Router {
             "/api",
             OpenApiRouter::new()
                 // Auth routes (no auth required for login/register)
-                .merge(auth::router(pool.clone()))
+                .merge(auth::router(pool.clone(), db))
                 // Merchant routes (requires MasterAdmin role)
-                .merge(merchant::router(pool.clone()))
+                .merge(merchant::router(pool.clone(), db))
                 // Payment routes (requires authentication)
-                .merge(payments::router(pool.clone()))
+                .merge(payments::router(pool.clone(), db))
                 .merge(OpenApiRouter::new().route("/test", get(|| async { "Hello, World!" }))),
         )
         .layer(axum::middleware::from_fn(auth::api::authentication))

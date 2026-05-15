@@ -1,9 +1,11 @@
+extern crate core;
+
 pub mod api;
 pub mod application;
 pub mod domain;
 pub mod infrastructure;
 
-pub use api::{PaymentsState, router};
+pub use api::{router, PaymentsState};
 pub use application::{
     ArifPayConfig, ArifPayProvider, InitializePaymentCommand, PaymentGateway, PaymentInitResult,
     PaymentVerificationResult, ProviderEngine,

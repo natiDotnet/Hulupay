@@ -1,37 +1,47 @@
 use crate::application::dto::MerchantResponse;
 use crate::application::error::ApplicationError;
-use crate::application::repository::MerchantRepository;
+use crate::domain::merchant;
+use anyhow::anyhow;
+use sea_orm::{DatabaseConnection, EntityTrait, Order, PaginatorTrait};
 use serde::Serialize;
-use std::sync::Arc;
 use utoipa::ToSchema;
 
 #[derive(Serialize, ToSchema)]
 pub struct PaginatedResponse<T> {
     pub items: Vec<T>,
-    pub page: i64,
-    pub page_size: i64,
-    pub total: i64,
+    pub page: u64,
+    pub page_size: u64,
+    pub total: u64,
 }
 
 #[derive(Clone)]
 pub struct ListMerchants {
-    repository: Arc<dyn MerchantRepository>,
+    db: DatabaseConnection,
 }
 
 impl ListMerchants {
-    pub fn new(repository: Arc<dyn MerchantRepository>) -> Self {
-        Self { repository }
+    pub fn new(db: DatabaseConnection) -> Self {
+        Self { db }
     }
 
     pub async fn execute(
         &self,
-        page: i64,
-        page_size: i64,
+        page: u64,
+        page_size: u64,
     ) -> Result<PaginatedResponse<MerchantResponse>, ApplicationError> {
-        let offset = (page - 1) * page_size;
-        let (merchants, total) = self.repository.list(offset, page_size).await?;
+        let paginator = merchant::Entity::find()
+            .order_by_id(Order::Desc)
+            .paginate(&self.db, page_size);
 
-        let items = merchants
+        let total = paginator
+            .num_items()
+            .await
+            .map_err(|e| ApplicationError::Internal(anyhow!(e)))?;
+
+        let items = paginator
+            .fetch_page(page)
+            .await
+            .map_err(|e| ApplicationError::Internal(anyhow!(e)))?
             .into_iter()
             .map(|m| MerchantResponse {
                 id: m.id,

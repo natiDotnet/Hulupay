@@ -1,16 +1,19 @@
 use crate::application::{PaymentProviderConfigRepository, PaymentProviderRepository};
-use crate::domain::{PaymentProviderConfig, Provider};
+use crate::domain::{nati, PaymentProviderConfig, Provider};
 use async_trait::async_trait;
+use sea_orm::DatabaseConnection;
+use sea_orm::EntityTrait;
 use sqlx::PgPool;
 use uuid::Uuid;
 
 pub struct PgPaymentProviderRepository {
     pool: PgPool,
+    db: DatabaseConnection,
 }
 
 impl PgPaymentProviderRepository {
-    pub fn new(pool: PgPool) -> Self {
-        Self { pool }
+    pub fn new(pool: PgPool, db: DatabaseConnection) -> Self {
+        Self { pool, db }
     }
 }
 
@@ -30,6 +33,9 @@ impl PaymentProviderRepository for PgPaymentProviderRepository {
         )
         .execute(&self.pool)
         .await?;
+        let id = Uuid::new_v4();
+
+        let nati: Option<nati::Model> = nati::Entity::find_by_id(id).one(&self.db).await?;
 
         Ok(())
     }

@@ -1,19 +1,27 @@
 use crate::application::repository::MerchantRepository;
+use crate::domain::merchant;
+use anyhow::anyhow;
+use sea_orm::{DatabaseConnection, EntityTrait, ModelTrait};
 use std::sync::Arc;
 use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct DeleteMerchant {
-    repository: Arc<dyn MerchantRepository>,
+    db: DatabaseConnection
 }
 
 impl DeleteMerchant {
-    pub fn new(repository: Arc<dyn MerchantRepository>) -> Self {
-        Self { repository }
+    pub fn new(db: DatabaseConnection) -> Self {
+        Self { db }
     }
 
     pub async fn execute(&self, id: Uuid) -> anyhow::Result<()> {
-        self.repository.delete(id).await?;
+        let merchant = merchant::Entity::find_by_id(id)
+            .one(&self.db)
+            .await?
+            .ok_or_else(|| anyhow!("Merchant not found"))?;
+
+        merchant.delete(&self.db).await?;
         Ok(())
     }
 }

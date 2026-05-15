@@ -1,32 +1,32 @@
 use crate::application::dto::MerchantResponse;
 use crate::application::error::ApplicationError;
-use crate::application::repository::MerchantRepository;
-use std::sync::Arc;
+use crate::domain::merchant;
+use anyhow::anyhow;
+use sea_orm::{DatabaseConnection, EntityTrait};
 use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct GetMerchant {
-    repository: Arc<dyn MerchantRepository>,
+    db: DatabaseConnection,
 }
 
 impl GetMerchant {
-    pub fn new(repository: Arc<dyn MerchantRepository>) -> Self {
-        Self { repository }
+    pub fn new(db: DatabaseConnection) -> Self {
+        Self { db }
     }
 
     pub async fn execute(&self, id: Uuid) -> Result<MerchantResponse, ApplicationError> {
-        let merchant = self.repository.get_by_id(id).await?;
+        // let merchant = self.repository.get_by_id(id).await?;
+        let merchant = merchant::Entity::find_by_id(id)
+            .one(&self.db)
+            .await
+            .map_err(|e| ApplicationError::Internal(anyhow!(e)))?
+            .ok_or_else(|| anyhow!("Merchant not found with given id"))?;
 
-        match merchant {
-            None => Err(ApplicationError::NotFound(format!(
-                "merchant not found with id {}",
-                id
-            ))),
-            Some(mer) => Ok(MerchantResponse {
-                id: mer.id,
-                name: mer.name,
-                is_active: mer.is_active,
-            }),
-        }
+        Ok(MerchantResponse {
+            id: merchant.id,
+            name: merchant.name,
+            is_active: merchant.is_active,
+        })
     }
 }

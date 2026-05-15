@@ -1,6 +1,7 @@
 pub mod api;
 use crate::api::api_routes;
 use dotenvy::dotenv;
+use sea_orm::Database;
 use sqlx::postgres::PgPoolOptions;
 use std::env;
 use tracing_subscriber::layer::SubscriberExt;
@@ -21,8 +22,13 @@ async fn main() -> anyhow::Result<()> {
         .max_connections(10)
         .connect(&db_url)
         .await?;
+    let db = &Database::connect(db_url).await?;
+    // synchronizes database schema with entity definitions
+    db.get_schema_registry("payments::domain::*")
+        .sync(db)
+        .await?;
 
-    let app = api_routes(pool);
+    let app = api_routes(pool, db);
     let listener = tokio::net::TcpListener::bind("0.0.0.0:5000").await?;
     axum::serve(listener, app).await?;
     println!("Server started");
