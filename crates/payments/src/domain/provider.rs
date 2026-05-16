@@ -1,9 +1,18 @@
 use crate::domain::error::DomainError;
 use crate::domain::PaymentMethod;
 use async_trait::async_trait;
+use sea_orm::sea_query::StringLen;
+use sea_orm::{DeriveActiveEnum, EnumIter};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, sqlx::Type, serde::Serialize, serde::Deserialize)]
-#[sqlx(type_name = "provider", rename_all = "snake_case")]
+// #[derive(Debug, Clone, PartialEq, sqlx::Type, serde::Serialize, serde::Deserialize)]
+// #[sqlx(type_name = "provider", rename_all = "snake_case")]
+#[derive(EnumIter, DeriveActiveEnum, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[sea_orm(
+    rs_type = "String",
+    db_type = "String(StringLen::None)",
+    rename_all = "UPPERCASE"
+)]
 pub enum Provider {
     Stripe,
     Chapa,

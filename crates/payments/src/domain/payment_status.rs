@@ -1,10 +1,17 @@
 // domain/src/state_machine.rs
 
-use serde::{Deserialize, Serialize};
+use sea_orm::sea_query::StringLen;
+use sea_orm::{DeriveActiveEnum, EnumIter};
 use thiserror::Error;
 
-#[derive(Debug, Clone, PartialEq, Eq, sqlx::Type, serde::Serialize, serde::Deserialize)]
-#[sqlx(type_name = "payment_status", rename_all = "snake_case")]
+// #[derive(Debug, Clone, PartialEq, Eq, sqlx::Type, serde::Serialize, serde::Deserialize)]
+// #[sqlx(type_name = "payment_status", rename_all = "snake_case")]
+#[derive(EnumIter, DeriveActiveEnum, Clone, Eq, PartialEq, Debug)]
+#[sea_orm(
+    rs_type = "String",
+    db_type = "String(StringLen::None)",
+    rename_all = "UPPERCASE"
+)]
 pub enum PaymentStatus {
     Initiated,
     Pending,
@@ -61,16 +68,24 @@ impl PaymentStatus {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[derive(EnumIter, DeriveActiveEnum, Clone, Eq, PartialEq, Debug)]
+#[sea_orm(
+    rs_type = "String",
+    db_type = "String(StringLen::None)",
+    rename_all = "UPPERCASE"
+)]
 pub enum TxStatus {
     Pending,
     Success,
     Failed,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[derive(EnumIter, DeriveActiveEnum, Clone, Eq, PartialEq, Debug)]
+#[sea_orm(
+    rs_type = "String",
+    db_type = "String(StringLen::None)",
+    rename_all = "UPPERCASE"
+)]
 pub enum TxDirection {
     Charge,
     Refund,
