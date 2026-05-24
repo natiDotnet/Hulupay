@@ -1,24 +1,8 @@
+use crate::application::initiate_payment::{InitializePaymentRequest, InitializePaymentResponse};
 use crate::application::{InitializePaymentCommand, ProviderEngine};
 use axum::extract::Path;
 use axum::{extract::State, http::StatusCode, Json};
-use serde::Deserialize;
 use utoipa::ToSchema;
-use uuid::Uuid;
-
-#[derive(Deserialize, ToSchema)]
-pub struct InitializePaymentRequest {
-    pub merchant_id: Uuid,
-    pub phone: String,
-    pub email: String,
-    pub amount: i64,
-    pub currency: String,
-}
-
-#[derive(serde::Serialize, ToSchema)]
-pub struct InitializePaymentResponse {
-    pub checkout_url: String,
-    pub provider_reference: String,
-}
 
 #[utoipa::path(
     post,

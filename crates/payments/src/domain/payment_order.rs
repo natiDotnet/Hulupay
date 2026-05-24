@@ -1,11 +1,14 @@
 // domain/src/entities.rs — updated PaymentOrder
 use crate::domain;
-use crate::domain::payment_status::PaymentStatus;
+use crate::domain::payment_status::{PaymentStatus, TransitionError};
 use crate::domain::provider::Provider;
+use crate::domain::DomainError;
+use chrono::Utc;
+use merchant::Merchant;
 use rust_decimal::Decimal;
 use sea_orm::entity::prelude::*;
 use sea_orm::prelude::DateTimeUtc;
-use sea_orm::{ActiveModelBehavior, DeriveEntityModel};
+use sea_orm::{ActiveModelBehavior, DeriveEntityModel, Set};
 use uuid::Uuid;
 
 #[sea_orm::model]
@@ -29,6 +32,15 @@ pub struct Model {
     pub payment_transaction: HasMany<domain::payment_transaction::Entity>,
 }
 impl ActiveModelBehavior for ActiveModel {}
+
+impl ActiveModel {
+    pub fn transition_to(&mut self, new_status: PaymentStatus) -> Result<(), TransitionError> {
+        self.status.clone().unwrap().transition(&new_status)?;
+        self.status = Set(new_status);
+        self.updated_at = Set(Utc::now());
+        Ok(())
+    }
+}
 // impl PaymentOrder {
 //     pub fn new(
 //         merchant: &Merchant, // takes the full merchant now
@@ -58,13 +70,13 @@ impl ActiveModelBehavior for ActiveModel {}
 // }
 
 // impl PaymentOrder {
-//     // The only way to change status — enforces state machine
-//     pub fn transition_to(&mut self, new_status: PaymentStatus) -> Result<(), TransitionError> {
-//         self.status.transition(&new_status)?;
-//         self.status = new_status;
-//         self.updated_at = Utc::now();
-//         Ok(())
-//     }
+// The only way to change status — enforces state machine
+// pub fn transition_to(&mut self, new_status: PaymentStatus) -> Result<(), TransitionError> {
+//     self.status.transition(&new_status)?;
+//     self.status = new_status;
+//     self.updated_at = Utc::now();
+//     Ok(())
+// }
 //
 //     pub fn can_retry(&self) -> bool {
 //         self.status == PaymentStatus::Failed && self.retry_count < self.provider.max_retries()

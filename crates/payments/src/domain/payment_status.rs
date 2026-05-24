@@ -1,7 +1,9 @@
 // domain/src/state_machine.rs
 
 use sea_orm::sea_query::StringLen;
-use sea_orm::{DeriveActiveEnum, EnumIter};
+use sea_orm::{
+    ActiveEnum, ActiveEnumValue, ActiveModelBehavior, DeriveActiveEnum, EnumIter,
+};
 use thiserror::Error;
 
 // #[derive(Debug, Clone, PartialEq, Eq, sqlx::Type, serde::Serialize, serde::Deserialize)]

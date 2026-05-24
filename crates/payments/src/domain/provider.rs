@@ -4,18 +4,37 @@ use async_trait::async_trait;
 use sea_orm::sea_query::StringLen;
 use sea_orm::{DeriveActiveEnum, EnumIter};
 use serde::{Deserialize, Serialize};
+use strum_macros::{AsRefStr, Display};
+use utoipa::ToSchema;
 
 // #[derive(Debug, Clone, PartialEq, sqlx::Type, serde::Serialize, serde::Deserialize)]
 // #[sqlx(type_name = "provider", rename_all = "snake_case")]
-#[derive(EnumIter, DeriveActiveEnum, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(
+    EnumIter,
+    DeriveActiveEnum,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    ToSchema,
+    Display,
+    AsRefStr,
+)]
 #[sea_orm(
     rs_type = "String",
     db_type = "String(StringLen::None)",
     rename_all = "UPPERCASE"
 )]
 pub enum Provider {
+    #[strum(serialize = "STRIPE")]
     Stripe,
+
+    #[strum(serialize = "CHAPA")]
     Chapa,
+
+    #[strum(serialize = "ARIFPAY")]
     ArifPay,
 }
 

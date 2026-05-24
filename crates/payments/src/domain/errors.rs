@@ -1,7 +1,6 @@
-use crate::domain::payment_status::PaymentStatus;
+use crate::domain::payment_status::TransitionError;
 use crate::domain::Provider;
 use rust_decimal::Decimal;
-use thiserror::Error;
 use uuid::Uuid;
 
 #[derive(Debug, thiserror::Error)]
@@ -32,15 +31,4 @@ pub enum DomainError {
 
     #[error("merchant not found")]
     MerchantNotFound,
-}
-
-#[derive(Debug, Error)]
-pub enum TransitionError {
-    #[error("illegal transition: {from:?} -> {to:?}")]
-    Illegal {
-        from: PaymentStatus,
-        to: PaymentStatus,
-    },
-    #[error("payment is already in terminal state: {0:?}")]
-    Terminal(PaymentStatus),
 }

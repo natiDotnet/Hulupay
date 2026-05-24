@@ -2,6 +2,7 @@ use crate::application::dto::InitializePaymentCommand;
 use crate::application::payment_gateway_error::PaymentGatewayError;
 use crate::TransactionStatus;
 use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
 
 #[async_trait::async_trait]
 pub trait PaymentGateway: Send + Sync {
@@ -35,11 +36,13 @@ pub trait WebhookHandler: Send + Sync {
     ) -> Result<(), PaymentGatewayError>;
 }
 
+#[derive(Serialize, Deserialize, Debug)]
 pub struct PaymentInitResult {
     pub checkout_url: String,
     pub provider_reference: String,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct PaymentVerificationResult {
     pub success: bool,
     pub provider_reference: String,

@@ -9,3 +9,9 @@ pub enum PaymentGatewayError {
     #[error("provider was not found!")]
     ProviderNotFound,
 }
+
+impl PaymentGatewayError {
+    pub fn is_retryable(&self) -> bool {
+        matches!(self, PaymentGatewayError::RequestFailed | PaymentGatewayError::InvalidResponse)
+    }
+}

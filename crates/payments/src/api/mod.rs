@@ -32,6 +32,7 @@ use crate::application::{
 use crate::infrastructure::{PgPaymentProviderRepository, PgTransactionRepository};
 use auth::api::middleware::AuthRouterExt;
 use auth::Role;
+use deadpool_redis::{Config, Runtime};
 use sea_orm::DatabaseConnection;
 use sqlx::Pool;
 use sqlx::Postgres;
@@ -222,4 +223,11 @@ fn build_provider_engine(
     // let arifpay_provider = crate::infrastructure::ArifPayProvider::new(arifpay_config);
 
     ProviderEngine::new(config_repo.clone(), transaction_repository.clone())
+}
+
+pub fn create_redis_pool() -> deadpool_redis::Pool {
+    let cfg = Config::from_url("redis://127.0.0.1/");
+
+    cfg.create_pool(Some(Runtime::Tokio1))
+        .expect("Cannot create Redis pool")
 }

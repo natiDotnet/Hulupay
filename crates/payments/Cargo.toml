@@ -27,7 +27,7 @@ anyhow = "1.0.102"
 thiserror = "2.0.18"
 
 # API documentation
-utoipa = { version = "5.4.0", features = ["axum_extras", "uuid"] }
+utoipa = { version = "5.4.0", features = ["axum_extras", "uuid", "decimal"] }
 utoipa-axum = { version = "0.2.0" }
 
 # HTTP framework (for API layer)
@@ -40,6 +40,9 @@ clap = { version = "4.6.0", features = ["derive"] }
 strum = "0.28.0"
 strum_macros = "0.28.0"
 axum-debug-macros = "0.1.0"
-rust_decimal = "1.42.0"
+rust_decimal = { version = "1.42.0", features = ["serde"] }
 
 sea-orm = { version = "2.0.0-rc.38" }
+# cache
+deadpool-redis = "0.23.0"
+redis = { version = "1.2.1", features = ["tokio-comp"] }
