@@ -9,4 +9,4 @@ pub use application::{
     RegisterUserResponse, TokenService, UserContext,
 };
 pub use domain::{AuthError as DomainAuthError, Role};
-pub use infrastructure::{JwtTokenService, PgUserRepository};
+pub use infrastructure::{JwtTokenService};

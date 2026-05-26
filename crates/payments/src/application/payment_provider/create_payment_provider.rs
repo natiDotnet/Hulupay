@@ -1,16 +1,16 @@
-use crate::application::repository::PaymentProviderRepository;
+use crate::domain;
 use crate::domain::Provider;
-use std::sync::Arc;
-use time::OffsetDateTime;
-use uuid::Uuid;
+use chrono::Utc;
+use sea_orm::{ActiveModelTrait, DatabaseConnection, NotSet, Set};
+
 #[derive(Clone)]
 pub struct CreatePaymentProvider {
-    repository: Arc<dyn PaymentProviderRepository>,
+    db: DatabaseConnection,
 }
 
 impl CreatePaymentProvider {
-    pub fn new(repository: Arc<dyn PaymentProviderRepository>) -> Self {
-        Self { repository }
+    pub fn new(db: DatabaseConnection) -> Self {
+        Self { db }
     }
 
     pub async fn execute(
@@ -19,15 +19,22 @@ impl CreatePaymentProvider {
         name: String,
         is_active: bool,
     ) -> anyhow::Result<Provider> {
-        let provider = Provider {
-            id: Uuid::new_v4(),
-            code,
-            name,
-            is_active,
-            created_at: OffsetDateTime::now_utc(),
-        };
-        self.repository.create(&provider).await?;
+        let provider = domain::payment_provider::ActiveModel {
+            id: NotSet,
+            code: Set(code),
+            name: Set(name),
+            is_active: Set(is_active),
+            created_at: Set(Utc::now()),
+        }
+        .insert(&self.db)
+        .await?;
 
-        Ok(provider)
+        Ok(Provider {
+            id: provider.id,
+            code: provider.code,
+            name: provider.name,
+            is_active: provider.is_active,
+            created_at: provider.created_at,
+        })
     }
 }

@@ -6,11 +6,10 @@ use crate::application::payment_gateway::{
     PaymentGateway, PaymentInitResult, PaymentVerificationResult,
 };
 use crate::application::payment_gateway_error::PaymentGatewayError;
-use crate::application::TransactionRepository;
-use crate::Transaction;
+use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::sync::Arc;
+use tracing::debug;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -53,14 +52,16 @@ pub struct ArifPayProvider {
     client: reqwest::Client,
     config: ArifPayConfig,
     provider_id: Uuid,
-    transaction_repository: Arc<dyn TransactionRepository>,
+    db: DatabaseConnection,
+    // transaction_repository: Arc<dyn TransactionRepository>,
 }
 
 impl ArifPayProvider {
     pub fn new(
         config: ArifPayConfig,
         provider_id: Uuid,
-        transaction_repository: Arc<dyn TransactionRepository>,
+        db: DatabaseConnection,
+        // transaction_repository: Arc<dyn TransactionRepository>,
     ) -> Self {
         let mut headers = reqwest::header::HeaderMap::new();
         headers.insert("x-arifpay-key", config.api_key.parse().unwrap());
@@ -76,7 +77,8 @@ impl ArifPayProvider {
             client,
             config,
             provider_id,
-            transaction_repository,
+            db,
+            // transaction_repository,
         }
     }
 
@@ -137,13 +139,7 @@ impl PaymentGateway for ArifPayProvider {
 
         let request = self.build_request(&cmd, &reference);
 
-        // Serialize and log the request body
-        let request_json = serde_json::to_string_pretty(&request).unwrap_or_else(|e| {
-            eprintln!("Failed to serialize request: {:?}", e);
-            "{}".to_string()
-        });
-        println!("REQUEST BODY:\n{}", request_json);
-        dbg!(&self.config);
+        debug!(?request, "the request body");
 
         let response = self
             .client
@@ -162,31 +158,19 @@ impl PaymentGateway for ArifPayProvider {
             return Err(PaymentGatewayError::RequestFailed);
         }
 
+        debug!(?body, "the request body");
+
         let data: ArifPayInitializeData = body
             .data
             .clone()
             .ok_or(PaymentGatewayError::InvalidResponse)?;
-
-        let mut transaction = Transaction::new(
-            cmd.merchant_id,
-            (data.total_amount * 100_f64) as i64,
-            cmd.currency,
-            self.provider_id,
-            reference,
-            serde_json::to_value(body).map_err(|_| PaymentGatewayError::InvalidResponse)?,
-        );
-        transaction
-            .initialize(data.session_id)
-            .map_err(|_| PaymentGatewayError::InvalidResponse)?;
-
-        self.transaction_repository
-            .create(&transaction)
-            .await
+        let row = serde_json::to_string_pretty(&body)
             .map_err(|_| PaymentGatewayError::InvalidResponse)?;
 
         Ok(PaymentInitResult {
             checkout_url: data.payment_url,
-            provider_reference: transaction.external_reference.unwrap(),
+            provider_reference: data.session_id,
+            row_response: row,
         })
     }
 
@@ -214,6 +198,7 @@ impl PaymentGateway for ArifPayProvider {
         Ok(PaymentVerificationResult {
             success: body["status"] == "success",
             provider_reference: reference.to_string(),
+            row_response: response_text,
         })
     }
 }

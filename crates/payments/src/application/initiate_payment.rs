@@ -140,7 +140,7 @@ impl InitiatePayment {
             .await?;
         let provider = self
             .payment_engine
-            .get_provider(payload.merchant_id, payload.provider.as_ref())
+            .get_provider(payload.merchant_id, payload.provider)
             .await?;
 
         // If the last tx has a provider_tx_id but order is still Pending/Failed,

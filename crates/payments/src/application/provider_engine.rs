@@ -1,6 +1,9 @@
 use crate::application::payment_gateway::PaymentGateway;
-use crate::application::{PaymentProviderConfigRepository, TransactionRepository};
-use crate::{ArifPayConfig, ArifPayProvider};
+use crate::domain::merchant_config;
+use crate::{domain, ArifPayConfig, ArifPayProvider};
+use sea_orm::QueryFilter;
+use sea_orm::{ColumnTrait, RelationTrait};
+use sea_orm::{DatabaseConnection, EntityTrait, JoinType, QuerySelect};
 use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -9,16 +12,15 @@ use uuid::Uuid;
 #[derive(Clone)]
 pub struct ProviderEngine {
     providers: HashMap<&'static str, Arc<dyn PaymentGateway>>,
-    config: Arc<dyn PaymentProviderConfigRepository>,
-    transaction_repository: Arc<dyn TransactionRepository>,
+    db: DatabaseConnection, // config: Arc<dyn PaymentProviderConfigRepository>,
+                            // transaction_repository: Arc<dyn TransactionRepository>,
 }
 
 impl ProviderEngine {
-    pub fn new(config_repo: Arc<dyn PaymentProviderConfigRepository>, transaction_repository: Arc<dyn TransactionRepository>) -> Self {
+    pub fn new(db: DatabaseConnection) -> Self {
         Self {
             providers: HashMap::new(),
-            config: config_repo,
-            transaction_repository,
+            db,
         }
     }
 
@@ -31,29 +33,38 @@ impl ProviderEngine {
     pub async fn get_provider(
         &self,
         merchant_id: Uuid,
-        name: &str,
+        name: domain::provider::Provider,
     ) -> anyhow::Result<Arc<dyn PaymentGateway>> {
-        let my_config = self
-            .config
-            .list_active_by_provider_code(merchant_id, name)
+        let my_config = merchant_config::Entity::find()
+            .join(
+                JoinType::InnerJoin,
+                merchant_config::Relation::PaymentProvider.def(),
+            )
+            .filter(merchant_config::Column::MerchantId.eq(merchant_id))
+            .filter(domain::payment_provider::Column::Code.eq(name.clone().to_string()))
+            .filter(merchant_config::Column::IsActive.eq(true))
+            .one(&self.db)
             .await?;
-        if my_config.is_empty() {
+        if my_config.is_none() {
             return Err(anyhow::anyhow!("Provider config not found"));
         }
-        let my_config = my_config.first().ok_or(anyhow::anyhow!("Provider config not found"))?;
-        
-        match name {
-            "arifpay" => {
-                let arif_config = serde_json::from_value::<ArifPayConfig>(my_config.config.clone())?;
-                let payment_gateway: Arc<dyn PaymentGateway> =
-                    Arc::new(ArifPayProvider::new(arif_config, my_config.provider_id, self.transaction_repository.clone()));
-                Ok(payment_gateway)
-            },
-            _ => Err(anyhow::anyhow!("Provider not found")),
+        match my_config {
+            None => Err(anyhow::anyhow!("Provider config not found")),
+            Some(config) => {
+                match name {
+                    domain::provider::Provider::ArifPay => {
+                        let arif_config =
+                            serde_json::from_value::<ArifPayConfig>(config.config.clone())?;
+                        let payment_gateway: Arc<dyn PaymentGateway> = Arc::new(
+                            ArifPayProvider::new(arif_config, config.provider_id, self.db.clone()),
+                        );
+                        Ok(payment_gateway)
+                    }
+                    _ => Err(anyhow::anyhow!("Provider not found")),
+                }
+            }
         }
     }
-    
-    
 
     /// Check if a provider exists
     pub fn has_provider(&self, name: &str) -> bool {

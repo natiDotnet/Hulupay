@@ -1,5 +1,5 @@
 use crate::application::ProviderEngine;
-use crate::PaymentVerificationResult;
+use crate::{domain, PaymentVerificationResult};
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -23,11 +23,11 @@ pub struct VerifyPaymentResponse {
 )]
 pub async fn verify_payment_handler(
     State(provider_engine): State<ProviderEngine>,
-    Path((provider_name, reference)): Path<(String, String)>,
+    Path((provider_name, reference)): Path<(domain::provider::Provider, String)>,
 ) -> Result<Json<VerifyPaymentResponse>, StatusCode> {
     // Get the provider from the engine based on provider_name
     let provider = provider_engine
-        .get_provider(Uuid::nil(), &provider_name)
+        .get_provider(Uuid::nil(), provider_name.clone())
         .await
         .map_err(|_| {
             eprintln!("Provider '{}' not found", provider_name);

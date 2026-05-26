@@ -28,13 +28,13 @@ use utoipa::ToSchema;
     rename_all = "UPPERCASE"
 )]
 pub enum Provider {
-    #[strum(serialize = "STRIPE")]
+    #[strum(serialize = "STRIPE", to_string = "STRIPE")]
     Stripe,
 
-    #[strum(serialize = "CHAPA")]
+    #[strum(serialize = "CHAPA", to_string = "CHAPA")]
     Chapa,
 
-    #[strum(serialize = "ARIFPAY")]
+    #[strum(serialize = "ARIFPAY", to_string = "ARIFPAY")]
     ArifPay,
 }
 

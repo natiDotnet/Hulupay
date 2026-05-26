@@ -1,9 +1,11 @@
+use crate::application::initiate_payment::InitiatePayment;
 use crate::application::{
     CreatePaymentProvider, CreatePaymentProviderConfig, DeletePaymentProvider,
     DeletePaymentProviderConfig, GetPaymentProvider, GetPaymentProviderConfig,
     GetPaymentProviderConfigByProvider, HandleProviderWebhook, ListPaymentProviderConfigs,
-    ListPaymentProviders, ProviderEngine, UpdatePaymentProvider, UpdatePaymentProviderConfig,
+    ListPaymentProviders, UpdatePaymentProvider, UpdatePaymentProviderConfig,
 };
+use crate::ProviderEngine;
 
 #[derive(Clone)]
 pub struct PaymentsState {
@@ -21,4 +23,5 @@ pub struct PaymentsState {
     pub list_payment_provider_configs: ListPaymentProviderConfigs,
 
     pub handle_provider_webhook: HandleProviderWebhook,
+    pub handle_initiate_payment: InitiatePayment,
 }

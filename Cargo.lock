@@ -2737,6 +2737,7 @@ dependencies = [
  "strum_macros",
  "thiserror 2.0.18",
  "time",
+ "tracing",
  "utoipa",
  "utoipa-axum",
  "uuid",

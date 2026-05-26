@@ -1,3 +1,4 @@
+use sea_orm::prelude::DateTimeUtc;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
@@ -7,7 +8,7 @@ pub struct PaymentProvider {
     pub code: String,
     pub name: String,
     pub is_active: bool,
-    pub created_at: OffsetDateTime,
+    pub created_at: DateTimeUtc,
 }
 
 #[derive(Debug, Clone)]

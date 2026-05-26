@@ -24,6 +24,7 @@ pub struct Model {
     pub currency: String,
     pub status: PaymentStatus,
     pub provider: Provider,
+    #[sea_orm(unique)]
     pub idempotency_key: String,
     pub retry_count: i32,
     pub created_at: DateTimeUtc,

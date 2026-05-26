@@ -1,15 +1,19 @@
-use crate::application::repository::PaymentProviderRepository;
-use std::sync::Arc;
+use crate::domain;
+use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, IntoActiveModel, Set};
 use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct UpdatePaymentProvider {
-    repository: Arc<dyn PaymentProviderRepository>,
+    db: DatabaseConnection,
+    // repository: Arc<dyn PaymentProviderRepository>,
 }
 
 impl UpdatePaymentProvider {
-    pub fn new(repository: Arc<dyn PaymentProviderRepository>) -> Self {
-        Self { repository }
+    pub fn new(
+        db: DatabaseConnection,
+        // repository: Arc<dyn PaymentProviderRepository>,
+    ) -> Self {
+        Self { db }
     }
 
     pub async fn execute(
@@ -19,18 +23,17 @@ impl UpdatePaymentProvider {
         name: String,
         is_active: bool,
     ) -> anyhow::Result<()> {
-        let mut provider = self
-            .repository
-            .get_by_id(id)
+        let mut provider = domain::payment_provider::Entity::find_by_id(id)
+            .one(&self.db)
             .await?
-            .ok_or_else(|| anyhow::anyhow!("Payment provider not found"))?;
+            .ok_or_else(|| anyhow::anyhow!("Payment provider not found"))?
+            .into_active_model();
 
-        provider.code = code;
-        provider.name = name;
-        provider.is_active = is_active;
+        provider.code = Set(code);
+        provider.name = Set(name);
+        provider.is_active = Set(is_active);
 
-        self.repository.update(&provider).await?;
-
+        provider.save(&self.db).await?;
         Ok(())
     }
 }

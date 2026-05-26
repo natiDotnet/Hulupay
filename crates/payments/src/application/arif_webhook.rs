@@ -1,21 +1,25 @@
 use crate::application::payment_gateway::WebhookHandler;
-use crate::application::{PaymentGatewayError, TransactionRepository};
-use crate::domain::{ArifPayment, ArifTransactionStatus};
-use crate::{PaymentMethod, TransactionStatus};
+use crate::application::PaymentGatewayError;
+use crate::domain;
+use crate::domain::payment_status::{PaymentStatus, TxStatus};
+use crate::domain::payment_transaction::ActiveModel;
+use crate::domain::{payment_order, payment_transaction, ArifPayment, ArifTransactionStatus};
 use async_trait::async_trait;
+use sea_orm::Value::Decimal;
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder, Set,
+    TransactionTrait,
+};
 use serde_json::Value;
-use std::str::FromStr;
-use std::sync::Arc;
+use tracing::debug;
 
 #[derive(Clone)]
 pub struct ArifWebhook {
-    transaction_repository: Arc<dyn TransactionRepository>,
+    db: DatabaseConnection,
 }
 impl ArifWebhook {
-    pub fn new(transaction_repository: Arc<dyn TransactionRepository>) -> Self {
-        Self {
-            transaction_repository,
-        }
+    pub fn new(db: DatabaseConnection) -> Self {
+        Self { db }
     }
 }
 #[async_trait]
@@ -37,49 +41,69 @@ impl WebhookHandler for ArifWebhook {
     }
 
     async fn success_handler(&self, request: Value) -> Result<(), PaymentGatewayError> {
-        self.change_status(request, TransactionStatus::Completed)
-            .await
+        self.change_status(request, TxStatus::Success).await
     }
 
     async fn failure_handler(&self, request: Value) -> Result<(), PaymentGatewayError> {
-        self.change_status(request, TransactionStatus::Failed).await
+        self.change_status(request, TxStatus::Failed).await
     }
 
     async fn change_status(
         &self,
         request: Value,
-        status: TransactionStatus,
+        status: TxStatus,
     ) -> Result<(), PaymentGatewayError> {
         let webhook: ArifPayment = serde_json::from_value(request.clone())
             .map_err(|_| PaymentGatewayError::InvalidResponse)?;
-
-        match self
-            .transaction_repository
-            .get_by_nonce(&webhook.nonce)
+        // Ok(())
+        let order = domain::payment_order::Entity::find_by_idempotency_key(&webhook.nonce)
+            .one(&self.db)
             .await
-        {
-            Ok(Some(mut transaction)) => {
-                // Update transaction status and payment method
-                transaction.status = status;
-                transaction.webhook_body = Some(request);
-                transaction.payment_method =
-                    Some(PaymentMethod::from_str(&webhook.payment_method).unwrap_or_default());
+            .map_err(|err| {
+                println!("Error creating order: {:?}", err);
+                PaymentGatewayError::InvalidResponse
+            })?;
 
-                // Save updated transaction to database
-                let _ = self.transaction_repository.update(&transaction).await;
+        match order {
+            Some(order) => {
+                let txn = self
+                    .db
+                    .begin()
+                    .await
+                    .map_err(|_| PaymentGatewayError::InvalidResponse)?;
+                payment_transaction::ActiveModel::new_state(
+                    &order,
+                    &status,
+                    rust_decimal::Decimal::try_from(webhook.total_amount).unwrap(),
+                    request.clone(),
+                )
+                .save(&self.db)
+                .await
+                .map_err(|_| PaymentGatewayError::InvalidResponse)?;
 
-                println!("Payment successful: {:?}", webhook);
+                let mut order: payment_order::ActiveModel = order.into();
+                order.status = Set(match status {
+                    TxStatus::Pending => PaymentStatus::Processing,
+                    TxStatus::Success => PaymentStatus::Completed,
+                    TxStatus::Failed => PaymentStatus::Failed,
+                });
+                order.currency = Set(webhook.payment_method.clone());
+
+                order
+                    .save(&self.db)
+                    .await
+                    .map_err(|_| PaymentGatewayError::InvalidResponse)?;
+
+                txn.commit()
+                    .await
+                    .map_err(|_| PaymentGatewayError::InvalidResponse)?;
+                debug!(?webhook, "Payment successful");
                 Ok(())
             }
-            Ok(None) => {
+            None => {
                 // Handle case where transaction is not found
-                println!("Transaction not found: {:?}", webhook.nonce);
-                Err(PaymentGatewayError::InvalidResponse)
-            }
-            Err(e) => {
-                // Handle repository error
-                println!("Error getting transaction: {:?}", e);
-                Err(PaymentGatewayError::InvalidResponse)
+                debug!(?webhook.nonce, "Transaction not found");
+                Err(PaymentGatewayError::TransactionNotFound)
             }
         }
     }

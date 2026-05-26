@@ -31,7 +31,7 @@ where
 #[macro_export]
 macro_rules! cache_get {
     ($cache:expr, $type:ty, $key:expr) => {
-        $crate::application::cache_helpers::get_cache::<$type>(
+        $crate::application::helper::get_cache::<$type>(
             $cache,
             $key,
         )

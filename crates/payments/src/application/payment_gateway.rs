@@ -3,6 +3,7 @@ use crate::application::payment_gateway_error::PaymentGatewayError;
 use crate::TransactionStatus;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+use crate::domain::payment_status::TxStatus;
 
 #[async_trait::async_trait]
 pub trait PaymentGateway: Send + Sync {
@@ -32,7 +33,7 @@ pub trait WebhookHandler: Send + Sync {
     async fn change_status(
         &self,
         request: serde_json::Value,
-        status: TransactionStatus,
+        status: TxStatus,
     ) -> Result<(), PaymentGatewayError>;
 }
 
@@ -40,10 +41,12 @@ pub trait WebhookHandler: Send + Sync {
 pub struct PaymentInitResult {
     pub checkout_url: String,
     pub provider_reference: String,
+    pub row_response: String,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct PaymentVerificationResult {
     pub success: bool,
     pub provider_reference: String,
+    pub row_response: String,
 }

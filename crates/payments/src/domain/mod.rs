@@ -1,10 +1,12 @@
 mod error;
 mod errors;
+pub mod merchant_config;
 pub mod nati;
 mod payment;
 mod payment_event;
 mod payment_method;
 pub mod payment_order;
+pub mod payment_provider;
 pub mod payment_status;
 pub mod payment_transaction;
 pub mod provider;

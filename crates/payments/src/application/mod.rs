@@ -35,4 +35,4 @@ pub use payment_provider_config::list_payment_provider_configs::ListPaymentProvi
 pub use payment_provider_config::update_payment_provider_config::UpdatePaymentProviderConfig;
 pub use provider_engine::ProviderEngine;
 pub use repository::{PaymentProviderConfigRepository, PaymentProviderRepository};
-pub use transaction_repository::TransactionRepository;
+// pub use transaction_repository::TransactionRepository;

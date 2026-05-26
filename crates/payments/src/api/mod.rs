@@ -21,15 +21,16 @@ use axum::extract::FromRef;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
+use crate::application::cache_service::CacheService;
+use crate::application::initiate_payment::InitiatePayment;
 use crate::application::{
     ArifWebhook, CreatePaymentProvider, CreatePaymentProviderConfig, DeletePaymentProvider,
     DeletePaymentProviderConfig, GetPaymentProvider, GetPaymentProviderConfig,
     GetPaymentProviderConfigByProvider, HandleProviderWebhook, ListPaymentProviderConfigs,
     ListPaymentProviders, PaymentProviderConfigRepository, PaymentProviderRepository,
-    ProviderEngine, TransactionRepository, UpdatePaymentProvider, UpdatePaymentProviderConfig,
-    WebhookHandler,
+    ProviderEngine, UpdatePaymentProvider, UpdatePaymentProviderConfig, WebhookHandler,
 };
-use crate::infrastructure::{PgPaymentProviderRepository, PgTransactionRepository};
+use crate::infrastructure::redis_service::RedisCacheService;
 use auth::api::middleware::AuthRouterExt;
 use auth::Role;
 use deadpool_redis::{Config, Runtime};
@@ -167,24 +168,26 @@ pub fn router(pool: Pool<Postgres>, db: &DatabaseConnection) -> OpenApiRouter {
 }
 
 fn build_state(pool: Pool<Postgres>, db: &DatabaseConnection) -> PaymentsState {
-    let provider_repo = build_provider_repository(pool.clone(), db);
+    // let provider_repo = build_provider_repository(pool.clone(), db);
     let config_repo = build_config_repository(pool.clone());
-    let transaction_repository = Arc::new(PgTransactionRepository::new(pool.clone()));
-    let provider_engine = build_provider_engine(&config_repo, transaction_repository.clone());
+    // let transaction_repository = Arc::new(PgTransactionRepository::new(pool.clone()));
+    let provider_engine = build_provider_engine(db);
 
     let mut webhook_handlers: HashMap<String, Arc<dyn WebhookHandler>> = HashMap::new();
     webhook_handlers.insert(
         "arifpay".to_string(),
-        Arc::new(ArifWebhook::new(transaction_repository.clone())),
+        Arc::new(ArifWebhook::new(db.clone())),
     );
+    let cache_service: Arc<dyn CacheService> =
+        Arc::new(RedisCacheService::new(create_redis_pool()));
 
     PaymentsState {
-        provider_engine,
-        create_payment_provider: CreatePaymentProvider::new(provider_repo.clone()),
-        get_payment_provider: GetPaymentProvider::new(provider_repo.clone()),
-        update_payment_provider: UpdatePaymentProvider::new(provider_repo.clone()),
-        delete_payment_provider: DeletePaymentProvider::new(provider_repo.clone()),
-        list_payment_providers: ListPaymentProviders::new(provider_repo.clone()),
+        provider_engine: provider_engine.clone(),
+        create_payment_provider: CreatePaymentProvider::new(db.clone()),
+        get_payment_provider: GetPaymentProvider::new(db.clone()),
+        update_payment_provider: UpdatePaymentProvider::new(db.clone()),
+        delete_payment_provider: DeletePaymentProvider::new(db.clone()),
+        list_payment_providers: ListPaymentProviders::new(db.clone()),
         create_payment_provider_config: CreatePaymentProviderConfig::new(
             config_repo.clone(),
             provider_repo.clone(),
@@ -198,6 +201,11 @@ fn build_state(pool: Pool<Postgres>, db: &DatabaseConnection) -> PaymentsState {
         delete_payment_provider_config: DeletePaymentProviderConfig::new(config_repo.clone()),
         list_payment_provider_configs: ListPaymentProviderConfigs::new(config_repo.clone()),
         handle_provider_webhook: HandleProviderWebhook::new(webhook_handlers),
+        handle_initiate_payment: InitiatePayment::new(
+            db.clone(),
+            cache_service,
+            provider_engine.clone(),
+        ),
     }
 }
 
@@ -205,16 +213,17 @@ fn build_provider_repository(
     pool: Pool<Postgres>,
     db: &DatabaseConnection,
 ) -> Arc<dyn PaymentProviderRepository> {
-    Arc::new(PgPaymentProviderRepository::new(pool, db.clone()))
+    // Arc::new(PgPaymentProviderRepository::new(pool, db.clone()))
 }
 
 fn build_config_repository(pool: Pool<Postgres>) -> Arc<dyn PaymentProviderConfigRepository> {
-    Arc::new(crate::infrastructure::PgPaymentProviderConfigRepository::new(pool))
+    // Arc::new(crate::infrastructure::PgPaymentProviderConfigRepository::new(pool))
 }
 
 fn build_provider_engine(
-    config_repo: &Arc<dyn PaymentProviderConfigRepository>,
-    transaction_repository: Arc<dyn TransactionRepository>,
+    // config_repo: &Arc<dyn PaymentProviderConfigRepository>,
+    db: &DatabaseConnection,
+    // transaction_repository: Arc<dyn TransactionRepository>,
 ) -> ProviderEngine {
     // let arifpay_config = ArifPayConfig::new(
     //     env::var("ARIFPAY_API_KEY").unwrap_or_else(|_| "test_key".to_string()),
@@ -222,7 +231,7 @@ fn build_provider_engine(
     // );
     // let arifpay_provider = crate::infrastructure::ArifPayProvider::new(arifpay_config);
 
-    ProviderEngine::new(config_repo.clone(), transaction_repository.clone())
+    ProviderEngine::new(db.clone())
 }
 
 pub fn create_redis_pool() -> deadpool_redis::Pool {

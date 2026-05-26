@@ -4,9 +4,10 @@
 use crate::domain;
 use crate::domain::payment_status::{TxDirection, TxStatus};
 use crate::domain::provider::Provider;
+use chrono::Utc;
 use rust_decimal::Decimal;
 use sea_orm::entity::prelude::*;
-use sea_orm::DeriveEntityModel;
+use sea_orm::{DeriveEntityModel, Order, Set};
 use uuid::Uuid;
 
 #[sea_orm::model]
@@ -32,6 +33,28 @@ pub struct Model {
 }
 
 impl ActiveModelBehavior for ActiveModel {}
+impl ActiveModel {
+    pub fn new_state(
+        order: &domain::payment_order::Model,
+        status: &TxStatus,
+        amount: Decimal,
+        response: serde_json::Value,
+    ) -> Self {
+        Self {
+            id: Set(Uuid::now_v7()),
+            updated_at: Set(Utc::now()),
+            created_at: Set(Utc::now()),
+            payment_order_id: Set(order.id),
+            provider: Set(order.provider.clone()),
+            currency: Set(order.currency.clone()),
+            status: Set(status.clone()),
+            amount: Set(amount),
+            direction: Set(TxDirection::Charge),
+            provider_tx_id: Set(Some(order.order_ref.clone())),
+            provider_response: Set(response),
+        }
+    }
+}
 
 // impl PaymentTransaction {
 //     pub fn new_charge(order: &PaymentOrder) -> Self {
