@@ -1,3 +1,4 @@
+use chrono::Utc;
 use sea_orm::prelude::DateTimeUtc;
 use time::OffsetDateTime;
 use uuid::Uuid;
@@ -19,6 +20,6 @@ pub struct PaymentProviderConfig {
     pub is_test_mode: bool,
     pub config: serde_json::Value,
     pub is_active: bool,
-    pub created_at: OffsetDateTime,
-    pub updated_at: OffsetDateTime,
+    pub created_at: DateTimeUtc,
+    pub updated_at: DateTimeUtc,
 }

@@ -23,6 +23,10 @@ async fn main() -> anyhow::Result<()> {
         .connect(&db_url)
         .await?;
     let db = &Database::connect(db_url).await?;
+    db.get_schema_registry("merchant::domain::*")
+        .sync(db)
+        .await?;
+    db.get_schema_registry("auth::domain::*").sync(db).await?;
     // synchronizes database schema with entity definitions
     db.get_schema_registry("payments::domain::*")
         .sync(db)

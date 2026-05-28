@@ -16,25 +16,25 @@ pub struct MerchantIdParams {
 #[derive(Deserialize, IntoParams)]
 pub struct PaginationQuery {
     #[serde(default = "default_page")]
-    pub page: i64,
+    pub page: u64,
 
     #[serde(default = "default_page_size")]
-    pub page_size: i64,
+    pub page_size: u64,
 }
 
-fn default_page() -> i64 {
+fn default_page() -> u64 {
     1
 }
-fn default_page_size() -> i64 {
+fn default_page_size() -> u64 {
     20
 }
 
 #[derive(Serialize, ToSchema)]
 pub struct PaginatedConfigsResponse {
     pub items: Vec<PaymentProviderConfigResponse>,
-    pub total: i64,
-    pub page: i64,
-    pub page_size: i64,
+    pub total: u64,
+    pub page: u64,
+    pub page_size: u64,
 }
 
 #[utoipa::path(

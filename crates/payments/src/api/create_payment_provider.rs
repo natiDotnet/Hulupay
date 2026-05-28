@@ -1,7 +1,7 @@
 use crate::application::CreatePaymentProvider;
 use axum::{extract::State, http::StatusCode, Json};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use time::OffsetDateTime;
 use utoipa::ToSchema;
 
 #[derive(Deserialize, ToSchema)]
@@ -50,7 +50,7 @@ pub struct ProviderResponse {
     pub code: String,
     pub name: String,
     pub is_active: bool,
-    #[serde(with = "time::serde::rfc3339")]
+    // #[serde(with = "time::serde::rfc3339")]
     #[schema(value_type = String, format = DateTime)]
-    pub created_at: OffsetDateTime,
+    pub created_at: DateTime<Utc>,
 }

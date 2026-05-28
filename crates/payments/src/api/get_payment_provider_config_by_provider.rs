@@ -1,16 +1,18 @@
 use crate::application::GetPaymentProviderConfigByProvider;
+use crate::domain;
 use auth::api::AuthUser;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
     Json,
 };
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
 #[derive(Deserialize, IntoParams)]
 pub struct ProviderNameParams {
-    pub provider: String,
+    pub provider: domain::provider::Provider,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -22,12 +24,12 @@ pub struct PaymentProviderConfigByProviderResponse {
     pub is_test_mode: bool,
     pub config: serde_json::Value,
     pub is_active: bool,
-    #[serde(with = "time::serde::rfc3339")]
+    // #[serde(with = "time::serde::rfc3339")]
     #[schema(value_type = String, format = DateTime)]
-    pub created_at: time::OffsetDateTime,
-    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: DateTime<Utc>,
+    // #[serde(with = "time::serde::rfc3339")]
     #[schema(value_type = String, format = DateTime)]
-    pub updated_at: time::OffsetDateTime,
+    pub updated_at: DateTime<Utc>,
 }
 
 impl From<crate::domain::PaymentProviderConfig> for PaymentProviderConfigByProviderResponse {
@@ -58,7 +60,7 @@ pub async fn get_payment_provider_config_by_provider_handler(
     State(usecase): State<GetPaymentProviderConfigByProvider>,
     Path(params): Path<ProviderNameParams>,
 ) -> Result<Json<PaymentProviderConfigByProviderResponse>, StatusCode> {
-    let config = usecase.execute(user, &params.provider).await.map_err(|e| {
+    let config = usecase.execute(user, params.provider).await.map_err(|e| {
         eprintln!("Error getting payment provider config by provider: {:?}", e);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;

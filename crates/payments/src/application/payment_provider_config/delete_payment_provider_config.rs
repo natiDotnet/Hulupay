@@ -1,18 +1,22 @@
-use crate::application::repository::PaymentProviderConfigRepository;
-use std::sync::Arc;
+use crate::domain;
+use sea_orm::{DatabaseConnection, EntityTrait};
 use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct DeletePaymentProviderConfig {
-    repository: Arc<dyn PaymentProviderConfigRepository>,
+    db: DatabaseConnection,
 }
 
 impl DeletePaymentProviderConfig {
-    pub fn new(repository: Arc<dyn PaymentProviderConfigRepository>) -> Self {
-        Self { repository }
+    pub fn new(
+        db: DatabaseConnection, ) -> Self {
+        Self { db }
     }
 
     pub async fn execute(&self, id: Uuid) -> anyhow::Result<()> {
-        self.repository.delete(id).await
+        domain::merchant_config::Entity::delete_by_id(id)
+            .exec(&self.db)
+            .await?;
+        Ok(())
     }
 }

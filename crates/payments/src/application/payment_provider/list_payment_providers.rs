@@ -7,14 +7,10 @@ use sea_orm::{DatabaseConnection, EntityTrait, Order, PaginatorTrait};
 #[derive(Clone)]
 pub struct ListPaymentProviders {
     db: DatabaseConnection,
-    // repository: Arc<dyn PaymentProviderRepository>,
 }
 
 impl ListPaymentProviders {
-    pub fn new(
-        db: DatabaseConnection,
-        // repository: Arc<dyn PaymentProviderRepository>,
-    ) -> Self {
+    pub fn new(db: DatabaseConnection) -> Self {
         Self { db }
     }
 

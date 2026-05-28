@@ -1,8 +1,8 @@
 use crate::application::UpdatePaymentProviderConfig;
 use axum::{
-    Json,
     extract::{Path, State},
     http::StatusCode,
+    Json,
 };
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
@@ -39,14 +39,7 @@ pub async fn update_payment_provider_config_handler(
     let id = uuid::Uuid::parse_str(&params.id).map_err(|_| StatusCode::BAD_REQUEST)?;
 
     usecase
-        .execute(
-            id,
-            payload.merchant_id,
-            payload.provider_id,
-            payload.is_test_mode,
-            payload.config,
-            payload.is_active,
-        )
+        .execute(id, payload.is_test_mode, payload.config, payload.is_active)
         .await
         .map_err(|e| {
             eprintln!("Error updating payment provider config: {:?}", e);

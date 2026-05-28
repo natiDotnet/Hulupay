@@ -1,43 +1,39 @@
-use crate::application::repository::PaymentProviderConfigRepository;
+use crate::domain;
+use anyhow::anyhow;
+use chrono::Utc;
+use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, IntoActiveModel, Set};
 use serde_json::Value;
-use std::sync::Arc;
-use time::OffsetDateTime;
 use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct UpdatePaymentProviderConfig {
-    repository: Arc<dyn PaymentProviderConfigRepository>,
+    db: DatabaseConnection,
 }
 
 impl UpdatePaymentProviderConfig {
-    pub fn new(repository: Arc<dyn PaymentProviderConfigRepository>) -> Self {
-        Self { repository }
+    pub fn new(db: DatabaseConnection) -> Self {
+        Self { db }
     }
 
     pub async fn execute(
         &self,
         id: Uuid,
-        merchant_id: Uuid,
-        provider_id: Uuid,
         is_test_mode: bool,
         config: Value,
         is_active: bool,
     ) -> anyhow::Result<()> {
-        let mut config_entity = self
-            .repository
-            .get_by_id(id)
+        let config_entity = domain::merchant_config::Entity::find_by_id(id)
+            .one(&self.db)
             .await?
-            .ok_or_else(|| anyhow::anyhow!("Payment provider config not found"))?;
+            .ok_or_else(|| anyhow!("merchant provider config not found"))?;
 
-        config_entity.merchant_id = merchant_id;
-        config_entity.provider_id = provider_id;
-        config_entity.is_test_mode = is_test_mode;
-        config_entity.config = config;
-        config_entity.is_active = is_active;
-        config_entity.updated_at = OffsetDateTime::now_utc();
+        let mut config_entity = config_entity.into_active_model();
+        config_entity.is_test_mode = Set(is_test_mode);
+        config_entity.config = Set(config);
+        config_entity.is_active = Set(is_active);
+        config_entity.updated_at = Set(Utc::now());
 
-        self.repository.update(&config_entity).await?;
-
+        config_entity.save(&self.db).await?;
         Ok(())
     }
 }

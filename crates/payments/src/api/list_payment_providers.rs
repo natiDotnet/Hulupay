@@ -1,35 +1,35 @@
 use super::create_payment_provider::ProviderResponse;
 use crate::application::ListPaymentProviders;
 use axum::{
-    Json,
     extract::{Query, State},
     http::StatusCode,
+    Json,
 };
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
 #[derive(Deserialize, IntoParams)]
 pub struct PaginationQuery {
-    #[serde(default = "default_page")]
-    pub page: i64,
+    // #[serde(default = "default_page")]
+    pub page: u64,
 
-    #[serde(default = "default_page_size")]
-    pub page_size: i64,
+    // #[serde(default = "default_page_size")]
+    pub page_size: u64,
 }
 
-fn default_page() -> i64 {
+fn default_page() -> u64 {
     1
 }
-fn default_page_size() -> i64 {
+fn default_page_size() -> u64 {
     20
 }
 
 #[derive(Serialize, ToSchema)]
 pub struct PaginatedProvidersResponse {
     pub items: Vec<ProviderResponse>,
-    pub total: i64,
-    pub page: i64,
-    pub page_size: i64,
+    pub total: u64,
+    pub page: u64,
+    pub page_size: u64,
 }
 
 #[utoipa::path(

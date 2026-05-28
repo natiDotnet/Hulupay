@@ -1,5 +1,6 @@
 use crate::application::CreatePaymentProviderConfig;
 use axum::{Json, extract::State, http::StatusCode};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -31,12 +32,12 @@ pub struct PaymentProviderConfigResponse {
     pub is_test_mode: bool,
     pub config: serde_json::Value,
     pub is_active: bool,
-    #[serde(with = "time::serde::rfc3339")]
+    // #[serde(with = "time::serde::rfc3339")]
     #[schema(value_type = String, format = DateTime)]
-    pub created_at: time::OffsetDateTime,
-    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: DateTime<Utc>,
+    // #[serde(with = "time::serde::rfc3339")]
     #[schema(value_type = String, format = DateTime)]
-    pub updated_at: time::OffsetDateTime,
+    pub updated_at: DateTime<Utc>,
 }
 
 impl From<crate::domain::PaymentProviderConfig> for PaymentProviderConfigResponse {

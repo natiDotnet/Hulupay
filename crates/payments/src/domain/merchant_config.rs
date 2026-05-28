@@ -18,8 +18,8 @@ pub struct Model {
     pub is_test_mode: bool,
     pub config: serde_json::Value,
     pub is_active: bool,
-    pub created_at: OffsetDateTime,
-    pub updated_at: OffsetDateTime,
+    pub created_at: DateTimeUtc,
+    pub updated_at: DateTimeUtc,
     #[sea_orm(belongs_to, from = "provider_id", to = "id")]
     pub payment: HasOne<domain::payment_provider::Entity>,
 }
