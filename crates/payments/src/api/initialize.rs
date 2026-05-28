@@ -4,7 +4,6 @@ use crate::domain;
 use axum::extract::Path;
 use axum::{extract::State, http::StatusCode, Json};
 use rust_decimal::prelude::ToPrimitive;
-use utoipa::ToSchema;
 
 #[utoipa::path(
     post,

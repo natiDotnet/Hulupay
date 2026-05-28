@@ -3,7 +3,6 @@ use crate::application::password::hash_password;
 use crate::domain::user;
 use crate::Role;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, SelectExt, Set};
-use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct RegisterUser {

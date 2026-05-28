@@ -53,16 +53,10 @@ pub struct ArifPayProvider {
     config: ArifPayConfig,
     provider_id: Uuid,
     db: DatabaseConnection,
-    // transaction_repository: Arc<dyn TransactionRepository>,
 }
 
 impl ArifPayProvider {
-    pub fn new(
-        config: ArifPayConfig,
-        provider_id: Uuid,
-        db: DatabaseConnection,
-        // transaction_repository: Arc<dyn TransactionRepository>,
-    ) -> Self {
+    pub fn new(config: ArifPayConfig, provider_id: Uuid, db: DatabaseConnection) -> Self {
         let mut headers = reqwest::header::HeaderMap::new();
         headers.insert("x-arifpay-key", config.api_key.parse().unwrap());
         headers.insert("Content-Type", "application/json".parse().unwrap());
@@ -78,7 +72,6 @@ impl ArifPayProvider {
             config,
             provider_id,
             db,
-            // transaction_repository,
         }
     }
 

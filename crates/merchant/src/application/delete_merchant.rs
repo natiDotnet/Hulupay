@@ -1,13 +1,11 @@
-use crate::application::repository::MerchantRepository;
 use crate::domain::merchant;
 use anyhow::anyhow;
 use sea_orm::{DatabaseConnection, EntityTrait, ModelTrait};
-use std::sync::Arc;
 use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct DeleteMerchant {
-    db: DatabaseConnection
+    db: DatabaseConnection,
 }
 
 impl DeleteMerchant {

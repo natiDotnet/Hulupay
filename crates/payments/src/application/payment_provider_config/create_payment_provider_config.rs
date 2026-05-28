@@ -1,13 +1,10 @@
-use crate::application::repository::{PaymentProviderConfigRepository, PaymentProviderRepository};
+use crate::domain;
 use crate::domain::PaymentProviderConfig;
-use serde_json::Value;
-use std::sync::Arc;
 use anyhow::anyhow;
 use chrono::Utc;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
-use time::OffsetDateTime;
+use serde_json::Value;
 use uuid::Uuid;
-use crate::domain;
 
 #[derive(Clone)]
 pub struct CreatePaymentProviderConfig {
@@ -15,12 +12,8 @@ pub struct CreatePaymentProviderConfig {
 }
 
 impl CreatePaymentProviderConfig {
-    pub fn new(
-        db: DatabaseConnection,
-    ) -> Self {
-        Self {
-            db,
-        }
+    pub fn new(db: DatabaseConnection) -> Self {
+        Self { db }
     }
 
     pub async fn execute(
@@ -31,9 +24,11 @@ impl CreatePaymentProviderConfig {
         config: Value,
         is_active: bool,
     ) -> anyhow::Result<PaymentProviderConfig> {
-        domain::payment_provider::Entity::find_by_id(provider_id).one(&self.db).await?
+        domain::payment_provider::Entity::find_by_id(provider_id)
+            .one(&self.db)
+            .await?
             .ok_or_else(|| anyhow!("Payment provider does not exist"))?;
-        
+
         let config_entity = domain::merchant_config::ActiveModel {
             id: Set(Uuid::now_v7()),
             merchant_id: Set(merchant_id),
@@ -43,8 +38,10 @@ impl CreatePaymentProviderConfig {
             is_active: Set(is_active),
             created_at: Set(Utc::now()),
             updated_at: Set(Utc::now()),
-        }.insert(&self.db).await?;
-        
+        }
+        .insert(&self.db)
+        .await?;
+
         Ok(PaymentProviderConfig {
             id: config_entity.id,
             merchant_id: config_entity.merchant_id,

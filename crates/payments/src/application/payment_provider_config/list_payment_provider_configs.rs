@@ -3,7 +3,8 @@ use crate::domain::{merchant_config, PaymentProviderConfig};
 use anyhow::anyhow;
 use domain::payment_provider;
 use merchant::application::ApplicationError;
-use sea_orm::{DatabaseConnection, EntityTrait, PaginatorTrait, QueryOrder};
+use sea_orm::ColumnTrait;
+use sea_orm::{DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder};
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -23,6 +24,7 @@ impl ListPaymentProviderConfigs {
         page_size: u64,
     ) -> anyhow::Result<PaginatedResponse<PaymentProviderConfig>> {
         let paginator = merchant_config::Entity::find()
+            .filter(merchant_config::Column::MerchantId.eq(merchant_id))
             .order_by_desc(payment_provider::Column::CreatedAt)
             .paginate(&self.db, page_size);
 

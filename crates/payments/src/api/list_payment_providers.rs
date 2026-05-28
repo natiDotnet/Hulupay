@@ -10,10 +10,10 @@ use utoipa::{IntoParams, ToSchema};
 
 #[derive(Deserialize, IntoParams)]
 pub struct PaginationQuery {
-    // #[serde(default = "default_page")]
+    #[serde(default = "default_page")]
     pub page: u64,
 
-    // #[serde(default = "default_page_size")]
+    #[serde(default = "default_page_size")]
     pub page_size: u64,
 }
 

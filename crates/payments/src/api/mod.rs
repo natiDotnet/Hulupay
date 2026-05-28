@@ -32,12 +32,10 @@ use crate::application::{
 };
 use crate::domain;
 use crate::infrastructure::redis_service::RedisCacheService;
-use auth::Role;
 use auth::api::middleware::AuthRouterExt;
+use auth::Role;
 use deadpool_redis::{Config, Runtime};
 use sea_orm::DatabaseConnection;
-use sqlx::Pool;
-use sqlx::Postgres;
 use std::sync::Arc;
 
 impl FromRef<PaymentsState> for ProviderEngine {
@@ -118,7 +116,7 @@ impl FromRef<PaymentsState> for HandleProviderWebhook {
     }
 }
 
-pub fn router(pool: Pool<Postgres>, db: &DatabaseConnection) -> OpenApiRouter {
+pub fn router(db: &DatabaseConnection) -> OpenApiRouter {
     let state = build_state(db);
 
     let master_admin_routes = OpenApiRouter::new()

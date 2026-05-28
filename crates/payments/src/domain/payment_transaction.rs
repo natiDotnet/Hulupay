@@ -7,7 +7,7 @@ use crate::domain::provider::Provider;
 use chrono::Utc;
 use rust_decimal::Decimal;
 use sea_orm::entity::prelude::*;
-use sea_orm::{DeriveEntityModel, Order, Set};
+use sea_orm::{DeriveEntityModel, Set};
 use uuid::Uuid;
 
 #[sea_orm::model]

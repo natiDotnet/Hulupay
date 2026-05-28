@@ -9,15 +9,12 @@ mod update_merchant;
 pub use state::MerchantState;
 
 use crate::application::{
-    CreateMerchant, DeleteMerchant, GetMerchant, ListMerchants, MerchantRepository, UpdateMerchant,
+    CreateMerchant, DeleteMerchant, GetMerchant, ListMerchants, UpdateMerchant,
 };
-use crate::infrastructure::MerchantRepositoryPostgres;
 use auth::api::middleware::AuthRouterExt;
 use auth::Role;
 use axum::extract::FromRef;
 use sea_orm::DatabaseConnection;
-use sqlx::{Pool, Postgres};
-use std::sync::Arc;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
@@ -51,9 +48,7 @@ impl FromRef<MerchantState> for ListMerchants {
     }
 }
 
-pub fn router(pool: Pool<Postgres>, db: &DatabaseConnection) -> OpenApiRouter {
-    let repo: Arc<dyn MerchantRepository> = Arc::new(MerchantRepositoryPostgres::new(pool));
-
+pub fn router(db: &DatabaseConnection) -> OpenApiRouter {
     let state = MerchantState {
         create_use_case: CreateMerchant::new(db.clone()),
         get_use_case: GetMerchant::new(db.clone()),

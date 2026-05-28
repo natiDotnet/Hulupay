@@ -10,13 +10,12 @@ pub use state::AuthState;
 
 use axum::extract::FromRef;
 use sea_orm::DatabaseConnection;
-use sqlx::PgPool;
 use std::sync::Arc;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use crate::application::{LoginUser, RegisterUser, TokenService, UserRepository};
-use crate::infrastructure::{JwtTokenService};
+use crate::application::{LoginUser, RegisterUser, TokenService};
+use crate::infrastructure::JwtTokenService;
 
 impl FromRef<AuthState> for RegisterUser {
     fn from_ref(state: &AuthState) -> Self {
@@ -30,7 +29,7 @@ impl FromRef<AuthState> for LoginUser {
     }
 }
 
-pub fn router(pool: PgPool, db: &DatabaseConnection) -> OpenApiRouter {
+pub fn router(db: &DatabaseConnection) -> OpenApiRouter {
     // let repo: Arc<dyn UserRepository> = Arc::new(PgUserRepository::new(pool));
     let jwt_secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
     let token_service: Arc<dyn TokenService> = Arc::new(JwtTokenService::new(jwt_secret));

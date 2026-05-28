@@ -1,17 +1,15 @@
-use sea_orm::DatabaseConnection;
-use sqlx::PgPool;
-
-pub struct PgPaymentProviderRepository {
-    pool: PgPool,
-    db: DatabaseConnection,
-}
-
-impl PgPaymentProviderRepository {
-    pub fn new(pool: PgPool, db: DatabaseConnection) -> Self {
-        Self { pool, db }
-    }
-}
-
+// use sea_orm::DatabaseConnection;
+// 
+// pub struct PgPaymentProviderRepository {
+//     db: DatabaseConnection,
+// }
+// 
+// impl PgPaymentProviderRepository {
+//     pub fn new(db: DatabaseConnection) -> Self {
+//         Self { db }
+//     }
+// }
+// 
 // #[async_trait]
 // impl PaymentProviderRepository for PgPaymentProviderRepository {
 //     async fn create(&self, provider: &Provider) -> anyhow::Result<()> {

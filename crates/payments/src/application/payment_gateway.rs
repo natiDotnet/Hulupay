@@ -1,9 +1,8 @@
 use crate::application::dto::InitializePaymentCommand;
 use crate::application::payment_gateway_error::PaymentGatewayError;
-use crate::TransactionStatus;
+use crate::domain::payment_status::TxStatus;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use crate::domain::payment_status::TxStatus;
 
 #[async_trait::async_trait]
 pub trait PaymentGateway: Send + Sync {

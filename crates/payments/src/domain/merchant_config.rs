@@ -2,7 +2,6 @@ use crate::domain;
 use sea_orm::entity::prelude::*;
 use sea_orm::ActiveModelBehavior;
 use sea_orm::DeriveEntityModel;
-use time::OffsetDateTime;
 use uuid::Uuid;
 
 #[sea_orm::model]
@@ -12,6 +11,7 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: Uuid,
     #[sea_orm(unique_key = "merchant_provider")]
+    #[sea_orm(index)]
     pub merchant_id: Uuid,
     #[sea_orm(unique_key = "merchant_provider")]
     pub provider_id: Uuid,

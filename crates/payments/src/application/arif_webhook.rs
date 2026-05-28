@@ -2,14 +2,9 @@ use crate::application::payment_gateway::WebhookHandler;
 use crate::application::PaymentGatewayError;
 use crate::domain;
 use crate::domain::payment_status::{PaymentStatus, TxStatus};
-use crate::domain::payment_transaction::ActiveModel;
 use crate::domain::{payment_order, payment_transaction, ArifPayment, ArifTransactionStatus};
 use async_trait::async_trait;
-use sea_orm::Value::Decimal;
-use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder, Set,
-    TransactionTrait,
-};
+use sea_orm::{ActiveModelTrait, DatabaseConnection, Set, TransactionTrait};
 use serde_json::Value;
 use tracing::debug;
 

@@ -53,11 +53,11 @@ pub fn api_routes(pool: Pool<Postgres>, db: &DatabaseConnection) -> Router {
             "/api",
             OpenApiRouter::new()
                 // Auth routes (no auth required for login/register)
-                .merge(auth::router(pool.clone(), db))
+                .merge(auth::router(db))
                 // Merchant routes (requires MasterAdmin role)
-                .merge(merchant::router(pool.clone(), db))
+                .merge(merchant::router(db))
                 // Payment routes (requires authentication)
-                .merge(payments::router(pool.clone(), db))
+                .merge(payments::router(db))
                 .merge(OpenApiRouter::new().route("/test", get(|| async { "Hello, World!" }))),
         )
         .layer(axum::middleware::from_fn(auth::api::authentication))

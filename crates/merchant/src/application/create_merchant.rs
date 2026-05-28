@@ -1,8 +1,6 @@
 use crate::application::dto::{CreateMerchantRequest, MerchantResponse};
-use crate::application::repository::MerchantRepository;
 use crate::domain::merchant;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, Set};
-use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct CreateMerchant {

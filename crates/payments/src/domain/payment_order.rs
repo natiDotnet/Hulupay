@@ -2,9 +2,7 @@
 use crate::domain;
 use crate::domain::payment_status::{PaymentStatus, TransitionError};
 use crate::domain::provider::Provider;
-use crate::domain::DomainError;
 use chrono::Utc;
-use merchant::Merchant;
 use rust_decimal::Decimal;
 use sea_orm::entity::prelude::*;
 use sea_orm::prelude::DateTimeUtc;
