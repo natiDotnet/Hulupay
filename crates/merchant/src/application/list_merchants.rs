@@ -39,7 +39,7 @@ impl ListMerchants {
             .map_err(|e| ApplicationError::Internal(anyhow!(e)))?;
 
         let items = paginator
-            .fetch_page(page)
+            .fetch_page(page - 1)
             .await
             .map_err(|e| ApplicationError::Internal(anyhow!(e)))?
             .into_iter()

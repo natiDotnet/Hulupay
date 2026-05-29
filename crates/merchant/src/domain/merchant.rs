@@ -3,6 +3,8 @@ use sea_orm::entity::prelude::*;
 use sea_orm::prelude::DateTimeUtc;
 use sea_orm::{ActiveModelBehavior, DeriveEntityModel, Set};
 use serde::{Deserialize, Serialize};
+use sqlx::encode::IsNull::No;
+use sqlx::types::chrono::Utc;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
@@ -24,6 +26,8 @@ impl ActiveModelBehavior for ActiveModel {
         Self {
             id: Set(Uuid::now_v7()),
             is_active: Set(true),
+            created_at: Set(Utc::now()),
+            updated_at: Set(None),
             ..ActiveModelTrait::default()
         }
     }

@@ -18,9 +18,10 @@ impl CreateMerchant {
     ) -> anyhow::Result<MerchantResponse> {
         let merchant = merchant::ActiveModel {
             name: Set(request.name),
-            ..ActiveModelTrait::default()
-        };
-        let merchant = merchant.insert(&self.db).await?;
+            ..Default::default()
+        }
+        .insert(&self.db)
+        .await?;
 
         Ok(MerchantResponse {
             id: merchant.id,

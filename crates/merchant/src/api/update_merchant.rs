@@ -1,5 +1,5 @@
 use crate::UpdateMerchantRequest;
-use crate::application::UpdateMerchant;
+use crate::application::{ApplicationError, UpdateMerchant};
 use axum::{
     Json,
     extract::{Path, State},
@@ -30,7 +30,10 @@ pub async fn update_merchant_handler(
         .await
         .map_err(|e| {
             eprintln!("Error updating merchant: {:?}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
+            match e {
+                ApplicationError::NotFound(_) => StatusCode::NOT_FOUND,
+                _ => StatusCode::INTERNAL_SERVER_ERROR,
+            }
         })?;
 
     Ok(Json("Merchant updated successfully"))

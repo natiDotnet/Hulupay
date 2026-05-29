@@ -1,8 +1,8 @@
 use crate::application::DeleteMerchant;
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
-    Json,
 };
 use uuid::Uuid;
 
@@ -19,7 +19,7 @@ pub async fn delete_merchant_handler(
 ) -> Result<Json<&'static str>, StatusCode> {
     usecase.execute(id).await.map_err(|e| {
         eprintln!("Error deleting merchant: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        StatusCode::NOT_FOUND
     })?;
 
     Ok(Json("Merchant deleted successfully"))

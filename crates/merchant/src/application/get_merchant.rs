@@ -21,7 +21,9 @@ impl GetMerchant {
             .one(&self.db)
             .await
             .map_err(|e| ApplicationError::Internal(anyhow!(e)))?
-            .ok_or_else(|| anyhow!("Merchant not found with given id"))?;
+            .ok_or_else(|| {
+                ApplicationError::NotFound("Merchant not found with given id".to_string())
+            })?;
 
         Ok(MerchantResponse {
             id: merchant.id,

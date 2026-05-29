@@ -14,12 +14,17 @@ impl DeleteMerchant {
     }
 
     pub async fn execute(&self, id: Uuid) -> anyhow::Result<()> {
-        let merchant = merchant::Entity::find_by_id(id)
-            .one(&self.db)
-            .await?
-            .ok_or_else(|| anyhow!("Merchant not found"))?;
+        let result = merchant::Entity::delete_by_id(id).exec(&self.db).await?;
 
-        merchant.delete(&self.db).await?;
+        if result.rows_affected == 0 {
+            return Err(anyhow!("Merchant not found"));
+        }
+        // let merchant = merchant::Entity::find_by_id(id)
+        //     .one(&self.db)
+        //     .await?
+        //     .ok_or_else(|| anyhow!("Merchant not found"))?;
+        //
+        // merchant.delete(&self.db).await?;
         Ok(())
     }
 }
