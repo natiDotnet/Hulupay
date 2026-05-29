@@ -1,6 +1,7 @@
 use crate::domain;
 use crate::domain::Provider;
 use anyhow::anyhow;
+use domain::payment_provider;
 use merchant::application::ApplicationError;
 use sea_orm::{DatabaseConnection, EntityTrait, Order, PaginatorTrait};
 
@@ -19,7 +20,7 @@ impl ListPaymentProviders {
         page: u64,
         page_size: u64,
     ) -> anyhow::Result<PaginatedResponse<Provider>> {
-        let paginator = domain::payment_provider::Entity::find()
+        let paginator = payment_provider::Entity::find()
             .order_by_id(Order::Desc)
             .paginate(&self.db, page_size);
 
@@ -28,7 +29,7 @@ impl ListPaymentProviders {
             .await
             .map_err(|e| ApplicationError::Internal(anyhow!(e)))?;
         let items = paginator
-            .fetch_page(page)
+            .fetch_page(page - 1)
             .await?
             // .map_err(|e| ApplicationError::Internal(anyhow!(e)))?
             .into_iter()

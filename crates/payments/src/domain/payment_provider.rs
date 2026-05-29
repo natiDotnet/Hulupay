@@ -1,6 +1,7 @@
+use chrono::Utc;
 use sea_orm::entity::prelude::*;
 use sea_orm::prelude::DateTimeUtc;
-use sea_orm::DeriveEntityModel;
+use sea_orm::{DeriveEntityModel, Set};
 use uuid::Uuid;
 
 #[sea_orm::model]
@@ -16,4 +17,13 @@ pub struct Model {
     pub created_at: DateTimeUtc,
 }
 
-impl ActiveModelBehavior for ActiveModel {}
+impl ActiveModelBehavior for ActiveModel {
+    fn new() -> Self {
+        Self {
+            id: Set(Uuid::now_v7()),
+            is_active: Set(true),
+            created_at: Set(Utc::now()),
+            ..ActiveModelTrait::default()
+        }
+    }
+}

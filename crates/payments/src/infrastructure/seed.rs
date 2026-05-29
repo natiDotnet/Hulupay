@@ -1,7 +1,8 @@
+use crate::domain;
 use auth::Role;
 use chrono::Utc;
-use merchant::domain;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, Set};
+use domain::payment_provider;
+use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
 use uuid::Uuid;
 
 pub struct DataSeeder {
@@ -17,20 +18,21 @@ impl DataSeeder {
     pub async fn seed(&self) -> anyhow::Result<()> {
         let merchant_id = Uuid::now_v7();
 
-        self.seed_merchant(merchant_id).await?;
-        self.seed_user(merchant_id).await?;
+        self.seed_master_merchant(merchant_id).await?;
+        self.seed_admin_user(merchant_id).await?;
+        self.seed_providers().await?;
 
         Ok(())
     }
-    pub async fn seed_merchant(&self, merchant_id: Uuid) -> anyhow::Result<()> {
+    async fn seed_master_merchant(&self, merchant_id: Uuid) -> anyhow::Result<()> {
         let name = "master";
-        let master = domain::merchant::Entity::find_by_name(name)
+        let master = merchant::domain::merchant::Entity::find_by_name(name)
             .one(&self.db)
             .await?;
-        if let Some(_) = master {
+        if master.is_some() {
             return Ok(());
         }
-        let _ = domain::merchant::ActiveModel {
+        let _ = merchant::domain::merchant::ActiveModel {
             id: Set(merchant_id),
             name: Set(name.to_string()),
             is_active: Set(true),
@@ -43,12 +45,12 @@ impl DataSeeder {
         Ok(())
     }
 
-    pub async fn seed_user(&self, merchant_id: Uuid) -> anyhow::Result<()> {
+    async fn seed_admin_user(&self, merchant_id: Uuid) -> anyhow::Result<()> {
         let email = "admin@gmail.com";
         let user = auth::domain::user::Entity::find_by_email(email)
             .one(&self.db)
             .await?;
-        if let Some(_) = user {
+        if user.is_some() {
             return Ok(());
         }
         let _ = auth::domain::user::ActiveModel {
@@ -63,6 +65,26 @@ impl DataSeeder {
         }
         .insert(&self.db)
         .await?;
+
+        Ok(())
+    }
+
+    async fn seed_providers(&self) -> anyhow::Result<()> {
+        let arifpay = payment_provider::ActiveModel {
+            name: Set(domain::provider::Provider::ArifPay.to_string()),
+            code: Set(domain::provider::Provider::ArifPay.to_string()),
+            ..Default::default()
+        };
+
+        let chapa = payment_provider::ActiveModel {
+            name: Set(domain::provider::Provider::Chapa.to_string()),
+            code: Set(domain::provider::Provider::Chapa.to_string()),
+            ..Default::default()
+        };
+        
+        payment_provider::Entity::insert_many([arifpay, chapa])
+            .exec(&self.db)
+            .await?;
 
         Ok(())
     }
