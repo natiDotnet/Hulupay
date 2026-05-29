@@ -2,7 +2,7 @@ mod claims;
 mod error;
 mod login;
 mod login_request;
-mod password;
+pub mod password;
 mod register_user;
 mod token;
 pub mod user_repository;

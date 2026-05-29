@@ -1,7 +1,6 @@
 use axum::routing::get;
 use axum::Router;
 use sea_orm::DatabaseConnection;
-use sqlx::{Pool, Postgres};
 use std::env;
 use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
@@ -21,7 +20,7 @@ use payments;
 #[openapi(info(title = "My API", version = "1.0", description = "An example API"))]
 pub struct ApiDoc;
 
-pub fn api_routes(pool: Pool<Postgres>, db: &DatabaseConnection) -> Router {
+pub fn api_routes(db: &DatabaseConnection) -> Router {
     let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
     let token_service: Arc<dyn TokenService> = Arc::new(JwtTokenService::new(jwt_secret));
 
@@ -39,6 +38,8 @@ pub fn api_routes(pool: Pool<Postgres>, db: &DatabaseConnection) -> Router {
                     .build(),
             ),
         );
+
+    seed_database(db);
 
     // Configure CORS to allow all origins (for development)
     // In production, you should restrict this to specific origins
@@ -67,4 +68,13 @@ pub fn api_routes(pool: Pool<Postgres>, db: &DatabaseConnection) -> Router {
     app.merge(SwaggerUi::new("/swagger-ui").url("/api-doc/openapi.json", doc.clone()))
         .merge(Scalar::with_url("/scalar", doc.clone()))
         .layer(cors)
+}
+
+pub fn seed_database(db: &DatabaseConnection) {
+    let seeder = payments::infrastructure::seed::DataSeeder::new(db.clone());
+    tokio::spawn(async move {
+        if let Err(err) = seeder.seed().await {
+            tracing::error!("Failed to run seeder: {:?}", err);
+        }
+    });
 }

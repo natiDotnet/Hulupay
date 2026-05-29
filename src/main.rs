@@ -1,8 +1,7 @@
 pub mod api;
 use crate::api::api_routes;
 use dotenvy::dotenv;
-use sea_orm::Database;
-use sqlx::postgres::PgPoolOptions;
+use sea_orm::{Database, DatabaseConnection};
 use std::env;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::prelude::*;
@@ -18,11 +17,17 @@ async fn main() -> anyhow::Result<()> {
         .with(fmt::layer().json().with_target(false))
         .init();
 
-    let pool = PgPoolOptions::new()
-        .max_connections(10)
-        .connect(&db_url)
-        .await?;
     let db = &Database::connect(db_url).await?;
+    auto_apply(db).await?;
+
+    let app = api_routes(db);
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:5000").await?;
+    axum::serve(listener, app).await?;
+    println!("Server started");
+    Ok(())
+}
+
+pub async fn auto_apply(db: &DatabaseConnection) -> anyhow::Result<()> {
     db.get_schema_registry("merchant::domain::*")
         .sync(db)
         .await?;
@@ -32,9 +37,5 @@ async fn main() -> anyhow::Result<()> {
         .sync(db)
         .await?;
 
-    let app = api_routes(pool, db);
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:5000").await?;
-    axum::serve(listener, app).await?;
-    println!("Server started");
     Ok(())
 }

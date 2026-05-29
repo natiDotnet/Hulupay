@@ -6,7 +6,7 @@ pub mod infrastructure;
 pub use api::{MerchantState, router};
 pub use application::{
     CreateMerchant, CreateMerchantRequest, DeleteMerchant, GetMerchant, ListMerchants,
-    MerchantRepository, MerchantResponse, UpdateMerchant, UpdateMerchantRequest,
+    MerchantResponse, UpdateMerchant, UpdateMerchantRequest,
 };
 pub use domain::Merchant;
-pub use infrastructure::MerchantRepositoryPostgres;
+// pub use infrastructure::MerchantRepositoryPostgres;
