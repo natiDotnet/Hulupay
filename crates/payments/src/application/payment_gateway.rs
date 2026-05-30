@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 
 #[async_trait::async_trait]
 pub trait PaymentGateway: Send + Sync {
+    fn get_apikey_name(&self) -> &'static str;
     async fn initialize_payment(
         &self,
         cmd: InitializePaymentCommand,

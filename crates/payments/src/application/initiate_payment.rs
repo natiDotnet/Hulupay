@@ -64,7 +64,7 @@ impl InitiatePayment {
             return Ok(cached);
         }
 
-        if payload.amount <= rust_decimal::Decimal::ZERO {
+        if payload.amount <= Decimal::ZERO {
             return Err(anyhow::anyhow!("amount must be greater than zero"));
         }
 

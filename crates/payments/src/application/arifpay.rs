@@ -58,7 +58,7 @@ pub struct ArifPayProvider {
 impl ArifPayProvider {
     pub fn new(config: ArifPayConfig, provider_id: Uuid, db: DatabaseConnection) -> Self {
         let mut headers = reqwest::header::HeaderMap::new();
-        headers.insert("x-arifpay-key", config.api_key.parse().unwrap());
+        // headers.insert("x-arifpay-key", config.api_key.parse().unwrap());
         headers.insert("Content-Type", "application/json".parse().unwrap());
         dbg!(&headers.values());
 
@@ -124,6 +124,10 @@ impl ArifPayProvider {
 
 #[async_trait::async_trait]
 impl PaymentGateway for ArifPayProvider {
+    fn get_apikey_name(&self) -> &'static str {
+        "x-arifpay-key"
+    }
+
     async fn initialize_payment(
         &self,
         cmd: InitializePaymentCommand,
@@ -137,6 +141,7 @@ impl PaymentGateway for ArifPayProvider {
         let response = self
             .client
             .post(format!("{}/checkout/session", self.config.base_url))
+            .header(self.get_apikey_name(), self.config.api_key.clone())
             .json(&request)
             .send()
             .await

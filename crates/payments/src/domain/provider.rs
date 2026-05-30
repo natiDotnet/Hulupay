@@ -29,12 +29,15 @@ use utoipa::ToSchema;
 )]
 pub enum Provider {
     #[strum(serialize = "STRIPE", to_string = "STRIPE")]
+    #[serde(rename = "STRIPE")]
     Stripe,
 
     #[strum(serialize = "CHAPA", to_string = "CHAPA")]
+    #[serde(rename = "CHAPA")]
     Chapa,
 
     #[strum(serialize = "ARIFPAY", to_string = "ARIFPAY")]
+    #[serde(rename = "ARIFPAY")]
     ArifPay,
 }
 
