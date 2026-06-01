@@ -46,7 +46,7 @@ pub struct ArifPayBeneficiary {
 pub struct ArifPayInitializeResponse {
     pub error: bool,
     pub msg: String,
-    pub data: Option<ArifPayInitializeData>,
+    pub data: Option<serde_json::Value>,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]

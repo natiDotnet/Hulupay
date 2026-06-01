@@ -1,4 +1,4 @@
-use crate::domain::{merchant_config, PaymentProviderConfig};
+use crate::domain::{merchant_config, MerchantConfigs, PaymentProviderConfig};
 use anyhow::anyhow;
 use merchant::application::ApplicationError;
 use sea_orm::ColumnTrait;
@@ -22,7 +22,7 @@ impl ListPaymentProviderConfigs {
         page: u64,
         page_size: u64,
     ) -> anyhow::Result<PaginatedResponse<PaymentProviderConfig>> {
-        let paginator = merchant_config::Entity::find()
+        let paginator = MerchantConfigs::find()
             .filter(merchant_config::Column::MerchantId.eq(merchant_id))
             .order_by_desc(merchant_config::Column::CreatedAt)
             .paginate(&self.db, page_size);

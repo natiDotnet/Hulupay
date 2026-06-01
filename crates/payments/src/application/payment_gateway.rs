@@ -41,12 +41,12 @@ pub trait WebhookHandler: Send + Sync {
 pub struct PaymentInitResult {
     pub checkout_url: String,
     pub provider_reference: String,
-    pub row_response: String,
+    pub row_response: serde_json::Value,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct PaymentVerificationResult {
     pub success: bool,
     pub provider_reference: String,
-    pub row_response: String,
+    pub row_response: serde_json::Value,
 }

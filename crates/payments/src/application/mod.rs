@@ -5,7 +5,7 @@ mod dto;
 mod handle_webhook;
 pub mod helper;
 pub mod initiate_payment;
-mod payment_gateway;
+pub mod payment_gateway;
 mod payment_gateway_error;
 pub mod payment_provider;
 pub mod payment_provider_config;

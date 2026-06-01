@@ -28,11 +28,12 @@ pub async fn verify_payment_handler(
     // Get the provider from the engine based on provider_name
     let provider = provider_engine
         .get_provider(Uuid::nil(), provider_name.clone())
-        .await
-        .map_err(|_| {
-            eprintln!("Provider '{}' not found", provider_name);
-            StatusCode::NOT_FOUND
-        })?;
+        // .await
+        .ok_or(StatusCode::NOT_FOUND)?;
+    // .ok_or(|_| {
+    //     eprintln!("Provider '{}' not found", provider_name);
+    //     StatusCode::NOT_FOUND
+    // })?;
 
     let result: PaymentVerificationResult =
         provider.verify_payment(&reference).await.map_err(|e| {

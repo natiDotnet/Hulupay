@@ -11,7 +11,7 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: Uuid,
     #[sea_orm(unique_key = "merchant_provider")]
-    #[sea_orm(index)]
+    #[sea_orm(indexed)]
     pub merchant_id: Uuid,
     #[sea_orm(unique_key = "merchant_provider")]
     pub provider_id: Uuid,

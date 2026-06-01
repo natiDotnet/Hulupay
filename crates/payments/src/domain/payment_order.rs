@@ -30,7 +30,16 @@ pub struct Model {
     #[sea_orm(has_many)]
     pub payment_transaction: HasMany<domain::payment_transaction::Entity>,
 }
-impl ActiveModelBehavior for ActiveModel {}
+impl ActiveModelBehavior for ActiveModel {
+    fn new() -> Self {
+        Self {
+            id: Set(Uuid::now_v7()),
+            created_at: Set(Utc::now()),
+            updated_at: Set(Utc::now()),
+            ..ActiveModelTrait::default()
+        }
+    }
+}
 
 impl ActiveModel {
     pub fn transition_to(&mut self, new_status: PaymentStatus) -> Result<(), TransitionError> {
@@ -52,7 +61,7 @@ impl ActiveModel {
 //     ) -> Result<Self, DomainError> {
 //         // merchant.allows_provider(&provider)?; // guard at construction time
 //         Ok(Self {
-//             id: Uuid::new_v4(),
+//             id: Uuid::now_v7(),
 //             merchant_id: merchant.id,
 //             customer_id,
 //             order_ref,

@@ -30,11 +30,12 @@ use crate::application::{
     ListPaymentProviders, ProviderEngine, UpdatePaymentProvider, UpdatePaymentProviderConfig,
     WebhookHandler,
 };
-use crate::domain;
 use crate::infrastructure::redis_service::RedisCacheService;
+use crate::{domain, ArifPayProvider, PaymentGateway};
 use auth::api::middleware::AuthRouterExt;
 use auth::Role;
 use deadpool_redis::{Config, Runtime};
+use domain::provider;
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
 
@@ -116,6 +117,12 @@ impl FromRef<PaymentsState> for HandleProviderWebhook {
     }
 }
 
+impl FromRef<PaymentsState> for InitiatePayment {
+    fn from_ref(state: &PaymentsState) -> Self {
+        state.handle_initiate_payment.clone()
+    }
+}
+
 pub fn router(db: &DatabaseConnection) -> OpenApiRouter {
     let state = build_state(db);
 
@@ -171,7 +178,7 @@ fn build_state(db: &DatabaseConnection) -> PaymentsState {
 
     let mut webhook_handlers: HashMap<String, Arc<dyn WebhookHandler>> = HashMap::new();
     webhook_handlers.insert(
-        domain::provider::Provider::ArifPay.to_string(),
+        provider::Provider::ArifPay.to_string(),
         Arc::new(ArifWebhook::new(db.clone())),
     );
     let cache_service: Arc<dyn CacheService> =
@@ -218,13 +225,31 @@ fn build_provider_engine(db: &DatabaseConnection) -> ProviderEngine {
     //     env::var("ARIFPAY_IS_TEST_KEY").unwrap_or_else(|_| "true".to_string()) == "true",
     // );
     // let arifpay_provider = crate::infrastructure::ArifPayProvider::new(arifpay_config);
+    let mut headers = reqwest::header::HeaderMap::new();
+    // headers.insert("x-arifpay-key", config.api_key.parse().unwrap());
+    headers.insert("Content-Type", "application/json".parse().unwrap());
+    dbg!(&headers.values());
 
-    ProviderEngine::new(db.clone())
+    let client = reqwest::Client::builder()
+        .default_headers(headers)
+        .build()
+        .unwrap();
+
+    let mut providers: HashMap<String, Arc<dyn PaymentGateway>> = HashMap::new();
+    providers.insert(
+        provider::Provider::ArifPay.to_string(),
+        Arc::new(ArifPayProvider::new(client.clone(), db.clone())),
+    );
+    ProviderEngine::new(providers, db.clone(), client)
 }
 
 pub fn create_redis_pool() -> deadpool_redis::Pool {
-    let cfg = Config::from_url("redis://127.0.0.1/");
+    let cfg = Config::from_url("redis://127.0.0.1:6379");
 
-    cfg.create_pool(Some(Runtime::Tokio1))
-        .expect("Cannot create Redis pool")
+    let pool = cfg.create_pool(Some(Runtime::Tokio1)).map_err(|e| {
+        tracing::error!("Redis pool creation failed: {:?}", e);
+        e
+    });
+
+    pool.unwrap()
 }

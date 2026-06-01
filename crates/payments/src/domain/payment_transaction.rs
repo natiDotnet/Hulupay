@@ -59,7 +59,7 @@ impl ActiveModel {
 // impl PaymentTransaction {
 //     pub fn new_charge(order: &PaymentOrder) -> Self {
 //         Self {
-//             id: Uuid::new_v4(),
+//             id: Uuid::now_v7(),
 //             payment_order_id: order.id,
 //             provider: order.provider.clone(),
 //             provider_tx_id: None,
@@ -75,7 +75,7 @@ impl ActiveModel {
 //
 //     pub fn new_refund(order: &PaymentOrder, amount: Decimal) -> Self {
 //         Self {
-//             id: Uuid::new_v4(),
+//             id: Uuid::now_v7(),
 //             payment_order_id: order.id,
 //             provider: order.provider.clone(),
 //             provider_tx_id: None,

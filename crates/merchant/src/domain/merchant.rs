@@ -45,7 +45,7 @@ pub struct Merchant {
 impl Merchant {
     pub fn new(name: String, is_active: bool) -> Self {
         Self {
-            id: Uuid::new_v4(),
+            id: Uuid::now_v7(),
             name,
             is_active,
             created_at: OffsetDateTime::now_utc(),

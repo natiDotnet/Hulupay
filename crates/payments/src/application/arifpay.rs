@@ -6,7 +6,12 @@ use crate::application::payment_gateway::{
     PaymentGateway, PaymentInitResult, PaymentVerificationResult,
 };
 use crate::application::payment_gateway_error::PaymentGatewayError;
-use sea_orm::DatabaseConnection;
+use crate::domain;
+use crate::domain::{merchant_config, payment_provider, MerchantConfigs};
+use axum::http::HeaderValue;
+use sea_orm::ColumnTrait;
+use sea_orm::QueryFilter;
+use sea_orm::{DatabaseConnection, EntityTrait, JoinType, QuerySelect, RelationTrait};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::debug;
@@ -50,53 +55,36 @@ impl ArifPayConfig {
 #[derive(Clone)]
 pub struct ArifPayProvider {
     client: reqwest::Client,
-    config: ArifPayConfig,
-    provider_id: Uuid,
+    // config: ArifPayConfig,
+    // provider_id: Uuid,
     db: DatabaseConnection,
 }
 
 impl ArifPayProvider {
-    pub fn new(config: ArifPayConfig, provider_id: Uuid, db: DatabaseConnection) -> Self {
-        let mut headers = reqwest::header::HeaderMap::new();
-        // headers.insert("x-arifpay-key", config.api_key.parse().unwrap());
-        headers.insert("Content-Type", "application/json".parse().unwrap());
-        dbg!(&headers.values());
-
-        let client = reqwest::Client::builder()
-            .default_headers(headers)
-            .build()
-            .unwrap();
-
-        Self {
-            client,
-            config,
-            provider_id,
-            db,
-        }
+    pub fn new(client: reqwest::Client, db: DatabaseConnection) -> Self {
+        Self { client, db }
     }
 
     fn build_request(
         &self,
+        config: &ArifPayConfig,
         cmd: &InitializePaymentCommand,
         reference: &str,
     ) -> ArifPayInitializeRequest {
         ArifPayInitializeRequest {
-            cancel_url: self
-                .config
+            cancel_url: config
                 .cancel_url
                 .clone()
                 .map_or_else(|| "".to_string(), |u| u.clone()),
-            success_url: self
-                .config
+            success_url: config
                 .success_url
                 .clone()
                 .map_or_else(|| "".to_string(), |u| u.clone()),
-            error_url: self
-                .config
+            error_url: config
                 .error_url
                 .clone()
                 .map_or_else(|| "".to_string(), |u| u.clone()),
-            notify_url: self.config.notify_url.clone(),
+            notify_url: config.notify_url.clone(),
             nonce: reference.to_string(),
             phone: cmd.phone.clone(),
             email: cmd.email.clone(),
@@ -113,8 +101,8 @@ impl ArifPayProvider {
                 description: "Merchant payment".into(),
             }],
             beneficiaries: vec![ArifPayBeneficiary {
-                account_number: self.config.account_number.clone(),
-                bank: self.config.bank.clone(),
+                account_number: config.account_number.clone(),
+                bank: config.bank.clone(),
                 amount: cmd.amount,
             }],
             lang: "EN".into(),
@@ -132,38 +120,62 @@ impl PaymentGateway for ArifPayProvider {
         &self,
         cmd: InitializePaymentCommand,
     ) -> Result<PaymentInitResult, PaymentGatewayError> {
-        let reference = Uuid::new_v4().to_string();
+        let my_config = MerchantConfigs::find()
+            .join(
+                JoinType::InnerJoin,
+                merchant_config::Relation::PaymentProvider.def(),
+            )
+            .filter(merchant_config::Column::MerchantId.eq(cmd.merchant_id))
+            .filter(payment_provider::Column::Code.eq(domain::provider::Provider::ArifPay))
+            .filter(merchant_config::Column::IsActive.eq(true))
+            .one(&self.db)
+            .await
+            .map_err(|_| PaymentGatewayError::ProviderNotFound)?;
 
-        let request = self.build_request(&cmd, &reference);
+        let my_config = my_config.ok_or(PaymentGatewayError::ProviderNotFound)?;
+
+        let arif_config = serde_json::from_value::<ArifPayConfig>(my_config.config)
+            .map_err(|_| PaymentGatewayError::ProviderNotFound)?;
+        let reference = Uuid::now_v7().to_string();
+
+        let request = self.build_request(&arif_config, &cmd, &reference);
 
         debug!(?request, "the request body");
 
         let response = self
             .client
-            .post(format!("{}/checkout/session", self.config.base_url))
-            .header(self.get_apikey_name(), self.config.api_key.clone())
+            .post(format!("{}/api/checkout/session", arif_config.base_url))
+            .header(self.get_apikey_name(), arif_config.api_key.clone())
             .json(&request)
             .send()
             .await
             .map_err(|_| PaymentGatewayError::RequestFailed)?;
 
         let body: ArifPayInitializeResponse = response.json().await.map_err(|e| {
-            dbg!(e);
+            debug!(?e, "response body parse error");
             PaymentGatewayError::InvalidResponse
         })?;
 
         if body.error {
+            debug!(?body, "the response body error is true");
             return Err(PaymentGatewayError::RequestFailed);
         }
 
-        debug!(?body, "the request body");
+        let data: ArifPayInitializeData = serde_json::from_value::<ArifPayInitializeData>(
+            body.data
+                .clone()
+                .ok_or(PaymentGatewayError::InvalidResponse)?,
+        )
+        .map_err(|e| {
+            debug!(?e, "response body data field parse error");
+            PaymentGatewayError::InvalidResponse
+        })?;
 
-        let data: ArifPayInitializeData = body
-            .data
-            .clone()
-            .ok_or(PaymentGatewayError::InvalidResponse)?;
-        let row = serde_json::to_string_pretty(&body)
-            .map_err(|_| PaymentGatewayError::InvalidResponse)?;
+        debug!(?body, "the response body");
+        let row = serde_json::to_value(&body).map_err(|e| {
+            debug!(?e, "parse error");
+            PaymentGatewayError::InvalidResponse
+        })?;
 
         Ok(PaymentInitResult {
             checkout_url: data.payment_url,
@@ -176,27 +188,40 @@ impl PaymentGateway for ArifPayProvider {
         &self,
         reference: &str,
     ) -> Result<PaymentVerificationResult, PaymentGatewayError> {
+        let my_config = MerchantConfigs::find()
+            .join(
+                JoinType::InnerJoin,
+                merchant_config::Relation::PaymentProvider.def(),
+            )
+            // .filter(merchant_config::Column::MerchantId.eq(cmd.merchant_id))
+            .filter(payment_provider::Column::Code.eq(domain::provider::Provider::ArifPay))
+            .filter(merchant_config::Column::IsActive.eq(true))
+            .one(&self.db)
+            .await
+            .map_err(|_| PaymentGatewayError::ProviderNotFound)?
+            .ok_or(PaymentGatewayError::ProviderNotFound)?;
+
+        let arif_config = serde_json::from_value::<ArifPayConfig>(my_config.config)
+            .map_err(|_| PaymentGatewayError::ProviderNotFound)?;
+
         let response = self
             .client
-            .get(format!("{}/verify/{}", self.config.base_url, reference))
-            .bearer_auth(&self.config.api_key)
+            .get(format!("{}/api/verify/{}", arif_config.base_url, reference))
+            .bearer_auth(&arif_config.api_key)
             .send()
             .await
             .map_err(|_| PaymentGatewayError::RequestFailed)?;
 
         // Log the response body as string
-        let response_text = response.text().await.unwrap_or_else(|e| {
-            eprintln!("Failed to read response text: {:?}", e);
-            "".to_string()
-        });
-
-        let body: Value = serde_json::from_str(&response_text)
-            .map_err(|_| PaymentGatewayError::InvalidResponse)?;
+        let body: Value = response.json().await.map_err(|e| {
+            debug!(?e, "response parse error");
+            PaymentGatewayError::InvalidResponse
+        })?;
 
         Ok(PaymentVerificationResult {
             success: body["status"] == "success",
             provider_reference: reference.to_string(),
-            row_response: response_text,
+            row_response: body,
         })
     }
 }

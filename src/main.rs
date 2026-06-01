@@ -14,7 +14,7 @@ async fn main() -> anyhow::Result<()> {
 
     tracing_subscriber::registry()
         .with(EnvFilter::from_default_env())
-        .with(fmt::layer().json().with_target(false))
+        .with(fmt::layer().json().pretty().with_target(false))
         .init();
 
     let db = &Database::connect(db_url).await?;

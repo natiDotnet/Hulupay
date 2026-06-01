@@ -24,7 +24,7 @@ pub struct Model {
 impl ActiveModelBehavior for ActiveModel {
     fn new() -> Self {
         Self {
-            id: Set(Uuid::new_v4()),
+            id: Set(Uuid::now_v7()),
             is_active: Set(true),
             ..ActiveModelTrait::default()
         }
@@ -50,7 +50,7 @@ impl User {
     ) -> Self {
         let now = OffsetDateTime::now_utc();
         Self {
-            id: Uuid::new_v4(),
+            id: Uuid::now_v7(),
             email,
             password_hash,
             role,

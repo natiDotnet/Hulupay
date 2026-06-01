@@ -1,18 +1,20 @@
 use crate::application::cache_service::CacheService;
 // use crate::application::helper::{set_cache, get_cache};
+use crate::application::PaymentGatewayError;
 use crate::domain::payment_status::{PaymentStatus, TxDirection, TxStatus};
-use crate::domain::{payment_order, payment_transaction};
+use crate::domain::{payment_order, payment_transaction, PaymentOrders, PaymentTransactions};
 use crate::{cache_get, cache_set, domain, InitializePaymentCommand, ProviderEngine};
 use anyhow::anyhow;
 use chrono::Utc;
 use rust_decimal::Decimal;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, NotSet, PaginatorTrait,
-    QueryFilter, QueryOrder, Set,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, IntoActiveModel,
+    PaginatorTrait, QueryFilter, QueryOrder, Set, TryIntoModel,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
+use tracing::debug;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -21,7 +23,7 @@ pub struct InitializePaymentRequest {
     pub merchant_id: Uuid,
     pub phone: String,
     pub email: String,
-    pub amount: rust_decimal::Decimal,
+    pub amount: Decimal,
     pub currency: String,
     pub provider: domain::provider::Provider,
     pub nonce: String,
@@ -57,18 +59,19 @@ impl InitiatePayment {
         payload: InitializePaymentRequest,
     ) -> anyhow::Result<InitializePaymentResponse> {
         // ── Stage 1: Idempotency — Redis fast path ────────────────────────────────
-        let cache_key = format!("{}:{}", payload.merchant_id, payload.nonce);
+        let cache_key = format!("{}:{}", payload.merchant_id, &payload.nonce);
         if let Some(cached) =
             cache_get!(self.cache.as_ref(), InitializePaymentResponse, &cache_key).await?
         {
             return Ok(cached);
         }
+        debug!(?cache_key, "test debug");
 
         if payload.amount <= Decimal::ZERO {
             return Err(anyhow::anyhow!("amount must be greater than zero"));
         }
 
-        let order = payment_order::Entity::find()
+        let order = PaymentOrders::find()
             .filter(payment_order::Column::MerchantId.eq(payload.merchant_id))
             .filter(payment_order::Column::IdempotencyKey.eq(&payload.nonce))
             .one(&self.db)
@@ -80,18 +83,16 @@ impl InitiatePayment {
                     return Err(anyhow!("amount must be positive"));
                 }
                 let order = payment_order::ActiveModel {
-                    id: NotSet,
                     merchant_id: Set(payload.merchant_id),
                     customer_id: Set(Uuid::now_v7()),
-                    order_ref: Set(payload.nonce),
+                    order_ref: Set(payload.nonce.clone()),
                     amount: Set(payload.amount),
                     currency: Set(payload.currency.clone()),
                     status: Set(PaymentStatus::Pending),
                     provider: Set(payload.provider.clone()),
-                    idempotency_key: Default::default(),
+                    idempotency_key: Set(payload.nonce.clone()),
                     retry_count: Set(0),
-                    created_at: Set(Utc::now()),
-                    updated_at: Set(Utc::now()),
+                    ..Default::default()
                 }
                 .insert(&self.db)
                 .await?;
@@ -132,7 +133,7 @@ impl InitiatePayment {
         // ── Stage 3: Look at the last transaction to understand what happened ─────
         // Find the most recent transaction for this order. Its status tells us
         // whether the last attempt reached the provider or died locally.
-        let last_tx = payment_transaction::Entity::find()
+        let last_tx = PaymentTransactions::find()
             .filter(payment_transaction::Column::PaymentOrderId.eq(order.id))
             .filter(payment_transaction::Column::Direction.eq(TxDirection::Charge))
             .order_by_desc(payment_transaction::Column::CreatedAt)
@@ -141,83 +142,83 @@ impl InitiatePayment {
         let provider = self
             .payment_engine
             .get_provider(payload.merchant_id, payload.provider)
-            .await?;
+            // .await
+            .ok_or(PaymentGatewayError::RequestFailed)?;
 
         // If the last tx has a provider_tx_id but order is still Pending/Failed,
         // it means the provider accepted the charge but our webhook never arrived.
         // Poll the provider directly before creating a new transaction.
-        if let Some(ref tx) = last_tx {
-            if let Some(ref provider_tx_id) = tx.provider_tx_id {
-                // let provider = providers.resolve(payload.merchant_id, &order.provider)?;
-                let verify = provider.verify_payment(provider_tx_id).await;
+        if let Some(tx) = &last_tx
+            && let Some(provider_tx_id) = &tx.provider_tx_id
+        {
+            // if let Some(ref provider_tx_id) = tx.provider_tx_id {
+            // let provider = providers.resolve(payload.merchant_id, &order.provider)?;
+            let verify = provider.verify_payment(provider_tx_id).await;
 
-                if let Ok(charge) = verify {
-                    let settled = charge.success;
+            if let Ok(charge) = verify {
+                let settled = charge.success;
 
-                    if settled {
-                        // Provider already has the money — transition order to Completed,
-                        // create an immutable success tx row, no new charge attempt
-                        let success_tx_id = Uuid::new_v4();
-                        let now = Utc::now();
+                if settled {
+                    // Provider already has the money — transition order to Complete,
+                    // create an immutable success tx row, no new charge attempt
+                    let success_tx_id = Uuid::now_v7();
+                    let now = Utc::now();
 
-                        payment_transaction::ActiveModel {
-                            id: Set(success_tx_id),
-                            payment_order_id: Set(order.id),
-                            provider: Set(order.provider.clone()),
-                            provider_tx_id: Set(Some(provider_tx_id.clone())),
-                            direction: Set(TxDirection::Charge),
-                            amount: Set(order.amount),
-                            currency: Set(order.currency.clone()),
-                            status: Set(TxStatus::Success),
-                            provider_response: Set(json!(charge)),
-                            created_at: Set(now),
-                            updated_at: Set(now),
-                        }
-                        .insert(&self.db)
-                        .await?;
-
-                        payment_order::ActiveModel {
-                            id: Set(order.id),
-                            status: Set(PaymentStatus::Completed),
-                            updated_at: Set(now),
-                            ..Default::default()
-                        }
-                        .update(&self.db)
-                        .await?;
-
-                        // state.event_bus.publish(
-                        //     merchant.id,
-                        //     PaymentEvent::Completed {
-                        //         payment_id: order.id,
-                        //         merchant_id: merchant.id,
-                        //         occurred_at: now,
-                        //     },
-                        // );
-
-                        let response = InitializePaymentResponse {
-                            provider_reference: order.id.to_string(),
-                            // status: PaymentStatus::Completed,
-                            checkout_url: None,
-                        };
-                        cache_set!(self.cache.as_ref(), &cache_key, &response).await?;
-                        return Ok(response);
+                    payment_transaction::ActiveModel {
+                        id: Set(success_tx_id),
+                        payment_order_id: Set(order.id),
+                        provider: Set(order.provider.clone()),
+                        provider_tx_id: Set(Some(provider_tx_id.clone())),
+                        direction: Set(TxDirection::Charge),
+                        amount: Set(order.amount),
+                        currency: Set(order.currency.clone()),
+                        status: Set(TxStatus::Success),
+                        provider_response: Set(json!(charge)),
+                        created_at: Set(now),
+                        updated_at: Set(now),
                     }
-                    // Provider says not settled yet — fall through to new attempt
+                    .insert(&self.db)
+                    .await?;
+
+                    let mut order = order.into_active_model();
+                    order.status = Set(PaymentStatus::Completed);
+                    order.updated_at = Set(now);
+
+                    order.save(&self.db).await?;
+
+                    // state.event_bus.publish(
+                    //     merchant.id,
+                    //     PaymentEvent::Completed {
+                    //         payment_id: order.id,
+                    //         merchant_id: merchant.id,
+                    //         occurred_at: now,
+                    //     },
+                    // );
+
+                    let response = InitializePaymentResponse {
+                        provider_reference: provider_tx_id.to_string(),
+                        // status: PaymentStatus::Completed,
+                        checkout_url: None,
+                    };
+                    cache_set!(self.cache.as_ref(), &cache_key, &response).await?;
+                    return Ok(response);
                 }
+                // Provider says not settled yet — fall through to new attempt
             }
+            // }
         }
 
         // ── Stage 4: Create a NEW transaction row for this attempt ────────────────
         // Never mutate a previous transaction row. Each row is an immutable receipt.
         // attempt number = number of existing charge rows + 1
-        let attempt_number = payment_transaction::Entity::find()
+        let attempt_number = PaymentTransactions::find()
             .filter(payment_transaction::Column::PaymentOrderId.eq(order.id))
             .filter(payment_transaction::Column::Direction.eq(TxDirection::Charge))
             .count(&self.db)
             .await? as i32
             + 1;
 
-        let tx_id = Uuid::new_v4();
+        let tx_id = Uuid::now_v7();
         let now = Utc::now();
 
         // Written before the provider call — provider_tx_id is None.
@@ -259,7 +260,7 @@ impl InitiatePayment {
                 // that an attempt was dispatched. Now insert a success row with
                 // the real provider_tx_id the provider returned.
                 payment_transaction::ActiveModel {
-                    id: Set(Uuid::new_v4()),
+                    id: Set(Uuid::now_v7()),
                     payment_order_id: Set(order.id),
                     provider: Set(order.provider.clone()),
                     provider_tx_id: Set(Some(charge.provider_reference.clone())),
@@ -275,14 +276,19 @@ impl InitiatePayment {
                 .insert(&self.db)
                 .await?;
 
-                payment_order::ActiveModel {
-                    id: Set(order.id),
-                    status: Set(PaymentStatus::Processing),
-                    updated_at: Set(Utc::now()),
-                    ..Default::default()
-                }
-                .update(&self.db)
-                .await?;
+                let mut order = order.into_active_model();
+                order.status = Set(PaymentStatus::Processing);
+                order.updated_at = Set(Utc::now());
+
+                order.save(&self.db).await?.try_into_model()?;
+                // payment_order::ActiveModel {
+                //     id: Set(order.id),
+                //     status: Set(PaymentStatus::Processing),
+                //     updated_at: Set(Utc::now()),
+                //     ..Default::default()
+                // }
+                // .update(&self.db)
+                // .await?;
 
                 // state.event_bus.publish(merchant.id, PaymentEvent::Processing {
                 //     payment_id:     order.id,
@@ -292,7 +298,7 @@ impl InitiatePayment {
                 // });
 
                 let response = InitializePaymentResponse {
-                    provider_reference: order.id.to_string(),
+                    provider_reference: charge.provider_reference,
                     // status:       PaymentStatus::Processing,
                     checkout_url: Some(charge.checkout_url.clone()),
                 };
@@ -303,7 +309,7 @@ impl InitiatePayment {
                 // Insert a Failed tx row — immutable record of this attempt's outcome.
                 // The pending tx row stays untouched as evidence of dispatch.
                 payment_transaction::ActiveModel {
-                    id: Set(Uuid::new_v4()),
+                    id: Set(Uuid::now_v7()),
                     payment_order_id: Set(order.id),
                     provider: Set(order.provider.clone()),
                     provider_tx_id: Set(None),

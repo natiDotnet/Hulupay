@@ -1,15 +1,15 @@
 // use sea_orm::DatabaseConnection;
-// 
+//
 // pub struct PgPaymentProviderRepository {
 //     db: DatabaseConnection,
 // }
-// 
+//
 // impl PgPaymentProviderRepository {
 //     pub fn new(db: DatabaseConnection) -> Self {
 //         Self { db }
 //     }
 // }
-// 
+//
 // #[async_trait]
 // impl PaymentProviderRepository for PgPaymentProviderRepository {
 //     async fn create(&self, provider: &Provider) -> anyhow::Result<()> {
@@ -26,7 +26,7 @@
 //         )
 //         .execute(&self.pool)
 //         .await?;
-//         let id = Uuid::new_v4();
+//         let id = Uuid::now_v7();
 //
 //         let nati: Option<nati::Model> = nati::Entity::find_by_id(id).one(&self.db).await?;
 //
