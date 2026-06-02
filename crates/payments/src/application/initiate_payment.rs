@@ -244,7 +244,7 @@ impl InitiatePayment {
             merchant_id: payload.merchant_id,
             phone: payload.phone,
             email: payload.email,
-            amount: (payload.amount.as_f64() * 100.0) as i64,
+            amount: payload.amount,
             currency: payload.currency,
         };
         let result = provider.initialize_payment(cmd).await;

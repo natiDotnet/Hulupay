@@ -1,4 +1,4 @@
-use crate::application::dto::InitializePaymentCommand;
+use crate::application::dto::{DirectPaymentRequest, InitializePaymentCommand};
 use crate::application::payment_gateway_error::PaymentGatewayError;
 use crate::domain::payment_status::TxStatus;
 use async_trait::async_trait;
@@ -11,6 +11,11 @@ pub trait PaymentGateway: Send + Sync {
         &self,
         cmd: InitializePaymentCommand,
     ) -> Result<PaymentInitResult, PaymentGatewayError>;
+
+    async fn charge(
+        &self,
+        request: DirectPaymentRequest,
+    ) -> Result<PaymentChargeResult, PaymentGatewayError>;
 
     // async fn handle_webhook(
     //     &self,
@@ -40,6 +45,12 @@ pub trait WebhookHandler: Send + Sync {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PaymentInitResult {
     pub checkout_url: String,
+    pub provider_reference: String,
+    pub row_response: serde_json::Value,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct PaymentChargeResult {
     pub provider_reference: String,
     pub row_response: serde_json::Value,
 }

@@ -11,6 +11,7 @@ pub mod payment_status;
 pub mod payment_transaction;
 pub mod provider;
 mod provider_configs;
+pub mod provider_payment_method;
 mod transaction;
 
 pub use error::DomainError;
@@ -24,3 +25,4 @@ pub use merchant_config::Entity as MerchantConfigs;
 pub use payment_order::Entity as PaymentOrders;
 pub use payment_provider::Entity as PaymentProviders;
 pub use payment_transaction::Entity as PaymentTransactions;
+pub use provider_payment_method::Entity as ProviderPaymentMethods;

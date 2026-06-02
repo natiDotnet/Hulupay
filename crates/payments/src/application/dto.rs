@@ -1,3 +1,5 @@
+use crate::PaymentMethod;
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -5,10 +7,19 @@ pub struct InitializePaymentCommand {
     pub merchant_id: Uuid,
     pub phone: String,
     pub email: String,
-    pub amount: i64,
+    pub amount: Decimal,
     pub currency: String,
 }
-
+#[derive(Debug, Clone)]
+pub struct DirectPaymentRequest {
+    pub merchant_id: Uuid,
+    pub payment_method: PaymentMethod,
+    pub amount: Decimal,
+    pub phone_number: String,
+    pub email: Option<String>,
+    pub reference: String,
+    pub currency: String,
+}
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ArifPayInitializeRequest {
@@ -30,7 +41,7 @@ pub struct ArifPayInitializeRequest {
 pub struct ArifPayItem {
     pub name: String,
     pub quantity: u32,
-    pub price: f64,
+    pub price: Decimal,
     pub description: String,
 }
 
@@ -39,7 +50,7 @@ pub struct ArifPayItem {
 pub struct ArifPayBeneficiary {
     pub account_number: String,
     pub bank: String,
-    pub amount: i64,
+    pub amount: Decimal,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
