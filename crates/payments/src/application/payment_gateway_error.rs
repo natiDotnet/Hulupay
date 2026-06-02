@@ -10,6 +10,8 @@ pub enum PaymentGatewayError {
     ProviderNotFound,
     #[error("transaction was not found!")]
     TransactionNotFound,
+    #[error("unsupported payment method!")]
+    UnsupportedPaymentMethod,
 }
 
 impl PaymentGatewayError {
