@@ -1,4 +1,4 @@
-mod arifpay;
+pub mod arifpay;
 mod payment_provider_repository;
 pub mod redis_service;
 pub mod seed;

@@ -1,4 +1,5 @@
 use crate::PaymentMethod;
+use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -9,6 +10,32 @@ pub struct InitializePaymentCommand {
     pub email: String,
     pub amount: Decimal,
     pub currency: String,
+}
+pub struct CustomerInfo {
+    pub phone: String,
+    pub email: String,
+    pub name: String,
+}
+pub struct PaymentOptions {
+    pub reference: String,
+    pub currency: String,
+    pub payment_methods: Vec<String>,
+    pub expire_date: DateTime<Utc>,
+    pub lang: String,
+}
+
+pub struct CallbackUrls {
+    pub success_url: String,
+    pub error_url: String,
+    pub cancel_url: String,
+    pub notify_url: String,
+}
+
+pub struct Item {
+    pub name: String,
+    pub quantity: u32,
+    pub price: Decimal,
+    pub description: String,
 }
 #[derive(Debug, Clone)]
 pub struct DirectPaymentRequest {

@@ -3,6 +3,7 @@ use crate::application::payment_gateway_error::PaymentGatewayError;
 use crate::domain::payment_status::TxStatus;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 #[async_trait::async_trait]
 pub trait PaymentGateway: Send + Sync {
@@ -44,9 +45,18 @@ pub trait WebhookHandler: Send + Sync {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PaymentInitResult {
+    pub status_code: u16,
+    pub status: ApiStatus,
+    pub message: String,
     pub checkout_url: String,
     pub provider_reference: String,
     pub row_response: serde_json::Value,
+}
+
+#[derive(Serialize, Deserialize, Debug, ToSchema, PartialEq, Eq)]
+pub enum ApiStatus {
+    Success,
+    Failure,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

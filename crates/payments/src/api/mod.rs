@@ -1,3 +1,4 @@
+pub mod arifpay_api;
 mod create_payment_provider;
 mod create_payment_provider_config;
 mod delete_payment_provider;

@@ -3,7 +3,7 @@
 // that depend on infrastructure concerns (database, external services, etc.)
 
 mod arifpay_service;
-mod payment_request;
-mod payment_response;
+pub mod payment_request;
+pub mod payment_response;
 
 pub use crate::application::ArifPayProvider;

@@ -1,6 +1,8 @@
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct PaymentRequest {
     pub cancel_url: String,
@@ -14,24 +16,25 @@ pub struct PaymentRequest {
     pub expire_date: String,
     pub items: Vec<Item>,
     pub beneficiaries: Vec<Beneficiary>,
+    pub currency: Option<String>,
     pub lang: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Item {
     pub name: String,
     pub quantity: u32,
-    pub price: u64,
+    pub price: Decimal,
     pub description: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Beneficiary {
     pub account_number: String,
     pub bank: String,
-    pub amount: u64,
+    pub amount: Decimal,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

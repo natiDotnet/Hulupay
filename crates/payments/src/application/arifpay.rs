@@ -3,12 +3,12 @@ use crate::application::dto::{
     ArifPayItem, DirectPaymentRequest, InitializePaymentCommand,
 };
 use crate::application::payment_gateway::{
-    PaymentChargeResult, PaymentGateway, PaymentInitResult, PaymentVerificationResult,
+    ApiStatus, PaymentChargeResult, PaymentGateway, PaymentInitResult, PaymentVerificationResult,
 };
 use crate::application::payment_gateway_error::PaymentGatewayError;
 use crate::domain;
 use crate::domain::{merchant_config, payment_provider, MerchantConfigs, ProviderPaymentMethods};
-use axum::http::HeaderValue;
+use axum::http::{HeaderValue, StatusCode};
 use domain::{provider, provider_payment_method};
 use rust_decimal::prelude::ToPrimitive;
 use sea_orm::ColumnTrait;
@@ -141,6 +141,8 @@ impl PaymentGateway for ArifPayProvider {
             .await
             .map_err(|_| PaymentGatewayError::RequestFailed)?;
 
+        let status_code: StatusCode = response.status();
+
         let body: ArifPayInitializeResponse = response.json().await.map_err(|e| {
             debug!(?e, "response body parse error");
             PaymentGatewayError::InvalidResponse
@@ -168,6 +170,13 @@ impl PaymentGateway for ArifPayProvider {
         })?;
 
         Ok(PaymentInitResult {
+            status_code: status_code.as_u16(),
+            status: if body.error {
+                ApiStatus::Failure
+            } else {
+                ApiStatus::Success
+            },
+            message: body.msg,
             checkout_url: data.payment_url,
             provider_reference: data.session_id,
             row_response: row,
