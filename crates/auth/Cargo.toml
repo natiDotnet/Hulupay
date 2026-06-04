@@ -26,7 +26,7 @@ anyhow = "1.0.102"
 thiserror = "2.0.18"
 
 # API documentation
-utoipa = { version = "5.4.0", features = ["axum_extras", "uuid"] }
+utoipa = { version = "5.4.0", features = ["axum_extras", "uuid", "debug"] }
 utoipa-axum = { version = "0.2.0" }
 
 # HTTP framework (for API layer)

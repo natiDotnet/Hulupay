@@ -15,6 +15,7 @@ resolver = "2"
 auth = { path = "crates/auth" }
 merchant = { path = "crates/merchant" }
 payments = { path = "crates/payments" }
+arifpay = { path = "crates/arifpay" }
 
 tokio = { version = "1.49.0", features = ["full"] }
 axum = { version = "0.8.8" }

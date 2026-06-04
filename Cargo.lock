@@ -7,6 +7,7 @@ name = "Rust"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "arifpay",
  "auth",
  "axum 0.8.8",
  "dotenvy",
@@ -166,6 +167,30 @@ dependencies = [
  "blake2",
  "cpufeatures 0.3.0",
  "password-hash",
+]
+
+[[package]]
+name = "arifpay"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "auth",
+ "axum 0.8.8",
+ "axum-macros",
+ "chrono",
+ "payments",
+ "reqwest",
+ "rust_decimal",
+ "sea-orm 2.0.0-rc.38",
+ "serde",
+ "serde_json",
+ "strum 0.28.0",
+ "strum_macros",
+ "thiserror 2.0.18",
+ "tracing",
+ "utoipa",
+ "utoipa-axum",
+ "uuid",
 ]
 
 [[package]]
@@ -643,6 +668,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "axum-macros"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7aa268c23bfbbd2c4363b9cd302a4f504fb2a9dfe7e3451d66f35dd392e20aca"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
 ]
 
 [[package]]

@@ -1,6 +1,7 @@
 use crate::application::initiate_payment::{
     InitializePaymentRequest, InitializePaymentResponse, InitiatePayment,
 };
+use crate::application::payment_gateway::ApiStatus;
 use crate::domain;
 use axum::extract::Path;
 use axum::{extract::State, http::StatusCode, Json};
@@ -43,6 +44,9 @@ pub async fn initialize_payment_handler(
     // })?;
 
     Ok(Json(InitializePaymentResponse {
+        message: "success".to_string(),
+        status: ApiStatus::Success,
+        status_code: result.status_code,
         checkout_url: result.checkout_url,
         provider_reference: result.provider_reference,
     }))

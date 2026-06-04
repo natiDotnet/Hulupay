@@ -25,7 +25,7 @@ pub struct Model {
     pub currency: String,
     pub status: TxStatus,
     /// Full raw JSON response from the provider — never discard this
-    pub provider_response: serde_json::Value,
+    pub provider_response: Option<serde_json::Value>,
     pub created_at: DateTimeUtc,
     pub updated_at: DateTimeUtc,
     #[sea_orm(belongs_to, from = "payment_order_id", to = "id")]
@@ -51,7 +51,7 @@ impl ActiveModel {
             amount: Set(amount),
             direction: Set(TxDirection::Charge),
             provider_tx_id: Set(Some(order.order_ref.clone())),
-            provider_response: Set(response),
+            provider_response: Set(Some(response)),
         }
     }
 }
