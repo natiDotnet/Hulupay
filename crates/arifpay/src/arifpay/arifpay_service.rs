@@ -1,10 +1,11 @@
 use crate::arifpay::payment_request::{ArifpayPaymentRequest, OtpRequest, VerifyOtpRequest};
 use crate::arifpay::payment_response::{ArifPayInitializeData, ArifPayInitializeResponse};
-use crate::core::gateway_response::GatewayResponse;
-use crate::core::payment_gateway_error::PaymentGatewayError;
-use crate::core::payment_method::PaymentMethod;
+use core::gateway_response::GatewayResponse;
+use core::payment_gateway_error::PaymentGatewayError;
+use core::payment_method::PaymentMethod;
 use std::collections::HashMap;
 use tracing::debug;
+
 #[derive(Clone)]
 pub struct ArifpayService {
     client: reqwest::Client,

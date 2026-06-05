@@ -174,10 +174,10 @@ name = "arifpay"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "auth",
  "axum 0.8.8",
  "axum-macros",
  "chrono",
+ "core",
  "payments",
  "reqwest",
  "rust_decimal",
@@ -996,6 +996,19 @@ dependencies = [
  "getrandom 0.2.17",
  "once_cell",
  "tiny-keccak",
+]
+
+[[package]]
+name = "core"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "rust_decimal",
+ "serde",
+ "serde_json",
+ "strum 0.28.0",
+ "strum_macros",
+ "thiserror 2.0.18",
 ]
 
 [[package]]

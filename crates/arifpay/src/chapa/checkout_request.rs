@@ -1,4 +1,4 @@
-use crate::core::payment_request::{
+use core::payment_request::{
     Beneficiary, CallbackUrls, CustomerInfo, Item, PaymentOptions, PaymentRequest,
 };
 use rust_decimal::Decimal;

@@ -1,5 +1,5 @@
-use crate::core::payment_request::PaymentRequest;
 use chrono::{DateTime, Utc};
+use core::payment_request::PaymentRequest;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
@@ -77,8 +77,8 @@ impl From<PaymentRequest> for ArifpayPaymentRequest {
         }
     }
 }
-impl From<crate::core::payment_request::Beneficiary> for Beneficiary {
-    fn from(value: crate::core::payment_request::Beneficiary) -> Self {
+impl From<core::payment_request::Beneficiary> for Beneficiary {
+    fn from(value: core::payment_request::Beneficiary) -> Self {
         Self {
             account_number: value.account_number,
             amount: value.amount,
@@ -86,8 +86,8 @@ impl From<crate::core::payment_request::Beneficiary> for Beneficiary {
         }
     }
 }
-impl From<crate::core::payment_request::Item> for Item {
-    fn from(value: crate::core::payment_request::Item) -> Self {
+impl From<core::payment_request::Item> for Item {
+    fn from(value: core::payment_request::Item) -> Self {
         Self {
             name: value.name,
             description: value.description,
