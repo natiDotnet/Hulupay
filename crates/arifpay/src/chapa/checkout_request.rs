@@ -46,7 +46,7 @@ impl From<ChapaInitializeRequest> for PaymentRequest {
             },
             payment: PaymentOptions {
                 amount: value.amount,
-                currency: Some(value.currency),
+                currency: value.currency,
                 reference: value.tx_ref,
                 payment_methods: vec![],
                 lang: None,

@@ -59,7 +59,7 @@ impl From<PaymentRequest> for ArifpayPaymentRequest {
             phone: value.customer.phone,
             email: value.customer.email,
             items: value.items.into_iter().map(Into::into).collect(),
-            currency: value.payment.currency,
+            currency: Some(value.payment.currency),
             notify_url: value.callbacks.notify_url,
             success_url: value.callbacks.success_url,
             error_url: value.callbacks.error_url,
