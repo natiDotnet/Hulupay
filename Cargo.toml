@@ -16,7 +16,7 @@ auth = { path = "crates/auth" }
 merchant = { path = "crates/merchant" }
 payments = { path = "crates/payments" }
 arifpay = { path = "crates/arifpay" }
-
+hulu_core = { package = "core", path = "crates/core" }
 tokio = { version = "1.49.0", features = ["full"] }
 axum = { version = "0.8.8" }
 sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio", "macros"] }
@@ -30,3 +30,4 @@ tracing-subscriber = { version = "0.3.22", features = ["env-filter", "fmt", "jso
 tower-http = { version = "0.6", features = ["cors"] }
 tracing = "0.1.44"
 sea-orm = { version = "2.0.0-rc.38", features = ["sqlx-postgres", "runtime-tokio", "schema-sync", "debug-print", "with-chrono", "with-json", "with-uuid", "entity-registry"] }
+serde = { version = "1.0.228", features = ["derive"] }

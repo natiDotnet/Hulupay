@@ -1,4 +1,6 @@
 pub mod api;
+pub mod response;
+
 use crate::api::api_routes;
 use dotenvy::dotenv;
 use sea_orm::{Database, DatabaseConnection};

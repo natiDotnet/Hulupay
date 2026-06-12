@@ -1,9 +1,10 @@
 use crate::application::payment_gateway::WebhookHandler;
-use crate::application::PaymentGatewayError;
+// use crate::application::PaymentGatewayError;
 use crate::domain;
 use crate::domain::payment_status::{PaymentStatus, TxStatus};
 use crate::domain::{payment_order, payment_transaction, ArifPayment, ArifTransactionStatus};
 use async_trait::async_trait;
+use hulu_core::payment_gateway_error::PaymentGatewayError;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, Set, TransactionTrait};
 use serde_json::Value;
 use tracing::debug;

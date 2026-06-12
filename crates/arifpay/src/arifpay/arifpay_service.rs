@@ -1,8 +1,7 @@
 use crate::arifpay::payment_request::{ArifpayPaymentRequest, OtpRequest, VerifyOtpRequest};
 use crate::arifpay::payment_response::{ArifPayInitializeData, ArifPayInitializeResponse};
-use core::gateway_response::GatewayResponse;
-use core::payment_gateway_error::PaymentGatewayError;
-use core::payment_method::PaymentMethod;
+use hulu_core::payment_gateway_error::PaymentGatewayError;
+use hulu_core::payment_method::PaymentMethod;
 use std::collections::HashMap;
 use tracing::debug;
 
@@ -53,8 +52,9 @@ impl ArifpayService {
         &self,
         base_url: String,
         apikey: String,
-        request: &ArifpayPaymentRequest,
-    ) -> Result<GatewayResponse<ArifPayInitializeData>, PaymentGatewayError> {
+        request: &hulu_core::payment_request::PaymentRequest,
+    ) -> Result<ArifPayInitializeData, PaymentGatewayError> {
+        let request: ArifpayPaymentRequest = request.into();
         let response = self
             .client
             .post(format!("{}/api/checkout/session", base_url))
@@ -71,18 +71,15 @@ impl ArifpayService {
         })?;
         debug!(?body, "the response body");
 
-        Ok(GatewayResponse {
-            status: status.as_u16(),
-            data: body.data.clone(),
-            success: !body.error,
-            message: body.msg.clone(),
-            row_response: serde_json::to_value(&body).ok(),
-            error: if body.error {
-                serde_json::to_value(&body.data).ok()
-            } else {
-                None
-            },
-        })
+        if !status.is_success() || body.error {
+            return Err(PaymentGatewayError::ProviderError {
+                message: body.msg,
+                errors: serde_json::to_value(&body.data).ok(),
+                status_code: status.as_u16(),
+            });
+        }
+
+        Ok(body.data.unwrap())
     }
 
     pub async fn verify_session(

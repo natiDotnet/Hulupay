@@ -1,32 +1,32 @@
-use crate::application::dto::{DirectPaymentRequest, InitializePaymentCommand};
-use crate::application::payment_gateway_error::PaymentGatewayError;
 use crate::domain::payment_status::TxStatus;
 use async_trait::async_trait;
+use hulu_core::payment_gateway_error::PaymentGatewayError;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 #[async_trait::async_trait]
 pub trait PaymentGateway: Send + Sync {
     fn get_apikey_name(&self) -> &'static str;
-    async fn initialize_payment(
+    async fn checkout(
         &self,
-        cmd: InitializePaymentCommand,
-    ) -> Result<PaymentInitResult, PaymentGatewayError>;
+        request: &hulu_core::payment_request::PaymentRequest,
+        config: serde_json::Value,
+    ) -> Result<GatewayResponse, PaymentGatewayError>;
 
-    async fn charge(
-        &self,
-        request: DirectPaymentRequest,
-    ) -> Result<PaymentChargeResult, PaymentGatewayError>;
+    // async fn charge(
+    //     &self,
+    //     request: DirectPaymentRequest,
+    // ) -> Result<PaymentChargeResult, PaymentGatewayError>;
 
     // async fn handle_webhook(
     //     &self,
     //     webhook: serde_json::Value,
     // ) -> Result<PaymentInitResult, PaymentGatewayError>;
 
-    async fn verify_payment(
-        &self,
-        reference: &str,
-    ) -> Result<PaymentVerificationResult, PaymentGatewayError>;
+    // async fn verify(
+    //     &self,
+    //     reference: &str,
+    // ) -> Result<PaymentVerificationResult, PaymentGatewayError>;
 }
 
 #[async_trait]
@@ -44,13 +44,10 @@ pub trait WebhookHandler: Send + Sync {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct PaymentInitResult {
-    pub status_code: u16,
-    pub status: ApiStatus,
-    pub message: String,
+pub struct GatewayResponse {
     pub checkout_url: String,
-    pub provider_reference: String,
-    pub row_response: serde_json::Value,
+    pub reference: String,
+    pub row_response: Option<serde_json::Value>,
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, PartialEq, Eq)]

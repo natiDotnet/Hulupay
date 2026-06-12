@@ -3,9 +3,8 @@ use sea_orm::entity::prelude::*;
 use sea_orm::prelude::DateTimeUtc;
 use sea_orm::{ActiveModelBehavior, DeriveEntityModel, Set};
 use serde::{Deserialize, Serialize};
-use sqlx::encode::IsNull::No;
+use sqlx::types::chrono;
 use sqlx::types::chrono::Utc;
-use time::OffsetDateTime;
 use uuid::Uuid;
 
 #[sea_orm::model]
@@ -33,13 +32,13 @@ impl ActiveModelBehavior for ActiveModel {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Merchant {
     pub id: Uuid,
     pub name: String,
     pub is_active: bool,
-    pub created_at: OffsetDateTime,
-    pub updated_at: Option<OffsetDateTime>,
+    pub created_at: chrono::DateTime<Utc>,
+    pub updated_at: Option<chrono::DateTime<Utc>>,
 }
 
 impl Merchant {
@@ -48,8 +47,8 @@ impl Merchant {
             id: Uuid::now_v7(),
             name,
             is_active,
-            created_at: OffsetDateTime::now_utc(),
-            updated_at: Some(OffsetDateTime::now_utc()),
+            created_at: Utc::now(),
+            updated_at: Some(Utc::now()),
         }
     }
 
@@ -58,5 +57,17 @@ impl Merchant {
             return Err(DomainError::ProviderUnavailable);
         }
         Ok(())
+    }
+}
+
+impl From<Model> for Merchant {
+    fn from(value: Model) -> Self {
+        Self {
+            id: value.id,
+            name: value.name,
+            is_active: value.is_active,
+            created_at: value.created_at,
+            updated_at: value.updated_at,
+        }
     }
 }

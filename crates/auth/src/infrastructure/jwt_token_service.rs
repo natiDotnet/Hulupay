@@ -1,6 +1,6 @@
 use crate::application::{TokenService, UserContext};
 use crate::domain::AuthError;
-use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 

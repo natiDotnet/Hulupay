@@ -59,7 +59,7 @@ pub fn api_routes(db: &DatabaseConnection) -> Router {
                 .merge(merchant::router(db))
                 // Payment routes (requires authentication)
                 .merge(payments::router(db))
-                .merge(arifpay::chapa::router())
+                .merge(arifpay::chapa::router(db))
                 .merge(OpenApiRouter::new().route("/test", get(|| async { "Hello, World!" }))),
         )
         .layer(axum::middleware::from_fn(auth::api::authentication))

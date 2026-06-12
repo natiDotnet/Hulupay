@@ -1,10 +1,9 @@
 use crate::arifpay::arifpay_service::ArifpayService;
-use crate::chapa::checkout::__path_checkout_handler;
-use crate::chapa::checkout::checkout_handler;
+// use crate::chapa::checkout::__path_checkout_handler;
+// use crate::chapa::checkout::checkout_handler;
 use axum::extract::FromRef;
 use sea_orm::DatabaseConnection;
 use utoipa_axum::router::OpenApiRouter;
-use utoipa_axum::routes;
 
 pub mod checkout;
 pub mod checkout_request;
@@ -30,7 +29,7 @@ pub fn router(db: &DatabaseConnection) -> OpenApiRouter {
     };
 
     OpenApiRouter::new()
-        .routes(routes!(checkout_handler))
+        // .routes(routes!(checkout_handler))
         // .routes(routes!(login::login_user_handler))
         .with_state(state)
 }

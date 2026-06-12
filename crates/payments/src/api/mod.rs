@@ -15,6 +15,7 @@ mod update_payment_provider_config;
 mod verify;
 mod webhook;
 
+use crate::api::arifpay_api::checkout_session::__path_create_checkout_session_handler;
 pub use state::PaymentsState;
 use std::collections::HashMap;
 
@@ -22,8 +23,10 @@ use axum::extract::FromRef;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
+// use crate::application::initiate_payment::InitiatePayment;
+use crate::api::arifpay_api::checkout_session::create_checkout_session_handler;
 use crate::application::cache_service::CacheService;
-use crate::application::initiate_payment::InitiatePayment;
+use crate::application::checkout::create_checkout::CreateCheckout;
 use crate::application::{
     ArifWebhook, CreatePaymentProvider, CreatePaymentProviderConfig, DeletePaymentProvider,
     DeletePaymentProviderConfig, GetPaymentProvider, GetPaymentProviderConfig,
@@ -33,6 +36,7 @@ use crate::application::{
 };
 use crate::infrastructure::redis_service::RedisCacheService;
 use crate::{domain, ArifPayProvider, PaymentGateway};
+use arif::arifpay::arifpay_service::ArifpayService;
 use auth::api::middleware::AuthRouterExt;
 use auth::Role;
 use deadpool_redis::{Config, Runtime};
@@ -118,11 +122,17 @@ impl FromRef<PaymentsState> for HandleProviderWebhook {
     }
 }
 
-impl FromRef<PaymentsState> for InitiatePayment {
-    fn from_ref(state: &PaymentsState) -> Self {
-        state.handle_initiate_payment.clone()
+impl FromRef<PaymentsState> for CreateCheckout {
+    fn from_ref(input: &PaymentsState) -> Self {
+        input.handle_create_checkout.clone()
     }
 }
+
+// impl FromRef<PaymentsState> for InitiatePayment {
+//     fn from_ref(state: &PaymentsState) -> Self {
+//         state.handle_initiate_payment.clone()
+//     }
+// }
 
 pub fn router(db: &DatabaseConnection) -> OpenApiRouter {
     let state = build_state(db);
@@ -158,13 +168,20 @@ pub fn router(db: &DatabaseConnection) -> OpenApiRouter {
         .routes(routes!(
             list_payment_providers::list_payment_providers_handler,
         ))
-        .routes(routes!(
-            initialize::initialize_payment_handler,
-            verify::verify_payment_handler,
-        ))
+        // .routes(routes!(
+        //     create_checkout_session_handler,
+        //     //     // initialize::initialize_payment_handler,
+        //     //     verify::verify_payment_handler,
+        // ))
         .require_auth();
 
-    let public_routes = OpenApiRouter::new().routes(routes!(webhook::webhook_payment_handler));
+    let public_routes = OpenApiRouter::new()
+        .routes(routes!(webhook::webhook_payment_handler))
+        .routes(routes!(
+            create_checkout_session_handler,
+            //     // initialize::initialize_payment_handler,
+            //     verify::verify_payment_handler,
+        ));
 
     OpenApiRouter::new()
         .merge(master_admin_routes)
@@ -201,11 +218,12 @@ fn build_state(db: &DatabaseConnection) -> PaymentsState {
         delete_payment_provider_config: DeletePaymentProviderConfig::new(db.clone()),
         list_payment_provider_configs: ListPaymentProviderConfigs::new(db.clone()),
         handle_provider_webhook: HandleProviderWebhook::new(webhook_handlers),
-        handle_initiate_payment: InitiatePayment::new(
-            db.clone(),
-            cache_service,
-            provider_engine.clone(),
-        ),
+        handle_create_checkout: CreateCheckout::new(db.clone(), cache_service, provider_engine),
+        // handle_initiate_payment: InitiatePayment::new(
+        //     db.clone(),
+        //     cache_service,
+        //     provider_engine.clone(),
+        // ),
     }
 }
 
@@ -239,7 +257,10 @@ fn build_provider_engine(db: &DatabaseConnection) -> ProviderEngine {
     let mut providers: HashMap<String, Arc<dyn PaymentGateway>> = HashMap::new();
     providers.insert(
         provider::Provider::ArifPay.to_string(),
-        Arc::new(ArifPayProvider::new(client.clone(), db.clone())),
+        Arc::new(ArifPayProvider::new(
+            Arc::new(ArifpayService::new(client.clone())),
+            db.clone(),
+        )),
     );
     ProviderEngine::new(providers, db.clone(), client)
 }

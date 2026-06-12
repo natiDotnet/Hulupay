@@ -10,7 +10,7 @@ path = "src/lib.rs"
 # Domain dependencies
 uuid = { version = "1.21.0", features = ["v4", "serde"] }
 time = "0.3.47"
-
+hulu_core = { package = "core", path = "../core" }
 # Application layer dependencies
 async-trait = "0.1.89"
 serde = { version = "1.0.228", features = ["derive"] }

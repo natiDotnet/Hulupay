@@ -1,4 +1,4 @@
-use core::payment_request::{
+use hulu_core::payment_request::{
     Beneficiary, CallbackUrls, CustomerInfo, Item, PaymentOptions, PaymentRequest,
 };
 use rust_decimal::Decimal;

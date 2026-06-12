@@ -58,7 +58,7 @@ pub struct ArifPayInitializeRequest {
     pub error_url: String,
     pub notify_url: String,
     pub payment_methods: Vec<String>,
-    pub expire_date: String,
+    pub expire_date: DateTime<Utc>,
     pub items: Vec<ArifPayItem>,
     pub beneficiaries: Vec<ArifPayBeneficiary>,
     pub lang: String,
