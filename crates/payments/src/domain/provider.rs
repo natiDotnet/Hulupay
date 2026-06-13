@@ -42,6 +42,16 @@ pub enum Provider {
 }
 
 impl Provider {
+    pub const fn as_str(&self) -> &'static str {
+        match self {
+            Provider::ArifPay => "ARIFPAY",
+            Provider::Chapa => "CHAPA",
+            Provider::Stripe => "STRIPE",
+        }
+    }
+}
+
+impl Provider {
     pub fn max_retries(&self) -> i32 {
         3
     }

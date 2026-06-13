@@ -1,53 +1,18 @@
-use crate::arifpay::payment_request::ArifpayPaymentRequest;
-use crate::arifpay::payment_response::ArifPayInitializeResponse;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::{extract::State, Json};
-use hulu_core::create_checkout::CreateCheckout;
+use axum::Json;
 use hulu_core::hulu_error::HuluError;
 use hulu_core::hulu_response::HuluResponse;
-use hulu_core::payment_request::PaymentRequest;
-use std::sync::Arc;
+use sea_orm::sea_query::prelude::serde_json;
 
-fn default_is_active() -> bool {
-    true
-}
+pub struct ApiError(pub HuluError);
 
-#[utoipa::path(
-    post,
-    tag = "arifpay",
-    path = "/checkout/session",
-    request_body = ArifpayPaymentRequest,
-    responses((status = CREATED, body = ArifPayInitializeResponse))
-)]
-pub async fn arifpay_checkout_handler(
-    State(usecase): State<Arc<dyn CreateCheckout>>,
-    Json(payload): Json<ArifpayPaymentRequest>,
-) -> Result<Json<ArifPayInitializeResponse>, ArifpayApiErr> {
-    let request: PaymentRequest = payload.try_into()?;
-    let provider = usecase.execute("master", request).await?;
-
-    // let provider = ArifPayInitializeResponse {
-    //     error: false,
-    //     msg: "".to_string(),
-    //     data: Some(ArifPayInitializeData {
-    //         session_id: "qwertyuiop".to_string(),
-    //         payment_url: "qwertyuiop".to_string(),
-    //         cancel_url: "QWERTYUIOP".to_string(),
-    //         total_amount: Decimal::from_f64_retain(11.1).unwrap(),
-    //     }),
-    // };
-
-    Ok(Json(provider.into()))
-}
-
-pub struct ArifpayApiErr(pub HuluError);
-impl From<HuluError> for ArifpayApiErr {
+impl From<HuluError> for ApiError {
     fn from(value: HuluError) -> Self {
         Self(value)
     }
 }
-impl IntoResponse for ArifpayApiErr {
+impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let (status, message, errors) = match self.0 {
             HuluError::ProviderNotFound => (

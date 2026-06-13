@@ -18,6 +18,7 @@ pub struct PaymentProviderConfig {
     pub is_test_mode: bool,
     pub config: serde_json::Value,
     pub is_active: bool,
+    pub is_default: bool,
     pub created_at: DateTimeUtc,
     pub updated_at: DateTimeUtc,
 }

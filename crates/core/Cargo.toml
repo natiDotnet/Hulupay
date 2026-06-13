@@ -11,3 +11,4 @@ rust_decimal = { version = "1.42.0", features = ["serde", "serde-with-str", ] }
 strum = "0.28.0"
 strum_macros = "0.28.0"
 chrono = { version = "0.4.43", features = ["serde"] }
+async-trait = "0.1.89"

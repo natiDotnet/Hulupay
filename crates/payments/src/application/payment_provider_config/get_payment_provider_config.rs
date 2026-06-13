@@ -25,6 +25,7 @@ impl GetPaymentProviderConfig {
                 is_test_mode: p.is_test_mode,
                 config: p.config,
                 is_active: p.is_active,
+                is_default: p.is_default,
                 created_at: p.created_at,
             }))
     }

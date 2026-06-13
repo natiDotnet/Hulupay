@@ -1,5 +1,4 @@
 mod arif_webhook;
-pub mod arifpay;
 pub mod cache_service;
 pub mod checkout;
 mod dto;
@@ -14,13 +13,11 @@ mod provider_engine;
 mod repository;
 mod transaction_repository;
 
+pub use arif::arifpay::arifpay::{ArifPayConfig, ArifPayProvider};
 pub use arif_webhook::ArifWebhook;
-pub use arifpay::{ArifPayConfig, ArifPayProvider};
 pub use dto::InitializePaymentCommand;
 pub use handle_webhook::HandleProviderWebhook;
-pub use payment_gateway::{
-    GatewayResponse, PaymentGateway, PaymentVerificationResult, WebhookHandler,
-};
+pub use payment_gateway::{PaymentVerificationResult, WebhookHandler};
 // pub use payment_gateway_error::PaymentGatewayError;
 pub use payment_provider::create_payment_provider::CreatePaymentProvider;
 pub use payment_provider::delete_payment_provider::DeletePaymentProvider;

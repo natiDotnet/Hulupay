@@ -45,6 +45,7 @@ impl ListPaymentProviderConfigs {
                 is_test_mode: p.is_test_mode,
                 created_at: p.created_at,
                 updated_at: p.updated_at,
+                is_default: p.is_default,
             })
             .collect();
         // let offset = (page - 1) * page_size;

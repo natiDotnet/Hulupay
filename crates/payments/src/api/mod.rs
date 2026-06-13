@@ -15,7 +15,6 @@ mod update_payment_provider_config;
 mod verify;
 mod webhook;
 
-use crate::api::arifpay_api::checkout_session::__path_create_checkout_session_handler;
 pub use state::PaymentsState;
 use std::collections::HashMap;
 
@@ -23,10 +22,8 @@ use axum::extract::FromRef;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-// use crate::application::initiate_payment::InitiatePayment;
-use crate::api::arifpay_api::checkout_session::create_checkout_session_handler;
 use crate::application::cache_service::CacheService;
-use crate::application::checkout::create_checkout::CreateCheckout;
+use crate::application::checkout::create_checkout::CreateCheckoutHandler;
 use crate::application::{
     ArifWebhook, CreatePaymentProvider, CreatePaymentProviderConfig, DeletePaymentProvider,
     DeletePaymentProviderConfig, GetPaymentProvider, GetPaymentProviderConfig,
@@ -35,12 +32,14 @@ use crate::application::{
     WebhookHandler,
 };
 use crate::infrastructure::redis_service::RedisCacheService;
-use crate::{domain, ArifPayProvider, PaymentGateway};
+use crate::{ArifPayProvider, domain};
 use arif::arifpay::arifpay_service::ArifpayService;
-use auth::api::middleware::AuthRouterExt;
 use auth::Role;
+use auth::api::middleware::AuthRouterExt;
 use deadpool_redis::{Config, Runtime};
 use domain::provider;
+use hulu_core::create_checkout::CreateCheckout;
+use hulu_core::payment_gateway::PaymentGateway;
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
 
@@ -122,7 +121,7 @@ impl FromRef<PaymentsState> for HandleProviderWebhook {
     }
 }
 
-impl FromRef<PaymentsState> for CreateCheckout {
+impl FromRef<PaymentsState> for Arc<dyn CreateCheckout> {
     fn from_ref(input: &PaymentsState) -> Self {
         input.handle_create_checkout.clone()
     }
@@ -175,19 +174,23 @@ pub fn router(db: &DatabaseConnection) -> OpenApiRouter {
         // ))
         .require_auth();
 
-    let public_routes = OpenApiRouter::new()
-        .routes(routes!(webhook::webhook_payment_handler))
-        .routes(routes!(
-            create_checkout_session_handler,
-            //     // initialize::initialize_payment_handler,
-            //     verify::verify_payment_handler,
-        ));
-
-    OpenApiRouter::new()
+    let public_routes = OpenApiRouter::new().routes(routes!(webhook::webhook_payment_handler));
+    // .routes(routes!(
+    //     arif::api::checkout::arifpay_checkout_handler,
+    //     arif::chapa::checkout::chapa_checkout_handler,
+    //     // create_checkout_session_handler,
+    //     //     // initialize::initialize_payment_handler,
+    //     //     verify::verify_payment_handler,
+    // ))
+    // .merge(arif::api::arifpay_route::arifpay_routes());
+    // .merge(arif::chapa::chapa_routes(&state.handle_create_checkout));
+    OpenApiRouter::<PaymentsState>::new()
         .merge(master_admin_routes)
         .merge(merchant_admin_routes)
         .merge(authenticated_payment_routes)
         .merge(public_routes)
+        .merge(arif::chapa::chapa_routes::chapa_routes())
+        .merge(arif::api::arifpay_route::arifpay_routes())
         .with_state(state)
 }
 
@@ -201,6 +204,11 @@ fn build_state(db: &DatabaseConnection) -> PaymentsState {
     );
     let cache_service: Arc<dyn CacheService> =
         Arc::new(RedisCacheService::new(create_redis_pool()));
+    let checkout_handler: Arc<dyn CreateCheckout> = Arc::new(CreateCheckoutHandler::new(
+        db.clone(),
+        cache_service,
+        provider_engine.clone(),
+    ));
 
     PaymentsState {
         provider_engine: provider_engine.clone(),
@@ -218,7 +226,7 @@ fn build_state(db: &DatabaseConnection) -> PaymentsState {
         delete_payment_provider_config: DeletePaymentProviderConfig::new(db.clone()),
         list_payment_provider_configs: ListPaymentProviderConfigs::new(db.clone()),
         handle_provider_webhook: HandleProviderWebhook::new(webhook_handlers),
-        handle_create_checkout: CreateCheckout::new(db.clone(), cache_service, provider_engine),
+        handle_create_checkout: checkout_handler,
         // handle_initiate_payment: InitiatePayment::new(
         //     db.clone(),
         //     cache_service,

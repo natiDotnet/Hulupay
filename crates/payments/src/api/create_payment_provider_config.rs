@@ -14,6 +14,7 @@ pub struct CreatePaymentProviderConfigRequest {
     pub config: serde_json::Value,
     #[serde(default = "default_is_active")]
     pub is_active: bool,
+    pub is_default: bool,
 }
 
 fn default_is_test_mode() -> bool {
@@ -32,6 +33,7 @@ pub struct PaymentProviderConfigResponse {
     pub is_test_mode: bool,
     pub config: serde_json::Value,
     pub is_active: bool,
+    pub is_default: bool,
     // #[serde(with = "time::serde::rfc3339")]
     #[schema(value_type = String, format = DateTime)]
     pub created_at: DateTime<Utc>,
@@ -49,6 +51,7 @@ impl From<crate::domain::PaymentProviderConfig> for PaymentProviderConfigRespons
             is_test_mode: config.is_test_mode,
             config: config.config,
             is_active: config.is_active,
+            is_default: config.is_default,
             created_at: config.created_at,
             updated_at: config.updated_at,
         }
@@ -74,6 +77,7 @@ pub async fn create_payment_provider_config_handler(
             payload.is_test_mode,
             payload.config,
             payload.is_active,
+            payload.is_default,
         )
         .await
         .map_err(|e| {

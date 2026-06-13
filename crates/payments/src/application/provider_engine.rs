@@ -1,7 +1,8 @@
-use crate::application::payment_gateway::PaymentGateway;
 use crate::domain;
+use crate::domain::{merchant_config, MerchantConfigs, PaymentProviders};
+use hulu_core::payment_gateway::PaymentGateway;
 use reqwest::Client;
-use sea_orm::DatabaseConnection;
+use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QuerySelect};
 use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -28,38 +29,29 @@ impl ProviderEngine {
     }
 
     /// Get a provider by name
-    pub fn get_provider(
+    pub async fn get_provider(
         &self,
         merchant_id: Uuid,
-        name: domain::provider::Provider,
+        name: Option<domain::provider::Provider>,
     ) -> Option<&Arc<dyn PaymentGateway>> {
-        return self.providers.get(&name.to_string());
-        // let my_config = merchant_config::Entity::find()
-        //     .join(
-        //         JoinType::InnerJoin,
-        //         merchant_config::Relation::PaymentProvider.def(),
-        //     )
-        //     .filter(merchant_config::Column::MerchantId.eq(merchant_id))
-        //     .filter(domain::payment_provider::Column::Code.eq(name.clone().to_string()))
-        //     .filter(merchant_config::Column::IsActive.eq(true))
-        //     .one(&self.db)
-        //     .await?;
-        // if my_config.is_none() {
-        //     return Err(anyhow::anyhow!("Provider config not found"));
-        // }
-        // match my_config {
-        //     None => Err(anyhow::anyhow!("Provider config not found")),
-        //     Some(config) => match name {
-        //         domain::provider::Provider::ArifPay => {
-        //             let arif_config =
-        //                 serde_json::from_value::<ArifPayConfig>(config.config.clone())?;
-        //             let payment_gateway = self.providers.get(&name.to_string()).ok_or_else();
-        //             // let payment_gateway: Arc<dyn PaymentGateway> =
-        //             //     Arc::new(ArifPayProvider::new(self.client.clone(), self.db.clone()));
-        //             Ok(payment_gateway)
-        //         }
-        //         _ => Err(anyhow::anyhow!("Provider not found")),
-        //     },
-        // }
+        let provider = match name {
+            None => {
+                let (_, provider) = MerchantConfigs::find()
+                    .filter(merchant_config::Column::MerchantId.eq(merchant_id))
+                    .filter(merchant_config::Column::IsActive.eq(true))
+                    .filter(merchant_config::Column::IsDefault.eq(true))
+                    .filter(domain::payment_provider::Column::IsActive.eq(true))
+                    .find_also_related(PaymentProviders)
+                    .select_only()
+                    .column(domain::payment_provider::Column::Name)
+                    .one(&self.db)
+                    .await
+                    .ok()??;
+                provider.map(|m| m.name).unwrap_or_default()
+            }
+            Some(provider) => provider.to_string(),
+        };
+
+        self.providers.get(&provider)
     }
 }

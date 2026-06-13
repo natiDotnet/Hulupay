@@ -6,7 +6,9 @@ use crate::domain::{
     merchant_config, payment_order, payment_provider, payment_transaction, MerchantConfigs,
 };
 use crate::ProviderEngine;
+use async_trait::async_trait;
 use chrono::Utc;
+use hulu_core::create_checkout::CreateCheckout;
 use hulu_core::gateway_response::CheckoutResponse;
 use hulu_core::hulu_error::HuluError;
 use hulu_core::payment_gateway_error::PaymentGatewayError;
@@ -18,13 +20,13 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 #[derive(Clone)]
-pub struct CreateCheckout {
+pub struct CreateCheckoutHandler {
     db: DatabaseConnection,
     cache: Arc<dyn CacheService>,
     payment_engine: ProviderEngine,
 }
 
-impl CreateCheckout {
+impl CreateCheckoutHandler {
     pub fn new(
         db: DatabaseConnection,
         cache: Arc<dyn CacheService>,
@@ -37,9 +39,9 @@ impl CreateCheckout {
         }
     }
 }
-
-impl CreateCheckout {
-    pub async fn execute(
+#[async_trait]
+impl CreateCheckout for CreateCheckoutHandler {
+    async fn execute(
         &self,
         merchant: &str,
         payload: hulu_core::payment_request::PaymentRequest,
@@ -50,13 +52,14 @@ impl CreateCheckout {
 
         let provider = self
             .payment_engine
-            .get_provider(merchant.id, Provider::ArifPay)
+            .get_provider(merchant.id, None)
+            .await
             .ok_or(HuluError::ProviderNotFound)?;
 
         let merchant_config: merchant_config::Model = MerchantConfigs::find()
             .inner_join(payment_provider::Entity)
             .filter(merchant_config::Column::MerchantId.eq(merchant.id))
-            .filter(payment_provider::Column::Code.eq(Provider::ArifPay))
+            .filter(payment_provider::Column::Code.eq(provider.get_name()))
             .filter(merchant_config::Column::IsActive.eq(true))
             .one(&self.db)
             .await

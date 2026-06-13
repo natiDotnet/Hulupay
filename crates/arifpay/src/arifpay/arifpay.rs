@@ -1,7 +1,7 @@
-use crate::application::dto::{ArifPayBeneficiary, ArifPayInitializeRequest, ArifPayItem};
-use crate::application::payment_gateway::{GatewayResponse, PaymentGateway};
-use arif::arifpay::arifpay_service::ArifpayService;
+use crate::arifpay::arifpay_service::ArifpayService;
+use hulu_core::payment_gateway::{GatewayResponse, PaymentGateway};
 use hulu_core::payment_gateway_error::PaymentGatewayError;
+use sea_orm::prelude::async_trait;
 use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -55,45 +55,49 @@ impl ArifPayProvider {
         Self { service, db }
     }
 
-    fn build_request(
-        &self,
-        config: &ArifPayConfig,
-        cmd: &hulu_core::payment_request::PaymentRequest,
-        reference: &str,
-        payment_methods: Vec<String>,
-    ) -> ArifPayInitializeRequest {
-        ArifPayInitializeRequest {
-            cancel_url: config.cancel_url.clone().unwrap_or_else(|| "".to_string()),
-            success_url: config.success_url.clone().unwrap_or_else(|| "".to_string()),
-            error_url: config.error_url.clone().unwrap_or_else(|| "".to_string()),
-            notify_url: config.notify_url.clone(),
-            nonce: cmd.payment.reference.clone(),
-            phone: cmd.customer.phone.clone(),
-            email: cmd.customer.email.clone(),
-            payment_methods,
-            expire_date: cmd.payment.expire_date.unwrap_or(
-                chrono::Utc::now()
-                    .checked_add_signed(chrono::Duration::days(1))
-                    .unwrap(),
-            ),
-            items: vec![ArifPayItem {
-                name: "Payment".into(),
-                quantity: 1,
-                price: cmd.payment.amount,
-                description: "Merchant payment".into(),
-            }],
-            beneficiaries: vec![ArifPayBeneficiary {
-                account_number: config.account_number.clone(),
-                bank: config.bank.clone(),
-                amount: cmd.payment.amount,
-            }],
-            lang: "EN".into(),
-        }
-    }
+    // fn build_request(
+    //     &self,
+    //     config: &ArifPayConfig,
+    //     cmd: &hulu_core::payment_request::PaymentRequest,
+    //     reference: &str,
+    //     payment_methods: Vec<String>,
+    // ) -> ArifPayInitializeRequest {
+    //     ArifPayInitializeRequest {
+    //         cancel_url: config.cancel_url.clone().unwrap_or_else(|| "".to_string()),
+    //         success_url: config.success_url.clone().unwrap_or_else(|| "".to_string()),
+    //         error_url: config.error_url.clone().unwrap_or_else(|| "".to_string()),
+    //         notify_url: config.notify_url.clone(),
+    //         nonce: cmd.payment.reference.clone(),
+    //         phone: cmd.customer.phone.clone(),
+    //         email: cmd.customer.email.clone(),
+    //         payment_methods,
+    //         expire_date: cmd.payment.expire_date.unwrap_or(
+    //             chrono::Utc::now()
+    //                 .checked_add_signed(chrono::Duration::days(1))
+    //                 .unwrap(),
+    //         ),
+    //         items: vec![ArifPayItem {
+    //             name: "Payment".into(),
+    //             quantity: 1,
+    //             price: cmd.payment.amount,
+    //             description: "Merchant payment".into(),
+    //         }],
+    //         beneficiaries: vec![ArifPayBeneficiary {
+    //             account_number: config.account_number.clone(),
+    //             bank: config.bank.clone(),
+    //             amount: cmd.payment.amount,
+    //         }],
+    //         lang: "EN".into(),
+    //     }
+    // }
 }
 
 #[async_trait::async_trait]
 impl PaymentGateway for ArifPayProvider {
+    fn get_name(&self) -> &'static str {
+        "ARIFPAY"
+    }
+
     fn get_apikey_name(&self) -> &'static str {
         "x-arifpay-key"
     }

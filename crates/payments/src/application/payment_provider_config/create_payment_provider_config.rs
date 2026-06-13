@@ -23,6 +23,7 @@ impl CreatePaymentProviderConfig {
         is_test_mode: bool,
         config: Value,
         is_active: bool,
+        is_default: bool,
     ) -> anyhow::Result<PaymentProviderConfig> {
         domain::payment_provider::Entity::find_by_id(provider_id)
             .one(&self.db)
@@ -36,6 +37,7 @@ impl CreatePaymentProviderConfig {
             is_test_mode: Set(is_test_mode),
             config: Set(config),
             is_active: Set(is_active),
+            is_default: Set(is_default),
             created_at: Set(Utc::now()),
             updated_at: Set(Utc::now()),
         }
@@ -49,6 +51,7 @@ impl CreatePaymentProviderConfig {
             is_test_mode: config_entity.is_test_mode,
             config: config_entity.config,
             is_active: config_entity.is_active,
+            is_default: config_entity.is_default,
             created_at: config_entity.created_at,
             updated_at: config_entity.updated_at,
         })

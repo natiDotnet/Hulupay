@@ -1,5 +1,8 @@
+pub mod create_checkout;
 pub mod gateway_response;
 pub mod hulu_error;
+pub mod hulu_response;
+pub mod payment_gateway;
 pub mod payment_gateway_error;
 pub mod payment_method;
 pub mod payment_request;
