@@ -1,31 +1,25 @@
+use crate::api::arif_api_error::ArifpayApiErr;
 use crate::arifpay::payment_request::ArifpayPaymentRequest;
-use crate::arifpay::payment_response::ArifPayInitializeResponse;
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
+use crate::arifpay::payment_response::{ArifInitializeData, ArifResponse};
 use axum::{extract::State, Json};
 use hulu_core::create_checkout::CreateCheckout;
-use hulu_core::hulu_error::HuluError;
-use hulu_core::hulu_response::HuluResponse;
 use hulu_core::payment_request::PaymentRequest;
 use std::sync::Arc;
-
-fn default_is_active() -> bool {
-    true
-}
 
 #[utoipa::path(
     post,
     tag = "arifpay",
     path = "/checkout/session",
     request_body = ArifpayPaymentRequest,
-    responses((status = CREATED, body = ArifPayInitializeResponse))
+    responses((status = CREATED, body = ArifResponse<ArifInitializeData>),
+        (status = BAD_REQUEST, body = ArifResponse<serde_json::Value>))
 )]
 pub async fn arifpay_checkout_handler(
-    State(usecase): State<Arc<dyn CreateCheckout>>,
+    State(checkout): State<Arc<dyn CreateCheckout>>,
     Json(payload): Json<ArifpayPaymentRequest>,
-) -> Result<Json<ArifPayInitializeResponse>, ArifpayApiErr> {
+) -> Result<Json<ArifResponse<ArifInitializeData>>, ArifpayApiErr> {
     let request: PaymentRequest = payload.try_into()?;
-    let provider = usecase.execute("master", request).await?;
+    let provider = checkout.execute("master", request).await?;
 
     // let provider = ArifPayInitializeResponse {
     //     error: false,
@@ -39,67 +33,4 @@ pub async fn arifpay_checkout_handler(
     // };
 
     Ok(Json(provider.into()))
-}
-
-pub struct ArifpayApiErr(pub HuluError);
-impl From<HuluError> for ArifpayApiErr {
-    fn from(value: HuluError) -> Self {
-        Self(value)
-    }
-}
-impl IntoResponse for ArifpayApiErr {
-    fn into_response(self) -> Response {
-        let (status, message, errors) = match self.0 {
-            HuluError::ProviderNotFound => (
-                StatusCode::NOT_FOUND,
-                "provider not found".to_string(),
-                None,
-            ),
-
-            HuluError::UnsupportedPaymentMethod => (
-                StatusCode::BAD_REQUEST,
-                "unsupported payment method".to_string(),
-                None,
-            ),
-
-            HuluError::ResponseParseError => (
-                StatusCode::BAD_GATEWAY,
-                "unable to parse provider response".to_string(),
-                None,
-            ),
-
-            HuluError::ConnectionError => (
-                StatusCode::BAD_GATEWAY,
-                "connection error".to_string(),
-                None,
-            ),
-
-            HuluError::InternalServerError => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "internal server error".to_string(),
-                None,
-            ),
-
-            HuluError::ProviderError {
-                message,
-                status_code,
-                errors,
-            } => (
-                StatusCode::from_u16(status_code).unwrap_or(StatusCode::BAD_GATEWAY),
-                message,
-                errors,
-            ),
-        };
-
-        (
-            status,
-            Json(HuluResponse::<serde_json::Value> {
-                // status_code: status.as_u16(),
-                success: false,
-                message,
-                data: errors,
-            }),
-        )
-            .into_response()
-    }
 }

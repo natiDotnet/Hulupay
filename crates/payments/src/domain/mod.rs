@@ -9,6 +9,7 @@ pub mod payment_order;
 pub mod payment_provider;
 pub mod payment_status;
 pub mod payment_transaction;
+pub mod payments;
 pub mod provider;
 mod provider_configs;
 pub mod provider_payment_method;

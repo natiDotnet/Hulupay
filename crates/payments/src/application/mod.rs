@@ -2,6 +2,7 @@ mod arif_webhook;
 pub mod cache_service;
 pub mod checkout;
 mod dto;
+pub mod gateways;
 mod handle_webhook;
 pub mod helper;
 pub mod initiate_payment;
@@ -13,9 +14,9 @@ mod provider_engine;
 mod repository;
 mod transaction_repository;
 
-pub use arif::arifpay::arifpay::{ArifPayConfig, ArifPayProvider};
 pub use arif_webhook::ArifWebhook;
 pub use dto::InitializePaymentCommand;
+pub use gateways::arifpay::{ArifPayConfig, ArifPayProvider};
 pub use handle_webhook::HandleProviderWebhook;
 pub use payment_gateway::{PaymentVerificationResult, WebhookHandler};
 // pub use payment_gateway_error::PaymentGatewayError;

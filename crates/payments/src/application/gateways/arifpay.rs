@@ -1,9 +1,13 @@
-use crate::arifpay::arifpay_service::ArifpayService;
+use crate::domain;
+use crate::domain::{PaymentOrders, PaymentTransactions};
+use arif::arifpay::arifpay_service::ArifpayService;
+use hulu_core::gateway_response::{Transaction, VerifyResponse};
 use hulu_core::payment_gateway::{GatewayResponse, PaymentGateway};
 use hulu_core::payment_gateway_error::PaymentGatewayError;
 use sea_orm::prelude::async_trait;
-use sea_orm::DatabaseConnection;
+use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::sync::Arc;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -127,6 +131,50 @@ impl PaymentGateway for ArifPayProvider {
                 reference: r.session_id.clone(),
                 checkout_url: r.payment_url.clone(),
                 row_response: serde_json::to_value(r).ok(),
+            })
+    }
+
+    async fn verify(
+        &self,
+        reference: &str,
+        config: serde_json::Value,
+    ) -> Result<VerifyResponse, PaymentGatewayError> {
+        let arif_config: ArifPayConfig =
+            serde_json::from_value(config).map_err(|_| PaymentGatewayError::ProviderNotFound)?;
+
+        // let order = PaymentOrders::find()
+        //     .filter(domain::payment_order::Column::OrderRef.eq(reference))
+        //     .one(&self.db)
+        //     .await;
+
+        let (transaction, order) = PaymentTransactions::find()
+            .filter(domain::payment_transaction::Column::ProviderTxId.eq(reference))
+            .find_also_related(PaymentOrders)
+            .one(&self.db)
+            .await
+            .map_err(|_| PaymentGatewayError::InternalServerError)?
+            .ok_or_else(|| PaymentGatewayError::ProviderNotFound)?;
+
+        let order = order.ok_or_else(|| PaymentGatewayError::ProviderNotFound)?;
+
+        self.service
+            .verify_session(arif_config.base_url, arif_config.api_key, reference)
+            .await
+            .map(|v| VerifyResponse {
+                callbacks: None,
+                metadata: HashMap::new(),
+                items: vec![],
+                customer: None,
+                payment: None,
+                beneficiaries: vec![],
+                transaction: Transaction {
+                    id: v.transaction_id,
+                    reference: reference.to_string(),
+                    status: transaction.status.to_string(),
+                    charge: None,
+                    updated_at: transaction.updated_at,
+                    created_at: transaction.created_at,
+                },
             })
     }
 

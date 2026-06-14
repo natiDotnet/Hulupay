@@ -1,3 +1,4 @@
+use crate::gateway_response::VerifyResponse;
 use crate::payment_gateway_error::PaymentGatewayError;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -22,10 +23,11 @@ pub trait PaymentGateway: Send + Sync {
     //     webhook: serde_json::Value,
     // ) -> Result<PaymentInitResult, PaymentGatewayError>;
 
-    // async fn verify(
-    //     &self,
-    //     reference: &str,
-    // ) -> Result<PaymentVerificationResult, PaymentGatewayError>;
+    async fn verify(
+        &self,
+        reference: &str,
+        config: serde_json::Value,
+    ) -> Result<VerifyResponse, PaymentGatewayError>;
 }
 
 #[derive(Serialize, Deserialize, Debug)]

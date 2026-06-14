@@ -1,4 +1,4 @@
-use crate::api::checkout::ArifpayApiErr;
+use crate::chapa::chapa_api_error::ChapaApiErr;
 use crate::chapa::checkout_request::ChapaInitializeRequest;
 use crate::chapa::checkout_response::{ChapaCheckoutResponse, ChapaResponse};
 use axum::extract::State;
@@ -14,13 +14,15 @@ use std::sync::Arc;
     post,
     tag = "chapa",
     path = "/v1/transaction/initialize",
-    responses((status = OK, body = ChapaInitializeRequest))
+    request_body = ChapaInitializeRequest,
+    responses((status = OK, body = ChapaResponse<ChapaCheckoutResponse>),
+        (status = BAD_REQUEST, body = ChapaResponse<serde_json::Value>))
 )]
 pub async fn chapa_checkout_handler(
     State(checkout): State<Arc<dyn CreateCheckout>>,
     headers: HeaderMap,
     Json(payload): Json<ChapaInitializeRequest>,
-) -> Result<Json<ChapaResponse<ChapaCheckoutResponse>>, ArifpayApiErr> {
+) -> Result<Json<ChapaResponse<ChapaCheckoutResponse>>, ChapaApiErr> {
     let token = headers
         .get(AUTHORIZATION)
         .and_then(|value| value.to_str().ok())

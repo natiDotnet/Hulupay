@@ -1,5 +1,5 @@
 use crate::arifpay::payment_request::{ArifpayPaymentRequest, OtpRequest, VerifyOtpRequest};
-use crate::arifpay::payment_response::{ArifPayInitializeData, ArifPayInitializeResponse};
+use crate::arifpay::payment_response::{ArifInitializeData, ArifResponse, ArifVerifyResponse};
 use hulu_core::payment_gateway_error::PaymentGatewayError;
 use hulu_core::payment_method::PaymentMethod;
 use std::collections::HashMap;
@@ -53,7 +53,7 @@ impl ArifpayService {
         base_url: String,
         apikey: String,
         request: &hulu_core::payment_request::PaymentRequest,
-    ) -> Result<ArifPayInitializeData, PaymentGatewayError> {
+    ) -> Result<ArifInitializeData, PaymentGatewayError> {
         let request: ArifpayPaymentRequest = request.into();
         let response = self
             .client
@@ -65,7 +65,7 @@ impl ArifpayService {
             .map_err(|_| PaymentGatewayError::RequestFailed)?;
         let status = response.status();
 
-        let body: ArifPayInitializeResponse = response.json().await.map_err(|e| {
+        let body: ArifResponse<ArifInitializeData> = response.json().await.map_err(|e| {
             debug!(?e, "response body parse error");
             PaymentGatewayError::InvalidResponse
         })?;
@@ -79,15 +79,19 @@ impl ArifpayService {
             });
         }
 
-        Ok(body.data.unwrap())
+        body.data.ok_or_else(|| PaymentGatewayError::ProviderError {
+            message: "Provider returned success but data was empty".to_string(),
+            errors: None,
+            status_code: status.as_u16(),
+        })
     }
 
     pub async fn verify_session(
         &self,
         base_url: String,
         apikey: String,
-        session_id: String,
-    ) -> Result<serde_json::Value, PaymentGatewayError> {
+        session_id: &str,
+    ) -> Result<ArifVerifyResponse, PaymentGatewayError> {
         let response = self
             .client
             .get(format!(
@@ -100,13 +104,27 @@ impl ArifpayService {
             .await
             .map_err(|_| PaymentGatewayError::RequestFailed)?;
 
-        let body: serde_json::Value = response.json().await.map_err(|e| {
+        let status = response.status();
+
+        let body: ArifResponse<ArifVerifyResponse> = response.json().await.map_err(|e| {
             debug!(?e, "response body parse error");
             PaymentGatewayError::InvalidResponse
         })?;
         debug!(?body, "the response body");
 
-        Ok(body)
+        if !status.is_success() || body.error {
+            return Err(PaymentGatewayError::ProviderError {
+                message: body.msg,
+                errors: serde_json::to_value(&body.data).ok(),
+                status_code: status.as_u16(),
+            });
+        }
+
+        body.data.ok_or_else(|| PaymentGatewayError::ProviderError {
+            message: "Provider returned success but data was empty".to_string(),
+            errors: None,
+            status_code: status.as_u16(),
+        })
     }
 
     async fn direct_pay(
@@ -115,7 +133,7 @@ impl ArifpayService {
         apikey: String,
         payment_method: PaymentMethod,
         request: ArifpayPaymentRequest,
-    ) -> Result<ArifPayInitializeResponse, PaymentGatewayError> {
+    ) -> Result<ArifResponse<serde_json::Value>, PaymentGatewayError> {
         let path_segment = self
             .urls
             .get(&payment_method.to_string())
@@ -129,7 +147,7 @@ impl ArifpayService {
             .await
             .map_err(|_| PaymentGatewayError::RequestFailed)?;
 
-        let body: ArifPayInitializeResponse = response.json().await.map_err(|e| {
+        let body: ArifResponse<serde_json::Value> = response.json().await.map_err(|e| {
             debug!(?e, "response body parse error");
             PaymentGatewayError::InvalidResponse
         })?;

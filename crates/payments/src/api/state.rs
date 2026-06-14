@@ -6,7 +6,7 @@ use crate::application::{
 };
 // use crate::application::initiate_payment::InitiatePayment;
 use crate::ProviderEngine;
-use hulu_core::create_checkout::CreateCheckout;
+use hulu_core::create_checkout::{CreateCheckout, VerifyPayment};
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -26,5 +26,6 @@ pub struct PaymentsState {
 
     pub handle_provider_webhook: HandleProviderWebhook,
     pub handle_create_checkout: Arc<dyn CreateCheckout>,
+    pub handle_verify_payment: Arc<dyn VerifyPayment>,
     // pub handle_initiate_payment: InitiatePayment,
 }

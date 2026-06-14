@@ -24,6 +24,7 @@ use utoipa_axum::routes;
 
 use crate::application::cache_service::CacheService;
 use crate::application::checkout::create_checkout::CreateCheckoutHandler;
+use crate::application::checkout::verify_payment::VerifyPaymentHandler;
 use crate::application::{
     ArifWebhook, CreatePaymentProvider, CreatePaymentProviderConfig, DeletePaymentProvider,
     DeletePaymentProviderConfig, GetPaymentProvider, GetPaymentProviderConfig,
@@ -32,13 +33,13 @@ use crate::application::{
     WebhookHandler,
 };
 use crate::infrastructure::redis_service::RedisCacheService;
-use crate::{ArifPayProvider, domain};
+use crate::{domain, ArifPayProvider};
 use arif::arifpay::arifpay_service::ArifpayService;
-use auth::Role;
 use auth::api::middleware::AuthRouterExt;
+use auth::Role;
 use deadpool_redis::{Config, Runtime};
 use domain::provider;
-use hulu_core::create_checkout::CreateCheckout;
+use hulu_core::create_checkout::{CreateCheckout, VerifyPayment};
 use hulu_core::payment_gateway::PaymentGateway;
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
@@ -127,6 +128,12 @@ impl FromRef<PaymentsState> for Arc<dyn CreateCheckout> {
     }
 }
 
+impl FromRef<PaymentsState> for Arc<dyn VerifyPayment> {
+    fn from_ref(input: &PaymentsState) -> Self {
+        input.handle_verify_payment.clone()
+    }
+}
+
 // impl FromRef<PaymentsState> for InitiatePayment {
 //     fn from_ref(state: &PaymentsState) -> Self {
 //         state.handle_initiate_payment.clone()
@@ -206,7 +213,12 @@ fn build_state(db: &DatabaseConnection) -> PaymentsState {
         Arc::new(RedisCacheService::new(create_redis_pool()));
     let checkout_handler: Arc<dyn CreateCheckout> = Arc::new(CreateCheckoutHandler::new(
         db.clone(),
-        cache_service,
+        cache_service.clone(),
+        provider_engine.clone(),
+    ));
+    let verify_handler: Arc<dyn VerifyPayment> = Arc::new(VerifyPaymentHandler::new(
+        db.clone(),
+        cache_service.clone(),
         provider_engine.clone(),
     ));
 
@@ -227,6 +239,7 @@ fn build_state(db: &DatabaseConnection) -> PaymentsState {
         list_payment_provider_configs: ListPaymentProviderConfigs::new(db.clone()),
         handle_provider_webhook: HandleProviderWebhook::new(webhook_handlers),
         handle_create_checkout: checkout_handler,
+        handle_verify_payment: verify_handler,
         // handle_initiate_payment: InitiatePayment::new(
         //     db.clone(),
         //     cache_service,

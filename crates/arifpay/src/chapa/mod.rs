@@ -5,10 +5,12 @@ use axum::extract::FromRef;
 use sea_orm::DatabaseConnection;
 use utoipa_axum::router::OpenApiRouter;
 
+pub mod chapa_api_error;
 pub mod chapa_routes;
 pub mod checkout;
 pub mod checkout_request;
 pub mod checkout_response;
+pub mod verify;
 
 #[derive(Clone)]
 pub struct ChapaState {
