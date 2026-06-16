@@ -28,6 +28,11 @@ pub trait PaymentGateway: Send + Sync {
         reference: &str,
         config: serde_json::Value,
     ) -> Result<VerifyResponse, PaymentGatewayError>;
+    async fn cancel(
+        &self,
+        reference: &str,
+        config: serde_json::Value,
+    ) -> Result<(), PaymentGatewayError>;
 }
 
 #[derive(Serialize, Deserialize, Debug)]

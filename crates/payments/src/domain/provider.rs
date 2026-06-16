@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use sea_orm::sea_query::StringLen;
 use sea_orm::{DeriveActiveEnum, EnumIter};
 use serde::{Deserialize, Serialize};
-use strum_macros::{AsRefStr, Display};
+use strum_macros::{AsRefStr, Display, EnumString};
 use utoipa::ToSchema;
 
 // #[derive(Debug, Clone, PartialEq, sqlx::Type, serde::Serialize, serde::Deserialize)]
@@ -21,6 +21,7 @@ use utoipa::ToSchema;
     ToSchema,
     Display,
     AsRefStr,
+    EnumString,
 )]
 #[sea_orm(
     rs_type = "String",

@@ -1,6 +1,6 @@
 use crate::domain;
 use sea_orm::entity::prelude::*;
-use sea_orm::DeriveEntityModel;
+use sea_orm::{DeriveEntityModel, Set};
 use uuid::Uuid;
 
 #[sea_orm::model]
@@ -21,4 +21,11 @@ pub struct Model {
     pub payment_order: HasOne<domain::payment_order::Entity>,
 }
 
-impl ActiveModelBehavior for ActiveModel {}
+impl ActiveModelBehavior for ActiveModel {
+    fn new() -> Self {
+        Self {
+            id: Set(Uuid::now_v7()),
+            ..ActiveModelTrait::default()
+        }
+    }
+}

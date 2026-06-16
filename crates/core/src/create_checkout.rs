@@ -14,3 +14,7 @@ pub trait CreateCheckout: Send + Sync + 'static {
 pub trait VerifyPayment: Send + Sync + 'static {
     async fn execute(&self, merchant: &str, reference: &str) -> Result<VerifyResponse, HuluError>;
 }
+#[async_trait]
+pub trait CancelPayment: Send + Sync + 'static {
+    async fn execute(&self, merchant: &str, reference: &str) -> Result<(), HuluError>;
+}

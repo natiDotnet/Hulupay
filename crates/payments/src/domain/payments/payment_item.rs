@@ -13,7 +13,7 @@ pub struct Model {
     pub payment_order_id: Uuid,
     pub name: String,
     pub description: String,
-    pub quantity: i32,
+    pub quantity: u32,
     pub image: Option<String>,
     pub unit_price: Decimal,
     pub total_price: Decimal,

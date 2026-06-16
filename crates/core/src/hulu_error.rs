@@ -22,6 +22,9 @@ pub enum HuluError {
 
     #[error("unable to send the request!")]
     ConnectionError,
+
+    #[error("payment already completed")]
+    PaymentAlreadyCompleted,
 }
 
 impl From<PaymentGatewayError> for HuluError {

@@ -155,6 +155,44 @@ impl ArifpayService {
 
         Ok(body)
     }
+    pub async fn cancel_session(
+        &self,
+        base_url: &str,
+        apikey: &str,
+        session_id: &str,
+    ) -> Result<serde_json::Value, PaymentGatewayError> {
+        let response = self
+            .client
+            .delete(format!(
+                "{}/v0/checkout/session/cancel/{}",
+                base_url, session_id
+            ))
+            .header(self.get_apikey_name(), apikey)
+            .send()
+            .await
+            .map_err(|_| PaymentGatewayError::RequestFailed)?;
+        let status = response.status();
+
+        let body: ArifResponse<serde_json::Value> = response.json().await.map_err(|e| {
+            debug!(?e, "response body parse error");
+            PaymentGatewayError::InvalidResponse
+        })?;
+        debug!(?body, "the response body");
+
+        if !status.is_success() || body.error {
+            return Err(PaymentGatewayError::ProviderError {
+                message: body.msg,
+                errors: serde_json::to_value(&body.data).ok(),
+                status_code: status.as_u16(),
+            });
+        }
+
+        body.data.ok_or_else(|| PaymentGatewayError::ProviderError {
+            message: "Provider returned success but data was empty".to_string(),
+            errors: None,
+            status_code: status.as_u16(),
+        })
+    }
 
     async fn verify_otp(
         &self,

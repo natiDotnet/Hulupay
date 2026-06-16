@@ -7,6 +7,7 @@ use hulu_core::payment_gateway_error::PaymentGatewayError;
 use sea_orm::prelude::async_trait;
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -176,6 +177,15 @@ impl PaymentGateway for ArifPayProvider {
                     created_at: transaction.created_at,
                 },
             })
+    }
+
+    async fn cancel(&self, reference: &str, config: Value) -> Result<(), PaymentGatewayError> {
+        let arif_config: ArifPayConfig =
+            serde_json::from_value(config).map_err(|_| PaymentGatewayError::ProviderNotFound)?;
+        self.service
+            .cancel_session(&arif_config.base_url, &arif_config.api_key, reference)
+            .await?;
+        Ok(())
     }
 
     // async fn charge(

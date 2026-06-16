@@ -1,12 +1,13 @@
 use crate::application::cache_service::CacheService;
 use crate::application::merchants::get_merchant::get_merchant;
+use crate::domain::payment_status::{PaymentStatus, TxDirection, TxStatus};
 use crate::domain::{
     merchant_config, payment_provider, MerchantConfigs, PaymentOrders, PaymentTransactions,
 };
 use crate::{domain, ProviderEngine};
 use async_trait::async_trait;
-use hulu_core::create_checkout::VerifyPayment;
-use hulu_core::gateway_response::VerifyResponse;
+use chrono::Utc;
+use hulu_core::create_checkout::CancelPayment;
 use hulu_core::hulu_error::HuluError;
 use hulu_core::payment_gateway_error::PaymentGatewayError;
 use sea_orm::{ActiveModelTrait, QueryFilter};
@@ -14,13 +15,13 @@ use sea_orm::{ColumnTrait, IntoActiveModel, Set};
 use sea_orm::{DatabaseConnection, EntityTrait};
 use std::sync::Arc;
 
-pub struct VerifyPaymentHandler {
+pub struct CancelPaymentHandler {
     db: DatabaseConnection,
     cache: Arc<dyn CacheService>,
     payment_engine: ProviderEngine,
 }
 
-impl VerifyPaymentHandler {
+impl CancelPaymentHandler {
     pub fn new(
         db: DatabaseConnection,
         cache: Arc<dyn CacheService>,
@@ -34,8 +35,8 @@ impl VerifyPaymentHandler {
     }
 }
 #[async_trait]
-impl VerifyPayment for VerifyPaymentHandler {
-    async fn execute(&self, merchant: &str, reference: &str) -> Result<VerifyResponse, HuluError> {
+impl CancelPayment for CancelPaymentHandler {
+    async fn execute(&self, merchant: &str, reference: &str) -> Result<(), HuluError> {
         let merchant = get_merchant(&self.db, self.cache.as_ref(), merchant)
             .await
             .ok_or(PaymentGatewayError::MerchantNotFound)?;
@@ -56,8 +57,6 @@ impl VerifyPayment for VerifyPaymentHandler {
             .map_err(|_| PaymentGatewayError::ProviderNotFound)?
             .ok_or(PaymentGatewayError::ProviderNotFound)?;
 
-        let result = provider.verify(reference, merchant_config.config).await?;
-
         let (transaction, order) = PaymentTransactions::find()
             .filter(domain::payment_transaction::Column::ProviderTxId.eq(reference))
             .find_also_related(PaymentOrders)
@@ -65,20 +64,32 @@ impl VerifyPayment for VerifyPaymentHandler {
             .await
             .map_err(|_| PaymentGatewayError::InternalServerError)?
             .ok_or(PaymentGatewayError::ProviderNotFound)?;
+        let order = order.ok_or(PaymentGatewayError::ProviderNotFound)?;
+        if transaction.status == TxStatus::Success || order.status == PaymentStatus::Completed {
+            return Err(HuluError::PaymentAlreadyCompleted);
+        }
+        let result = provider.cancel(reference, merchant_config.config).await?;
 
-        let mut order = order
-            .ok_or(PaymentGatewayError::ProviderNotFound)?
-            .into_active_model();
+        let mut order = order.into_active_model();
+        order.status = Set(PaymentStatus::Cancelled);
 
-        let mut tnx = transaction.into_active_model();
-        tnx.status = Set(result.transaction.status.clone().parse().unwrap());
-        order.status = Set(result.transaction.status.clone().parse().unwrap());
-
+        domain::payment_transaction::ActiveModel {
+            status: Set(TxStatus::Failed),
+            amount: order.amount.clone(),
+            payment_order_id: order.id.clone(),
+            provider_tx_id: Set(None),
+            direction: Set(TxDirection::Charge),
+            currency: order.currency.clone(),
+            provider: Set(provider.get_name().parse().unwrap()),
+            updated_at: Set(Utc::now()),
+            provider_response: Set(None),
+            ..Default::default()
+        }
+        .insert(&self.db)
+        .await
+        .map_err(|_| PaymentGatewayError::InternalServerError)?;
         order
             .save(&self.db)
-            .await
-            .map_err(|_| PaymentGatewayError::InternalServerError)?;
-        tnx.save(&self.db)
             .await
             .map_err(|_| PaymentGatewayError::InternalServerError)?;
         Ok(result)

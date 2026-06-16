@@ -1,17 +1,20 @@
-use crate::ProviderEngine;
 use crate::application::cache_service::CacheService;
 use crate::application::merchants::get_merchant::get_merchant;
 use crate::domain::payment_status::{PaymentStatus, TxDirection, TxStatus};
 use crate::domain::provider::Provider;
 use crate::domain::{
-    MerchantConfigs, merchant_config, payment_order, payment_provider, payment_transaction,
+    merchant_config, payment_order, payment_provider, payment_transaction, MerchantConfigs,
 };
+use crate::{domain, ProviderEngine};
 use async_trait::async_trait;
 use chrono::Utc;
 use hulu_core::create_checkout::CreateCheckout;
 use hulu_core::gateway_response::CheckoutResponse;
 use hulu_core::hulu_error::HuluError;
 use hulu_core::payment_gateway_error::PaymentGatewayError;
+use hulu_core::payment_request;
+use payment_request::PaymentRequest;
+use rust_decimal::Decimal;
 use sea_orm::ColumnTrait;
 use sea_orm::QueryFilter;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
@@ -44,7 +47,7 @@ impl CreateCheckout for CreateCheckoutHandler {
     async fn execute(
         &self,
         merchant: &str,
-        payload: hulu_core::payment_request::PaymentRequest,
+        payload: PaymentRequest,
     ) -> Result<CheckoutResponse, HuluError> {
         let merchant = get_merchant(&self.db, self.cache.as_ref(), merchant)
             .await
@@ -103,6 +106,8 @@ impl CreateCheckout for CreateCheckoutHandler {
             updated_at: Set(now),
         };
 
+        self.save_info(order.id, &payload).await?;
+
         let gateway_response = match &result {
             Ok(data) => {
                 transaction.provider_tx_id = Set(Some(data.reference.clone()));
@@ -141,5 +146,53 @@ impl CreateCheckout for CreateCheckoutHandler {
             Ok(_) => Ok(gateway_response.unwrap()),
             Err(e) => Err(e.into()),
         }
+    }
+}
+impl CreateCheckoutHandler {
+    async fn save_info(&self, order_id: Uuid, info: &PaymentRequest) -> Result<(), HuluError> {
+        domain::payments::payment_customer::ActiveModel {
+            name: Set(info.customer.name.clone()),
+            email: Set(info.customer.email.clone()),
+            phone: Set(info.customer.phone.clone()),
+            account_number: Set(None),
+            payment_order_id: Set(order_id),
+            ..Default::default()
+        }
+        .insert(&self.db)
+        .await
+        .map_err(|_| HuluError::InternalServerError)?;
+
+        domain::payments::payment_callback::ActiveModel {
+            cancel_url: Set(info.callbacks.cancel_url.clone()),
+            success_url: Set(info.callbacks.success_url.clone()),
+            notify_url: Set(info.callbacks.notify_url.clone()),
+            payment_order_id: Set(order_id),
+            ..Default::default()
+        }
+        .insert(&self.db)
+        .await
+        .map_err(|_| HuluError::InternalServerError)?;
+
+        let items = info
+            .items
+            .clone()
+            .iter()
+            .map(|item| domain::payments::payment_item::ActiveModel {
+                name: Set(item.name.clone()),
+                payment_order_id: Set(order_id),
+                description: Set(item.description.clone()),
+                image: Set(item.image.clone()),
+                quantity: Set(item.quantity),
+                unit_price: Set(item.price),
+                total_price: Set(item.price * Decimal::from(item.quantity)),
+                ..Default::default()
+            })
+            .collect::<Vec<_>>();
+
+        domain::payments::payment_item::Entity::insert_many(items)
+            .exec(&self.db)
+            .await
+            .map_err(|_| HuluError::InternalServerError)?;
+        Ok(())
     }
 }
