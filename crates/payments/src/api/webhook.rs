@@ -1,7 +1,6 @@
-use crate::application::HandleProviderWebhook;
+use crate::{domain, ProviderEngine};
 use axum::extract::Path;
 use axum::{extract::State, http::StatusCode, Json};
-
 #[utoipa::path(
     post,
     tag = "payments",
@@ -10,14 +9,19 @@ use axum::{extract::State, http::StatusCode, Json};
     responses((status = OK, body = ()))
 )]
 pub async fn webhook_payment_handler(
-    Path(provider_name): Path<String>,
-    State(use_case): State<HandleProviderWebhook>,
+    Path(provider_name): Path<domain::provider::Provider>,
+    State(engine): State<ProviderEngine>,
     Json(payload): Json<serde_json::Value>,
 ) -> Result<StatusCode, StatusCode> {
-    use_case
-        .execute(payload, provider_name)
+    let provider = engine
+        .get_provider(None, Some(provider_name))
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
+        .ok_or(StatusCode::NOT_FOUND)?
+        .clone();
+    tokio::spawn(async move {
+        if let Err(e) = provider.webhook(payload).await {
+            tracing::error!("Webhook error: {}", e);
+        }
+    });
     Ok(StatusCode::OK)
 }

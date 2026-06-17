@@ -31,11 +31,12 @@ impl ProviderEngine {
     /// Get a provider by name
     pub async fn get_provider(
         &self,
-        merchant_id: Uuid,
+        merchant_id: Option<Uuid>,
         name: Option<domain::provider::Provider>,
     ) -> Option<&Arc<dyn PaymentGateway>> {
         let provider = match name {
             None => {
+                let merchant_id = merchant_id?;
                 let (_, provider) = MerchantConfigs::find()
                     .filter(merchant_config::Column::MerchantId.eq(merchant_id))
                     .filter(merchant_config::Column::IsActive.eq(true))

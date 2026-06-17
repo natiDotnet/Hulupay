@@ -112,6 +112,9 @@ impl PaymentGateway for ArifPayProvider {
         request: &hulu_core::payment_request::PaymentRequest,
         config: serde_json::Value,
     ) -> Result<GatewayResponse, PaymentGatewayError> {
+        let request = self
+            .change_callback_urls("test", request)
+            .map_err(|e| PaymentGatewayError::InternalServerError)?;
         // let my_config = MerchantConfigs::find()
         //     .inner_join(payment_provider::Entity)
         //     .filter(merchant_config::Column::MerchantId.eq(request.merchant_id))
@@ -126,13 +129,17 @@ impl PaymentGateway for ArifPayProvider {
             serde_json::from_value(config).map_err(|_| PaymentGatewayError::ProviderNotFound)?;
 
         self.service
-            .create_session(arif_config.base_url, arif_config.api_key, request)
+            .create_session(arif_config.base_url, arif_config.api_key, &request)
             .await
             .map(|r| GatewayResponse {
                 reference: r.session_id.clone(),
                 checkout_url: r.payment_url.clone(),
                 row_response: serde_json::to_value(r).ok(),
             })
+    }
+
+    async fn webhook(&self, request: Value) -> Result<(), PaymentGatewayError> {
+        todo!("handle arifpay webhook")
     }
 
     async fn verify(

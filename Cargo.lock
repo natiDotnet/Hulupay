@@ -1012,6 +1012,7 @@ dependencies = [
  "strum 0.28.0",
  "strum_macros",
  "thiserror 2.0.18",
+ "url",
 ]
 
 [[package]]
@@ -2791,6 +2792,7 @@ dependencies = [
  "strum_macros",
  "thiserror 2.0.18",
  "time",
+ "tokio",
  "tracing",
  "utoipa",
  "utoipa-axum",

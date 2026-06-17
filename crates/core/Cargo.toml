@@ -12,3 +12,4 @@ strum = "0.28.0"
 strum_macros = "0.28.0"
 chrono = { version = "0.4.43", features = ["serde"] }
 async-trait = "0.1.89"
+url = "2.5.8"

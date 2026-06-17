@@ -53,6 +53,11 @@ impl IntoResponse for ChapaApiErr {
                 message,
                 errors,
             ),
+            HuluError::PaymentAlreadyCompleted => (
+                StatusCode::BAD_REQUEST,
+                "payment already completed".to_string(),
+                None,
+            ),
         };
 
         (

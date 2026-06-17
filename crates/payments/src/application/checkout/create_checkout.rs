@@ -55,7 +55,7 @@ impl CreateCheckout for CreateCheckoutHandler {
 
         let provider = self
             .payment_engine
-            .get_provider(merchant.id, None)
+            .get_provider(Some(merchant.id), None)
             .await
             .ok_or(HuluError::ProviderNotFound)?;
 
