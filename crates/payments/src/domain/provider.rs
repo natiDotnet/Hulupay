@@ -1,6 +1,7 @@
 use crate::domain::error::DomainError;
 use crate::domain::PaymentMethod;
 use async_trait::async_trait;
+use hulu_core::payment_method::GatewayProvider;
 use sea_orm::sea_query::StringLen;
 use sea_orm::{DeriveActiveEnum, EnumIter};
 use serde::{Deserialize, Serialize};
@@ -33,6 +34,10 @@ pub enum Provider {
     #[serde(rename = "STRIPE")]
     Stripe,
 
+    #[strum(serialize = "HULU", to_string = "HULU")]
+    #[serde(rename = "HULU")]
+    Hulu,
+
     #[strum(serialize = "CHAPA", to_string = "CHAPA")]
     #[serde(rename = "CHAPA")]
     Chapa,
@@ -48,6 +53,7 @@ impl Provider {
             Provider::ArifPay => "ARIFPAY",
             Provider::Chapa => "CHAPA",
             Provider::Stripe => "STRIPE",
+            Provider::Hulu => "HULU",
         }
     }
 }
@@ -63,6 +69,17 @@ impl Provider {
             Self::Stripe => 300,   //  5 min
             Self::Chapa => 900,    // 15 min
             Self::ArifPay => 1200, // 20 min
+            Self::Hulu => 1800,    // 30 min
+        }
+    }
+}
+
+impl From<GatewayProvider> for Provider {
+    fn from(value: GatewayProvider) -> Self {
+        match value {
+            GatewayProvider::Arifpay => Provider::ArifPay,
+            GatewayProvider::Chapa => Provider::Chapa,
+            GatewayProvider::Hulu => Provider::Hulu,
         }
     }
 }

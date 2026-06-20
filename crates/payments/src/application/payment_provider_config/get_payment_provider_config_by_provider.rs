@@ -58,6 +58,7 @@ impl GetPaymentProviderConfigByProvider {
 
         match result {
             None => match &provider_code {
+                Provider::Hulu => Err(anyhow!("provider not found")),
                 Provider::Stripe => Err(anyhow!("provider not found")),
                 Provider::Chapa => Err(anyhow!("provider not found")),
                 Provider::ArifPay => Ok(PaymentProviderConfig {

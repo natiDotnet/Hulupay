@@ -19,9 +19,10 @@ pub async fn webhook_payment_handler(
         .ok_or(StatusCode::NOT_FOUND)?
         .clone();
     tokio::spawn(async move {
-        if let Err(e) = provider.webhook(payload).await {
+        if let Err(e) = provider.webhook(payload.clone()).await {
             tracing::error!("Webhook error: {}", e);
         }
     });
+
     Ok(StatusCode::OK)
 }

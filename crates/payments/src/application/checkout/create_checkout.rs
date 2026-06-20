@@ -13,6 +13,7 @@ use hulu_core::gateway_response::CheckoutResponse;
 use hulu_core::hulu_error::HuluError;
 use hulu_core::payment_gateway_error::PaymentGatewayError;
 use hulu_core::payment_request;
+use hulu_core::request_context::RequestContext;
 use payment_request::PaymentRequest;
 use rust_decimal::Decimal;
 use sea_orm::ColumnTrait;
@@ -46,10 +47,10 @@ impl CreateCheckoutHandler {
 impl CreateCheckout for CreateCheckoutHandler {
     async fn execute(
         &self,
-        merchant: &str,
+        context: &RequestContext,
         payload: PaymentRequest,
     ) -> Result<CheckoutResponse, HuluError> {
-        let merchant = get_merchant(&self.db, self.cache.as_ref(), merchant)
+        let merchant = get_merchant(&self.db, self.cache.as_ref(), &context.merchant)
             .await
             .ok_or(PaymentGatewayError::MerchantNotFound)?;
 
@@ -62,7 +63,7 @@ impl CreateCheckout for CreateCheckoutHandler {
         let merchant_config: merchant_config::Model = MerchantConfigs::find()
             .inner_join(payment_provider::Entity)
             .filter(merchant_config::Column::MerchantId.eq(merchant.id))
-            .filter(payment_provider::Column::Code.eq(provider.get_name()))
+            .filter(payment_provider::Column::Code.eq(provider.get_name().to_string()))
             .filter(merchant_config::Column::IsActive.eq(true))
             .one(&self.db)
             .await

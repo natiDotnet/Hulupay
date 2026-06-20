@@ -50,7 +50,7 @@ impl CancelPayment for CancelPaymentHandler {
         let merchant_config = MerchantConfigs::find()
             .inner_join(payment_provider::Entity)
             .filter(merchant_config::Column::MerchantId.eq(merchant.id))
-            .filter(payment_provider::Column::Code.eq(provider.get_name()))
+            .filter(payment_provider::Column::Code.eq(provider.get_name().to_string()))
             .filter(merchant_config::Column::IsActive.eq(true))
             .one(&self.db)
             .await
@@ -80,7 +80,7 @@ impl CancelPayment for CancelPaymentHandler {
             provider_tx_id: Set(None),
             direction: Set(TxDirection::Charge),
             currency: order.currency.clone(),
-            provider: Set(provider.get_name().parse().unwrap()),
+            provider: Set(provider.get_name().into()),
             updated_at: Set(Utc::now()),
             provider_response: Set(None),
             ..Default::default()

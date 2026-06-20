@@ -1,5 +1,6 @@
 use crate::gateway_response::VerifyResponse;
 use crate::payment_gateway_error::PaymentGatewayError;
+use crate::payment_method::GatewayProvider;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use url::{ParseError, Url};
@@ -30,7 +31,7 @@ pub trait PaymentGateway: Send + Sync {
 
         Ok(request)
     }
-    fn get_name(&self) -> &'static str;
+    fn get_name(&self) -> GatewayProvider;
     fn get_apikey_name(&self) -> &'static str;
     async fn checkout(
         &self,

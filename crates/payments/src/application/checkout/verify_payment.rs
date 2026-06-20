@@ -49,7 +49,7 @@ impl VerifyPayment for VerifyPaymentHandler {
         let merchant_config = MerchantConfigs::find()
             .inner_join(payment_provider::Entity)
             .filter(merchant_config::Column::MerchantId.eq(merchant.id))
-            .filter(payment_provider::Column::Code.eq(provider.get_name()))
+            .filter(payment_provider::Column::Code.eq(provider.get_name().to_string()))
             .filter(merchant_config::Column::IsActive.eq(true))
             .one(&self.db)
             .await

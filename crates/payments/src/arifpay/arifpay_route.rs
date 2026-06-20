@@ -1,4 +1,4 @@
-use crate::api::{checkout, verify};
+use crate::arifpay::{checkout, verify};
 use axum::extract::FromRef;
 use hulu_core::create_checkout::{CreateCheckout, VerifyPayment};
 use std::sync::Arc;

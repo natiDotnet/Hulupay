@@ -1,11 +1,13 @@
 use crate::gateway_response::{CheckoutResponse, VerifyResponse};
 use crate::hulu_error::HuluError;
+use crate::request_context::RequestContext;
 use async_trait::async_trait;
+
 #[async_trait]
 pub trait CreateCheckout: Send + Sync + 'static {
     async fn execute(
         &self,
-        merchant: &str,
+        context: &RequestContext,
         payload: crate::payment_request::PaymentRequest,
     ) -> Result<CheckoutResponse, HuluError>;
 }

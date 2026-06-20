@@ -1,9 +1,10 @@
+use crate::arifpay::arifpay_service::ArifpayService;
 use crate::domain;
 use crate::domain::{PaymentOrders, PaymentTransactions};
-use arif::arifpay::arifpay_service::ArifpayService;
 use hulu_core::gateway_response::{Transaction, VerifyResponse};
 use hulu_core::payment_gateway::{GatewayResponse, PaymentGateway};
 use hulu_core::payment_gateway_error::PaymentGatewayError;
+use hulu_core::payment_method::GatewayProvider;
 use sea_orm::prelude::async_trait;
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
@@ -99,8 +100,8 @@ impl ArifPayProvider {
 
 #[async_trait::async_trait]
 impl PaymentGateway for ArifPayProvider {
-    fn get_name(&self) -> &'static str {
-        "ARIFPAY"
+    fn get_name(&self) -> GatewayProvider {
+        GatewayProvider::Arifpay
     }
 
     fn get_apikey_name(&self) -> &'static str {

@@ -9,6 +9,7 @@ mod get_payment_provider_config_by_provider;
 mod initialize;
 mod list_payment_provider_configs;
 mod list_payment_providers;
+pub mod request_context;
 mod state;
 mod update_payment_provider;
 mod update_payment_provider_config;
@@ -32,9 +33,9 @@ use crate::application::{
     ListPaymentProviders, ProviderEngine, UpdatePaymentProvider, UpdatePaymentProviderConfig,
     WebhookHandler,
 };
+use crate::arifpay::arifpay_service::ArifpayService;
 use crate::infrastructure::redis_service::RedisCacheService;
 use crate::{domain, ArifPayProvider};
-use arif::arifpay::arifpay_service::ArifpayService;
 use auth::api::middleware::AuthRouterExt;
 use auth::Role;
 use deadpool_redis::{Config, Runtime};
@@ -196,8 +197,8 @@ pub fn router(db: &DatabaseConnection) -> OpenApiRouter {
         .merge(merchant_admin_routes)
         .merge(authenticated_payment_routes)
         .merge(public_routes)
-        .merge(arif::chapa::chapa_routes::chapa_routes())
-        .merge(arif::api::arifpay_route::arifpay_routes())
+        .merge(crate::chapa::chapa_routes::chapa_routes())
+        .merge(crate::arifpay::arifpay_route::arifpay_routes())
         .with_state(state)
 }
 

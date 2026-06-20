@@ -16,3 +16,10 @@ pub enum PaymentMethod {
     Binget,
     Kacha,
 }
+
+#[derive(Debug, Clone, Display, EnumString, Deserialize, Serialize, Eq, PartialEq)]
+pub enum GatewayProvider {
+    Hulu,
+    Arifpay,
+    Chapa,
+}

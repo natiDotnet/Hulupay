@@ -1,3 +1,4 @@
+use crate::api::request_context::RequestCtx;
 use crate::chapa::chapa_api_error::ChapaApiErr;
 use crate::chapa::checkout_request::ChapaInitializeRequest;
 use crate::chapa::checkout_response::{ChapaCheckoutResponse, ChapaResponse};
@@ -19,6 +20,7 @@ use std::sync::Arc;
         (status = BAD_REQUEST, body = ChapaResponse<serde_json::Value>))
 )]
 pub async fn chapa_checkout_handler(
+    ctx: RequestCtx,
     State(checkout): State<Arc<dyn CreateCheckout>>,
     headers: HeaderMap,
     Json(payload): Json<ChapaInitializeRequest>,
@@ -29,7 +31,7 @@ pub async fn chapa_checkout_handler(
         .and_then(|value| value.strip_prefix("Bearer "))
         .map(str::trim);
     let request: PaymentRequest = payload.into();
-    let response = checkout.execute("master", request).await?;
+    let response = checkout.execute(&ctx.0, request).await?;
 
     Ok(Json(response.into()))
 }
