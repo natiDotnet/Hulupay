@@ -21,6 +21,7 @@ use sea_orm::QueryFilter;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
 use serde_json::json;
 use std::sync::Arc;
+use tracing::debug;
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -50,6 +51,7 @@ impl CreateCheckout for CreateCheckoutHandler {
         context: &RequestContext,
         payload: PaymentRequest,
     ) -> Result<CheckoutResponse, HuluError> {
+        debug!(?context, "Creating checkout");
         let merchant = get_merchant(&self.db, self.cache.as_ref(), &context.merchant)
             .await
             .ok_or(PaymentGatewayError::MerchantNotFound)?;
@@ -75,6 +77,7 @@ impl CreateCheckout for CreateCheckoutHandler {
         let order = payment_order::ActiveModel {
             merchant_id: Set(merchant.id),
             customer_id: Set(Uuid::now_v7()),
+            request_provider: Set(context.provider.clone().into()),
             order_ref: Set(payload.payment.reference.clone()),
             amount: Set(payload.payment.amount),
             currency: Set(payload.payment.currency.clone()),

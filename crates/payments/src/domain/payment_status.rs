@@ -25,6 +25,19 @@ pub enum PaymentStatus {
     Refunded,
 }
 
+impl From<hulu_core::payment_gateway::PaymentStatus> for PaymentStatus {
+    fn from(value: hulu_core::payment_gateway::PaymentStatus) -> Self {
+        match value {
+            hulu_core::payment_gateway::PaymentStatus::Success => Self::Completed,
+            hulu_core::payment_gateway::PaymentStatus::Failed => Self::Failed,
+            hulu_core::payment_gateway::PaymentStatus::Pending => Self::Pending,
+            hulu_core::payment_gateway::PaymentStatus::Cancelled => Self::Cancelled,
+            hulu_core::payment_gateway::PaymentStatus::Refunding => Self::RefundPending,
+            hulu_core::payment_gateway::PaymentStatus::Refunded => Self::Refunded,
+            hulu_core::payment_gateway::PaymentStatus::Reversed => Self::Refunded,
+        }
+    }
+}
 #[derive(Debug, Error)]
 pub enum TransitionError {
     #[error("illegal transition from {from:?} to {to:?}")]

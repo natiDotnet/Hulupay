@@ -10,11 +10,15 @@ pub enum PaymentMethod {
     Mpesa,
     CbeBirr,
     AwashBirr,
+    Awash,
     Yaya,
     CoopayEbirr,
     ZamZam,
     Binget,
     Kacha,
+    Boa,
+    Amole,
+    Unknown(String),
 }
 
 #[derive(Debug, Clone, Display, EnumString, Deserialize, Serialize, Eq, PartialEq)]

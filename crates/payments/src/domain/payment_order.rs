@@ -17,10 +17,12 @@ pub struct Model {
     pub id: Uuid,
     pub merchant_id: Uuid,
     pub customer_id: Uuid,
+    #[sea_orm(unique)]
     pub order_ref: String,
     pub amount: Decimal,
     pub currency: String,
     pub status: PaymentStatus,
+    pub request_provider: Provider,
     pub provider: Provider,
     #[sea_orm(unique)]
     pub idempotency_key: String,
@@ -29,6 +31,10 @@ pub struct Model {
     pub updated_at: DateTimeUtc,
     #[sea_orm(has_many)]
     pub payment_transaction: HasMany<domain::payment_transaction::Entity>,
+    #[sea_orm(has_one)]
+    pub payment_callback: HasOne<domain::payments::payment_callback::Entity>,
+    #[sea_orm(has_one)]
+    pub payment_customer: HasOne<domain::payments::payment_customer::Entity>,
 }
 impl ActiveModelBehavior for ActiveModel {
     fn new() -> Self {

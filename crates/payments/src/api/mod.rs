@@ -25,6 +25,7 @@ use utoipa_axum::routes;
 
 use crate::application::cache_service::CacheService;
 use crate::application::checkout::create_checkout::CreateCheckoutHandler;
+use crate::application::checkout::payment_webhook::PaymentWebhookHandler;
 use crate::application::checkout::verify_payment::VerifyPaymentHandler;
 use crate::application::{
     ArifWebhook, CreatePaymentProvider, CreatePaymentProviderConfig, DeletePaymentProvider,
@@ -135,6 +136,12 @@ impl FromRef<PaymentsState> for Arc<dyn VerifyPayment> {
     }
 }
 
+impl FromRef<PaymentsState> for PaymentWebhookHandler {
+    fn from_ref(input: &PaymentsState) -> Self {
+        input.handle_payment_webhook.clone()
+    }
+}
+
 // impl FromRef<PaymentsState> for InitiatePayment {
 //     fn from_ref(state: &PaymentsState) -> Self {
 //         state.handle_initiate_payment.clone()
@@ -241,6 +248,11 @@ fn build_state(db: &DatabaseConnection) -> PaymentsState {
         handle_provider_webhook: HandleProviderWebhook::new(webhook_handlers),
         handle_create_checkout: checkout_handler,
         handle_verify_payment: verify_handler,
+        handle_payment_webhook: PaymentWebhookHandler::new(
+            db.clone(),
+            cache_service.clone(),
+            provider_engine.clone(),
+        ),
         // handle_initiate_payment: InitiatePayment::new(
         //     db.clone(),
         //     cache_service,

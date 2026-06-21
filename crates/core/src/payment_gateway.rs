@@ -1,8 +1,10 @@
 use crate::gateway_response::VerifyResponse;
 use crate::payment_gateway_error::PaymentGatewayError;
-use crate::payment_method::GatewayProvider;
+use crate::payment_method::{GatewayProvider, PaymentMethod};
 use async_trait::async_trait;
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
+use strum_macros::Display;
 use url::{ParseError, Url};
 
 #[async_trait]
@@ -44,7 +46,8 @@ pub trait PaymentGateway: Send + Sync {
     //     request: DirectPaymentRequest,
     // ) -> Result<PaymentChargeResult, PaymentGatewayError>;
 
-    async fn webhook(&self, webhook: serde_json::Value) -> Result<(), PaymentGatewayError>;
+    async fn webhook(&self, webhook: &WebhookInfo) -> Result<(), PaymentGatewayError>;
+    fn webhook_info(&self, webhook: serde_json::Value) -> Result<WebhookInfo, PaymentGatewayError>;
 
     async fn verify(
         &self,
@@ -63,4 +66,34 @@ pub struct GatewayResponse {
     pub checkout_url: String,
     pub reference: String,
     pub row_response: Option<serde_json::Value>,
+}
+#[derive(Debug, Clone)]
+pub enum PaymentStatus {
+    Success,
+    Failed,
+    Pending,
+    Cancelled,
+    Refunding,
+    Refunded,
+    Reversed,
+}
+
+#[derive(Clone)]
+pub struct WebhookInfo {
+    pub status: PaymentStatus,
+    pub provider_reference: String,
+    pub payment_method: PaymentMethod,
+    pub amount: Decimal,
+    pub charge: Decimal,
+    pub client_reference: String,
+    pub txn_reference: String,
+}
+
+#[derive(Display)]
+#[strum(serialize_all = "UPPERCASE")]
+pub enum WebhookStatus {
+    Pending,
+    Processing,
+    Forwarded,
+    Failed,
 }

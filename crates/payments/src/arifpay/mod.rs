@@ -1,4 +1,6 @@
 pub mod arif_api_error;
+pub mod arif_payment_method;
+pub mod arif_webhook;
 pub mod arifpay_route;
 pub mod arifpay_service;
 pub mod checkout;

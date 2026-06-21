@@ -32,7 +32,7 @@ impl ProviderEngine {
     pub async fn get_provider(
         &self,
         merchant_id: Option<Uuid>,
-        name: Option<domain::provider::Provider>,
+        name: Option<&domain::provider::Provider>,
     ) -> Option<&Arc<dyn PaymentGateway>> {
         let provider = match name {
             None => {

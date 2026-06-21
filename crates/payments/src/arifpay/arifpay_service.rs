@@ -1,9 +1,18 @@
+use crate::arifpay::arif_payment_method::ArifPaymentMethod;
+use crate::arifpay::arif_webhook::ArifWebhook;
 use crate::arifpay::payment_request::{ArifpayPaymentRequest, OtpRequest, VerifyOtpRequest};
 use crate::arifpay::payment_response::{ArifInitializeData, ArifResponse, ArifVerifyResponse};
+use hulu_core::payment_gateway::{PaymentStatus, WebhookInfo};
 use hulu_core::payment_gateway_error::PaymentGatewayError;
 use hulu_core::payment_method::PaymentMethod;
+use hulu_core::payment_request::CallbackUrls;
+use rust_decimal::Decimal;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use strum;
+use strum_macros::Display;
 use tracing::debug;
+use tracing::field::debug;
 
 #[derive(Clone)]
 pub struct ArifpayService {
@@ -223,6 +232,36 @@ impl ArifpayService {
         debug!(?body, "the response body");
 
         Ok(body)
+    }
+
+    pub fn map_webhook(
+        &self,
+        webhook: serde_json::Value,
+    ) -> Result<ArifWebhook, PaymentGatewayError> {
+        let webhook: ArifWebhook = serde_json::from_value(webhook).map_err(|e| {
+            debug!(?e, "webhook parse error");
+            PaymentGatewayError::RequestFailed
+        })?;
+        Ok(webhook)
+    }
+
+    pub async fn send_webhook(
+        &self,
+        url: &str,
+        webhook: ArifWebhook,
+    ) -> Result<(), PaymentGatewayError> {
+        let response = self
+            .client
+            .post(url)
+            .json(&webhook)
+            .send()
+            .await
+            .map_err(|_| PaymentGatewayError::RequestFailed)?;
+        let status = response.status();
+        if !status.is_success() {
+            return Err(PaymentGatewayError::RequestFailed);
+        }
+        Ok(())
     }
 
     async fn send_otp(

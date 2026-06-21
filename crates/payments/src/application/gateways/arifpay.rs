@@ -1,10 +1,12 @@
+use crate::arifpay::arif_webhook::{ArifTransaction, ArifWebhook};
 use crate::arifpay::arifpay_service::ArifpayService;
 use crate::domain;
-use crate::domain::{PaymentOrders, PaymentTransactions};
+use crate::domain::{payments, PaymentOrders, PaymentTransactions};
 use hulu_core::gateway_response::{Transaction, VerifyResponse};
-use hulu_core::payment_gateway::{GatewayResponse, PaymentGateway};
+use hulu_core::payment_gateway::{GatewayResponse, PaymentGateway, WebhookInfo};
 use hulu_core::payment_gateway_error::PaymentGatewayError;
 use hulu_core::payment_method::GatewayProvider;
+use rust_decimal_macros::dec;
 use sea_orm::prelude::async_trait;
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
@@ -139,8 +141,46 @@ impl PaymentGateway for ArifPayProvider {
             })
     }
 
-    async fn webhook(&self, request: Value) -> Result<(), PaymentGatewayError> {
-        todo!("handle arifpay webhook")
+    async fn webhook(&self, request: &WebhookInfo) -> Result<(), PaymentGatewayError> {
+        let (order, callback, customer) =
+            PaymentOrders::find_by_order_ref(&request.client_reference)
+                .find_also_related(payments::payment_callback::Entity)
+                .find_also_related(payments::payment_customer::Entity)
+                .one(&self.db)
+                .await
+                .map_err(|_| PaymentGatewayError::ProviderNotFound)?
+                .ok_or(PaymentGatewayError::ProviderNotFound)?;
+        let callback = callback.ok_or(PaymentGatewayError::ProviderNotFound)?;
+        let customer = customer.ok_or(PaymentGatewayError::ProviderNotFound)?;
+        let webhook = ArifWebhook {
+            uuid: request.provider_reference.clone(),
+            nonce: request.client_reference.clone(),
+            session_id: request.provider_reference.clone(),
+            transaction_status: request.status.clone().into(),
+            transaction: ArifTransaction {
+                transaction_id: request.txn_reference.clone(),
+                transaction_status: request.status.clone().into(),
+            },
+            total_amount: request.amount,
+            payment_method: request.payment_method.clone().into(),
+            notification_url: callback.notify_url.clone(),
+            phone: customer.phone,
+        };
+        self.service
+            .send_webhook(&callback.notify_url, webhook)
+            .await
+    }
+
+    fn webhook_info(&self, webhook: Value) -> Result<WebhookInfo, PaymentGatewayError> {
+        self.service.map_webhook(webhook).map(|w| WebhookInfo {
+            status: w.transaction_status.into(),
+            amount: w.total_amount,
+            provider_reference: w.session_id,
+            txn_reference: w.transaction.transaction_id,
+            client_reference: w.nonce,
+            charge: w.total_amount * dec!(2.875) / dec!(100),
+            payment_method: w.payment_method.into(),
+        })
     }
 
     async fn verify(

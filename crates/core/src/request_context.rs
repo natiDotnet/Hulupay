@@ -1,6 +1,7 @@
 use crate::payment_method::GatewayProvider;
 use std::collections::HashMap;
 
+#[derive(Debug, Clone)]
 pub struct RequestContext {
     pub merchant: String,
     pub provider: GatewayProvider,
