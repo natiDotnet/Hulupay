@@ -59,11 +59,12 @@ impl ArifpayService {
     }
     pub async fn create_session(
         &self,
-        base_url: String,
-        apikey: String,
+        base_url: &str,
+        apikey: &str,
         request: &hulu_core::payment_request::PaymentRequest,
     ) -> Result<ArifInitializeData, PaymentGatewayError> {
         let request: ArifpayPaymentRequest = request.into();
+        debug!(?base_url, ?apikey, ?request, "the request");
         let response = self
             .client
             .post(format!("{}/api/checkout/session", base_url))
@@ -73,6 +74,15 @@ impl ArifpayService {
             .await
             .map_err(|_| PaymentGatewayError::RequestFailed)?;
         let status = response.status();
+        debug!(?status, "the response status");
+        // let res = response
+        //     .text()
+        //     .await
+        //     .map_err(|e| PaymentGatewayError::RequestFailed)?;
+        // debug!(?res, "the response text");
+
+        // let body: ArifResponse<ArifInitializeData> =
+        //     serde_json::from_str(&res).map_err(|e| PaymentGatewayError::RequestFailed)?;
 
         let body: ArifResponse<ArifInitializeData> = response.json().await.map_err(|e| {
             debug!(?e, "response body parse error");

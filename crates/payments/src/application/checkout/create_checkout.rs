@@ -16,9 +16,9 @@ use hulu_core::payment_request;
 use hulu_core::request_context::RequestContext;
 use payment_request::PaymentRequest;
 use rust_decimal::Decimal;
-use sea_orm::ColumnTrait;
-use sea_orm::QueryFilter;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
+use sea_orm::{ActiveModelTrait, DatabaseConnection, DatabaseTransaction, EntityTrait, Set};
+use sea_orm::{ColumnTrait, TransactionTrait};
+use sea_orm::{IntoActiveModel, QueryFilter};
 use serde_json::json;
 use std::sync::Arc;
 use tracing::debug;
@@ -72,8 +72,22 @@ impl CreateCheckout for CreateCheckoutHandler {
             .map_err(|_| PaymentGatewayError::ProviderNotFound)?
             .ok_or(PaymentGatewayError::ProviderNotFound)?;
 
-        let result = provider.checkout(&payload, merchant_config.config).await;
+        let request_provider = self
+            .payment_engine
+            .get_provider(None, Some(&context.provider.into()))
+            .await
+            .ok_or(HuluError::ProviderNotFound)?;
 
+        let apikey_header = request_provider.get_apikey_name();
+        let result = provider
+            .checkout(&context, &payload, apikey_header, merchant_config.config)
+            .await;
+
+        let txn = self
+            .db
+            .begin()
+            .await
+            .map_err(|_| HuluError::InternalServerError)?;
         let order = payment_order::ActiveModel {
             merchant_id: Set(merchant.id),
             customer_id: Set(Uuid::now_v7()),
@@ -87,7 +101,7 @@ impl CreateCheckout for CreateCheckoutHandler {
             retry_count: Set(0),
             ..Default::default()
         }
-        .insert(&self.db)
+        .insert(&txn)
         .await
         .map_err(|_| HuluError::InternalServerError)?;
 
@@ -96,26 +110,24 @@ impl CreateCheckout for CreateCheckoutHandler {
         let success_tx_id = Uuid::now_v7();
         let now = Utc::now();
 
-        let mut transaction = payment_transaction::ActiveModel {
-            id: Set(success_tx_id),
-            payment_order_id: Set(order.id),
-            provider: Set(order.provider.clone()),
-            provider_tx_id: Set(None),
-            direction: Set(TxDirection::Charge),
-            amount: Set(order.amount),
-            currency: Set(order.currency.clone()),
-            status: Set(TxStatus::Pending),
-            provider_response: Set(None),
-            created_at: Set(now),
-            updated_at: Set(now),
+        let mut transaction = payment_transaction::Model {
+            id: success_tx_id,
+            payment_order_id: order.id,
+            provider: order.provider.clone(),
+            provider_tx_id: None,
+            direction: TxDirection::Charge,
+            amount: order.amount,
+            currency: order.currency.clone(),
+            status: TxStatus::Pending,
+            provider_response: None,
+            created_at: now,
+            updated_at: now,
         };
-
-        self.save_info(order.id, &payload).await?;
 
         let gateway_response = match &result {
             Ok(data) => {
-                transaction.provider_tx_id = Set(Some(data.reference.clone()));
-                transaction.provider_response = Set(data.row_response.clone());
+                transaction.provider_tx_id = Some(data.reference.clone());
+                transaction.provider_response = data.row_response.clone();
 
                 Some(CheckoutResponse {
                     checkout_url: data.checkout_url.clone(),
@@ -129,11 +141,11 @@ impl CreateCheckout for CreateCheckoutHandler {
                 message,
                 errors,
             }) => {
-                transaction.provider_response = Set(Some(json!({
+                transaction.provider_response = Some(json!({
                     "status_code": status_code,
                     "message": message,
                     "errors": errors,
-                })));
+                }));
 
                 None
             }
@@ -142,7 +154,13 @@ impl CreateCheckout for CreateCheckoutHandler {
         };
 
         transaction
-            .save(&self.db)
+            .into_active_model()
+            .insert(&txn)
+            .await
+            .map_err(|_| HuluError::InternalServerError)?;
+        self.save_info(&txn, order.id, &payload).await?;
+
+        txn.commit()
             .await
             .map_err(|_| HuluError::InternalServerError)?;
 
@@ -153,7 +171,12 @@ impl CreateCheckout for CreateCheckoutHandler {
     }
 }
 impl CreateCheckoutHandler {
-    async fn save_info(&self, order_id: Uuid, info: &PaymentRequest) -> Result<(), HuluError> {
+    async fn save_info(
+        &self,
+        txn: &DatabaseTransaction,
+        order_id: Uuid,
+        info: &PaymentRequest,
+    ) -> Result<(), HuluError> {
         domain::payments::payment_customer::ActiveModel {
             name: Set(info.customer.name.clone()),
             email: Set(info.customer.email.clone()),
@@ -162,7 +185,7 @@ impl CreateCheckoutHandler {
             payment_order_id: Set(order_id),
             ..Default::default()
         }
-        .insert(&self.db)
+        .insert(txn)
         .await
         .map_err(|_| HuluError::InternalServerError)?;
 
@@ -170,10 +193,11 @@ impl CreateCheckoutHandler {
             cancel_url: Set(info.callbacks.cancel_url.clone()),
             success_url: Set(info.callbacks.success_url.clone()),
             notify_url: Set(info.callbacks.notify_url.clone()),
+            error_url: Set(info.callbacks.error_url.clone()),
             payment_order_id: Set(order_id),
             ..Default::default()
         }
-        .insert(&self.db)
+        .insert(txn)
         .await
         .map_err(|_| HuluError::InternalServerError)?;
 
@@ -194,7 +218,7 @@ impl CreateCheckoutHandler {
             .collect::<Vec<_>>();
 
         domain::payments::payment_item::Entity::insert_many(items)
-            .exec(&self.db)
+            .exec(txn)
             .await
             .map_err(|_| HuluError::InternalServerError)?;
         Ok(())

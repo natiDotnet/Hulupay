@@ -1,13 +1,13 @@
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use std::collections::HashMap;
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct CustomerInfo {
     pub phone: String,
     pub email: String,
     pub name: String,
 }
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct PaymentOptions {
     pub amount: Decimal,
     pub reference: String,
@@ -16,14 +16,14 @@ pub struct PaymentOptions {
     pub expire_date: Option<DateTime<Utc>>,
     pub lang: Option<String>,
 }
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct CallbackUrls {
     pub success_url: String,
     pub error_url: String,
     pub cancel_url: String,
     pub notify_url: String,
 }
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Item {
     pub name: String,
     pub description: String,
@@ -31,14 +31,14 @@ pub struct Item {
     pub image: Option<String>,
     pub price: Decimal,
 }
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Beneficiary {
     pub account_number: String,
     pub bank: String,
     pub amount: Decimal,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct PaymentRequest {
     pub customer: CustomerInfo,
     pub payment: PaymentOptions,

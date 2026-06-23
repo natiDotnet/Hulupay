@@ -6,6 +6,12 @@ pub struct ChapaService {
 }
 
 impl ChapaService {
+    pub fn new(client: reqwest::Client) -> Self {
+        Self { client }
+    }
+}
+
+impl ChapaService {
     pub async fn send_webhook(
         &self,
         url: &str,

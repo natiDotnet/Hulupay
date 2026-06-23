@@ -58,12 +58,13 @@ pub fn api_routes(db: &DatabaseConnection) -> Router {
                 // Merchant routes (requires MasterAdmin role)
                 .merge(merchant::router(db))
                 // Payment routes (requires authentication)
-                .merge(payments::router(db))
-                .merge(payments::chapa::router(db))
+                // .merge(payments::router(db))
+                // .merge(payments::chapa::router(db))
                 .merge(OpenApiRouter::new().route("/test", get(|| async { "Hello, World!" }))),
         )
         .layer(axum::middleware::from_fn(auth::api::authentication))
         .layer(axum::Extension(token_service.clone()))
+        .merge(payments::router(db))
         .split_for_parts();
 
     app.merge(SwaggerUi::new("/swagger-ui").url("/api-doc/openapi.json", doc.clone()))

@@ -2,7 +2,7 @@ use crate::domain;
 use crate::domain::{merchant_config, MerchantConfigs, PaymentProviders};
 use hulu_core::payment_gateway::PaymentGateway;
 use reqwest::Client;
-use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QuerySelect};
+use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -43,8 +43,8 @@ impl ProviderEngine {
                     .filter(merchant_config::Column::IsDefault.eq(true))
                     .filter(domain::payment_provider::Column::IsActive.eq(true))
                     .find_also_related(PaymentProviders)
-                    .select_only()
-                    .column(domain::payment_provider::Column::Name)
+                    // .select_only()
+                    // .column(domain::payment_provider::Column::Name)
                     .one(&self.db)
                     .await
                     .ok()??;

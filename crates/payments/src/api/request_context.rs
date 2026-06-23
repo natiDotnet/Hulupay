@@ -15,7 +15,12 @@ where
         let header: HashMap<String, String> = parts
             .headers
             .iter()
-            .map(|(k, v)| (k.to_string(), v.to_str().unwrap_or("").to_string()))
+            .map(|(k, v)| {
+                (
+                    k.to_string().to_lowercase(),
+                    v.to_str().unwrap_or("").to_string(),
+                )
+            })
             .collect();
 
         Ok(RequestCtx(RequestContext {

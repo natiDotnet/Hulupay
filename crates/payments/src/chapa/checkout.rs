@@ -7,6 +7,7 @@ use axum::http::header::AUTHORIZATION;
 use axum::http::HeaderMap;
 use axum::Json;
 use hulu_core::create_checkout::CreateCheckout;
+use hulu_core::payment_method::GatewayProvider;
 use hulu_core::payment_request::PaymentRequest;
 use std::sync::Arc;
 
@@ -20,7 +21,7 @@ use std::sync::Arc;
         (status = BAD_REQUEST, body = ChapaResponse<serde_json::Value>))
 )]
 pub async fn chapa_checkout_handler(
-    ctx: RequestCtx,
+    mut ctx: RequestCtx,
     State(checkout): State<Arc<dyn CreateCheckout>>,
     headers: HeaderMap,
     Json(payload): Json<ChapaInitializeRequest>,
@@ -30,6 +31,7 @@ pub async fn chapa_checkout_handler(
         .and_then(|value| value.to_str().ok())
         .and_then(|value| value.strip_prefix("Bearer "))
         .map(str::trim);
+    ctx.0.set_provider(GatewayProvider::Chapa);
     let request: PaymentRequest = payload.into();
     let response = checkout.execute(&ctx.0, request).await?;
 

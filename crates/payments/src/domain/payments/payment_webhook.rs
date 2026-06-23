@@ -31,6 +31,7 @@ impl ActiveModelBehavior for ActiveModel {
     fn new() -> Self {
         Self {
             id: Set(Uuid::now_v7()),
+            retry_count: Set(0),
             created_at: Set(Utc::now()),
             updated_at: Set(Utc::now()),
             ..ActiveModelTrait::default()

@@ -2,6 +2,7 @@ use crate::application::cache_service::CacheService;
 use crate::{cache_get, cache_set};
 use merchant::{domain, Merchant};
 use sea_orm::DatabaseConnection;
+use tracing::debug;
 
 pub async fn get_merchant(
     db: &DatabaseConnection,
@@ -12,6 +13,7 @@ pub async fn get_merchant(
     if let Ok(Some(cached)) = cache_get!(cache, Merchant, &cache_key).await {
         return Some(cached);
     }
+    debug!(?name, "Getting merchant from database");
     let merchant = domain::merchant::Entity::find_by_name(name.to_owned())
         .one(db)
         .await

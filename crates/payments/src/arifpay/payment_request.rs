@@ -70,7 +70,7 @@ impl TryFrom<ArifpayPaymentRequest> for PaymentRequest {
                     .first()
                     .ok_or(HuluError::ResponseParseError)?
                     .amount,
-                currency: value.currency.unwrap_or("ET".to_string()),
+                currency: value.currency.unwrap_or("EN".to_string()),
                 reference: value.nonce,
                 expire_date: Some(value.expire_date),
                 lang: Some(value.lang),
@@ -123,7 +123,7 @@ impl From<&PaymentRequest> for ArifpayPaymentRequest {
                 .payment
                 .lang
                 .clone()
-                .unwrap_or_else(|| "ET".to_string()),
+                .unwrap_or_else(|| "EN".to_string()),
         }
     }
 }

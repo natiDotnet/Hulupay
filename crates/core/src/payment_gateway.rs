@@ -1,11 +1,11 @@
 use crate::gateway_response::VerifyResponse;
 use crate::payment_gateway_error::PaymentGatewayError;
 use crate::payment_method::{GatewayProvider, PaymentMethod};
+use crate::request_context::RequestContext;
 use async_trait::async_trait;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use strum_macros::Display;
-use url::{ParseError, Url};
 
 #[async_trait]
 pub trait PaymentGateway: Send + Sync {
@@ -13,31 +13,34 @@ pub trait PaymentGateway: Send + Sync {
         &self,
         host: &str,
         request: &crate::payment_request::PaymentRequest,
-    ) -> Result<crate::payment_request::PaymentRequest, ParseError> {
+    ) -> crate::payment_request::PaymentRequest {
         let mut request = request.clone();
 
-        let mut notify = Url::parse(&request.callbacks.notify_url)?;
-        let mut cancel = Url::parse(&request.callbacks.cancel_url)?;
-        let mut success = Url::parse(&request.callbacks.success_url)?;
-        let mut error = Url::parse(&request.callbacks.error_url)?;
+        // let mut notify = Url::parse(&request.callbacks.notify_url)?;
+        // let mut cancel = Url::parse(&request.callbacks.cancel_url)?;
+        // let mut success = Url::parse(&request.callbacks.success_url)?;
+        // let mut error = Url::parse(&request.callbacks.error_url)?;
 
-        notify.set_host(Some(host))?;
-        cancel.set_host(Some(host))?;
-        success.set_host(Some(host))?;
-        error.set_host(Some(host))?;
+        // notify.set_host(Some(host))?;
+        // cancel.set_host(Some(host))?;
+        // success.set_host(Some(host))?;
+        // error.set_host(Some(host))?;
 
-        request.callbacks.notify_url = notify.into();
-        request.callbacks.cancel_url = cancel.into();
-        request.callbacks.success_url = success.into();
-        request.callbacks.error_url = error.into();
+        request.callbacks.notify_url =
+            "https://69f8a62bf7044aa0103e3ba6.mockapi.io/api/callback".into();
+        // request.callbacks.cancel_url = cancel.into();
+        // request.callbacks.success_url = success.into();
+        // request.callbacks.error_url = error.into();
 
-        Ok(request)
+        request
     }
     fn get_name(&self) -> GatewayProvider;
     fn get_apikey_name(&self) -> &'static str;
     async fn checkout(
         &self,
+        context: &RequestContext,
         request: &crate::payment_request::PaymentRequest,
+        apikey_header: &str,
         config: serde_json::Value,
     ) -> Result<GatewayResponse, PaymentGatewayError>;
 
@@ -78,7 +81,7 @@ pub enum PaymentStatus {
     Reversed,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct WebhookInfo {
     pub status: PaymentStatus,
     pub provider_reference: String,

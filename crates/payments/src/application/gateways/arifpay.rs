@@ -6,6 +6,7 @@ use hulu_core::gateway_response::{Transaction, VerifyResponse};
 use hulu_core::payment_gateway::{GatewayResponse, PaymentGateway, WebhookInfo};
 use hulu_core::payment_gateway_error::PaymentGatewayError;
 use hulu_core::payment_method::GatewayProvider;
+use hulu_core::request_context::RequestContext;
 use rust_decimal_macros::dec;
 use sea_orm::prelude::async_trait;
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
@@ -112,12 +113,13 @@ impl PaymentGateway for ArifPayProvider {
 
     async fn checkout(
         &self,
+        context: &RequestContext,
         request: &hulu_core::payment_request::PaymentRequest,
+        apikey_header: &str,
         config: serde_json::Value,
     ) -> Result<GatewayResponse, PaymentGatewayError> {
-        let request = self
-            .change_callback_urls("test", request)
-            .map_err(|e| PaymentGatewayError::InternalServerError)?;
+        let request = self.change_callback_urls("test", request);
+        // .map_err(|e| PaymentGatewayError::InternalServerError)?;
         // let my_config = MerchantConfigs::find()
         //     .inner_join(payment_provider::Entity)
         //     .filter(merchant_config::Column::MerchantId.eq(request.merchant_id))
@@ -131,8 +133,14 @@ impl PaymentGateway for ArifPayProvider {
         let arif_config: ArifPayConfig =
             serde_json::from_value(config).map_err(|_| PaymentGatewayError::ProviderNotFound)?;
 
+        let apikey = context
+            .headers
+            .get(apikey_header)
+            .and_then(|value| value.strip_prefix("Bearer "))
+            .unwrap_or(&arif_config.api_key);
+
         self.service
-            .create_session(arif_config.base_url, arif_config.api_key, &request)
+            .create_session(&arif_config.base_url, apikey, &request)
             .await
             .map(|r| GatewayResponse {
                 reference: r.session_id.clone(),

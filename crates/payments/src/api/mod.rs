@@ -27,6 +27,7 @@ use crate::application::cache_service::CacheService;
 use crate::application::checkout::create_checkout::CreateCheckoutHandler;
 use crate::application::checkout::payment_webhook::PaymentWebhookHandler;
 use crate::application::checkout::verify_payment::VerifyPaymentHandler;
+use crate::application::gateways::chapa::ChapaProvider;
 use crate::application::{
     ArifWebhook, CreatePaymentProvider, CreatePaymentProviderConfig, DeletePaymentProvider,
     DeletePaymentProviderConfig, GetPaymentProvider, GetPaymentProviderConfig,
@@ -35,6 +36,7 @@ use crate::application::{
     WebhookHandler,
 };
 use crate::arifpay::arifpay_service::ArifpayService;
+use crate::chapa::chapa_service::ChapaService;
 use crate::infrastructure::redis_service::RedisCacheService;
 use crate::{domain, ArifPayProvider};
 use auth::api::middleware::AuthRouterExt;
@@ -293,6 +295,13 @@ fn build_provider_engine(db: &DatabaseConnection) -> ProviderEngine {
         provider::Provider::ArifPay.to_string(),
         Arc::new(ArifPayProvider::new(
             Arc::new(ArifpayService::new(client.clone())),
+            db.clone(),
+        )),
+    );
+    providers.insert(
+        provider::Provider::Chapa.to_string(),
+        Arc::new(ChapaProvider::new(
+            Arc::new(ChapaService::new(client.clone())),
             db.clone(),
         )),
     );

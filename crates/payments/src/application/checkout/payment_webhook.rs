@@ -50,6 +50,7 @@ impl PaymentWebhookHandler {
             debug!(?e, "webhook info error");
             HuluError::ResponseParseError
         })?;
+        debug!(?webhook_info, "webhook info");
         let order = PaymentOrders::find_by_order_ref(&webhook_info.client_reference)
             .one(&self.db)
             .await
@@ -57,6 +58,7 @@ impl PaymentWebhookHandler {
             .ok_or(HuluError::ResponseParseError)?;
 
         payments::payment_webhook::ActiveModel {
+            provider: Set(provider.get_name().into()),
             status: Set(WebhookStatus::Pending.to_string()),
             payment_order_id: Set(order.id),
             body: Set(payload.clone()),

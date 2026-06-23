@@ -21,7 +21,8 @@ pub enum PaymentMethod {
     Unknown(String),
 }
 
-#[derive(Debug, Clone, Display, EnumString, Deserialize, Serialize, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Display, EnumString, Deserialize, Serialize, Eq, PartialEq)]
+#[strum(serialize_all = "UPPERCASE")]
 pub enum GatewayProvider {
     Hulu,
     Arifpay,
