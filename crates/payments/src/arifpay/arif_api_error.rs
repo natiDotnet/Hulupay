@@ -1,7 +1,7 @@
 use crate::arifpay::payment_response::ArifResponse;
+use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::Json;
 use hulu_core::hulu_error::HuluError;
 
 pub struct ArifpayApiErr(pub HuluError);
