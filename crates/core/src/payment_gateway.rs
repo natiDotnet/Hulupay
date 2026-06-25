@@ -70,7 +70,8 @@ pub struct GatewayResponse {
     pub reference: String,
     pub row_response: Option<serde_json::Value>,
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Display)]
+#[strum(serialize_all = "UPPERCASE")]
 pub enum PaymentStatus {
     Success,
     Failed,

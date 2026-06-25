@@ -3,9 +3,9 @@ use crate::application::merchants::get_merchant::get_merchant;
 use crate::domain::payment_status::{PaymentStatus, TxDirection, TxStatus};
 use crate::domain::provider::Provider;
 use crate::domain::{
-    merchant_config, payment_order, payment_provider, payment_transaction, MerchantConfigs,
+    MerchantConfigs, merchant_config, payment_order, payment_provider, payment_transaction,
 };
-use crate::{domain, ProviderEngine};
+use crate::{ProviderEngine, domain};
 use async_trait::async_trait;
 use chrono::Utc;
 use hulu_core::create_checkout::CreateCheckout;
@@ -91,7 +91,7 @@ impl CreateCheckout for CreateCheckoutHandler {
         let order = payment_order::ActiveModel {
             merchant_id: Set(merchant.id),
             customer_id: Set(Uuid::now_v7()),
-            request_provider: Set(context.provider.clone().into()),
+            request_provider: Set(context.provider.into()),
             order_ref: Set(payload.payment.reference.clone()),
             amount: Set(payload.payment.amount),
             currency: Set(payload.payment.currency.clone()),

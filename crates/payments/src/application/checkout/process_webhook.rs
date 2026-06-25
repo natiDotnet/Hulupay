@@ -38,6 +38,7 @@ pub async fn process_webhook(
             return;
         }
     };
+    let retries = webhook.retry_count;
 
     let mut webhook_am = webhook.into_active_model();
 
@@ -60,9 +61,7 @@ pub async fn process_webhook(
         }
 
         Err(err) => {
-            let retries = webhook_am.retry_count.clone().unwrap() + 1;
-
-            webhook_am.retry_count = Set(retries);
+            webhook_am.retry_count = Set(retries + 1);
 
             webhook_am.last_error = Set(Some(err.to_string()));
 
