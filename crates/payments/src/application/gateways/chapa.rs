@@ -1,16 +1,14 @@
 use crate::chapa::chapa_service::ChapaService;
-use crate::chapa::chapa_webhook::{self, Customization};
+use crate::chapa::chapa_webhook::{self, ChapaPaymentStatus, Customization};
 use crate::domain::payments::payment_callback;
-use crate::domain::{PaymentOrders, payments};
+use crate::domain::{payments, PaymentOrders};
 use hulu_core::gateway_response::VerifyResponse;
 use hulu_core::payment_gateway::{GatewayResponse, PaymentGateway, WebhookInfo};
 use hulu_core::payment_gateway_error::PaymentGatewayError;
 use hulu_core::payment_request::PaymentRequest;
 use hulu_core::request_context::RequestContext;
 use sea_orm::DatabaseConnection;
-use sea_orm::sea_query::ValueTuple::One;
 use serde_json::Value;
-use std::fmt::format;
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -96,7 +94,10 @@ impl PaymentGateway for ChapaProvider {
         let callbacks = callbacks.ok_or(PaymentGatewayError::ProviderNotFound)?;
 
         let request = chapa_webhook::ChapaWebhook {
-            event: format!("charge.{}", webhook.status),
+            event: format!(
+                "charge.{}",
+                ChapaPaymentStatus::from(webhook.status.clone())
+            ),
             first_name: customer.name.clone(),
             last_name: customer.name.clone(),
             email: Some(customer.email),

@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use utoipa::ToSchema;
 
+use crate::application::helper::normalize;
+
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct ChapaInitializeRequest {
     pub amount: Decimal,
@@ -13,22 +15,16 @@ pub struct ChapaInitializeRequest {
 
     pub email: String,
 
-    #[serde(rename = "first_name")]
     pub first_name: String,
 
-    #[serde(rename = "last_name")]
     pub last_name: String,
 
-    #[serde(rename = "phone_number")]
     pub phone_number: String,
 
-    #[serde(rename = "tx_ref")]
     pub tx_ref: String,
 
-    #[serde(rename = "callback_url")]
     pub callback_url: String,
 
-    #[serde(rename = "return_url")]
     pub return_url: String,
 
     pub customization: Customization,
@@ -41,7 +37,7 @@ impl From<ChapaInitializeRequest> for PaymentRequest {
         Self {
             customer: CustomerInfo {
                 email: value.email,
-                phone: value.phone_number,
+                phone: normalize(&value.phone_number).unwrap(),
                 name: format!("{} {}", value.first_name, value.last_name),
             },
             payment: PaymentOptions {

@@ -2,6 +2,7 @@ use chrono::{DateTime, Utc};
 use hulu_core::{payment_gateway::PaymentStatus, payment_method::PaymentMethod};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
+use strum_macros::Display;
 
 #[derive(Serialize, Deserialize)]
 pub struct Customization {
@@ -9,7 +10,8 @@ pub struct Customization {
     pub description: Option<String>,
     pub logo: Option<String>,
 }
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Display)]
+#[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "lowercase")]
 pub enum ChapaPaymentStatus {
     Pending,

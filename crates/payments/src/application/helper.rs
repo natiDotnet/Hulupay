@@ -1,6 +1,18 @@
 use crate::application::cache_service::CacheService;
 use anyhow::Result;
-use serde::{de::DeserializeOwned, Serialize};
+use phonenumber::{Mode, country, parse};
+use serde::{Serialize, de::DeserializeOwned};
+
+pub fn normalize(phone: &str) -> Result<String, phonenumber::ParseError> {
+    let number = parse(Some(country::ET), phone)?;
+
+    if !number.is_valid() {
+        return Err(phonenumber::ParseError::InvalidCountryCode);
+    }
+
+    Ok(number.format().mode(Mode::E164).to_string())
+}
+
 pub const DEFAULT_CACHE_TTL: u64 = 300;
 pub async fn set_cache<T>(
     cache: &dyn CacheService,
@@ -31,30 +43,17 @@ where
 #[macro_export]
 macro_rules! cache_get {
     ($cache:expr, $type:ty, $key:expr) => {
-        $crate::application::helper::get_cache::<$type>(
-            $cache,
-            $key,
-        )
+        $crate::application::helper::get_cache::<$type>($cache, $key)
     };
 }
 
 #[macro_export]
 macro_rules! cache_set {
     ($cache:expr, $key:expr, $value:expr) => {
-        $crate::application::helper::set_cache(
-            $cache,
-            $key,
-            &$value,
-            None,
-        )
+        $crate::application::helper::set_cache($cache, $key, &$value, None)
     };
 
     ($cache:expr, $key:expr, $value:expr, $ttl:expr) => {
-        $crate::application::helper::set_cache(
-            $cache,
-            $key,
-            &$value,
-            Some($ttl),
-        )
+        $crate::application::helper::set_cache($cache, $key, &$value, Some($ttl))
     };
 }
