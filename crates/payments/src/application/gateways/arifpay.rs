@@ -2,7 +2,7 @@ use crate::arifpay::arif_webhook::{ArifTransaction, ArifWebhook};
 use crate::arifpay::arifpay_service::ArifpayService;
 use crate::domain;
 use crate::domain::{payments, PaymentOrders, PaymentTransactions};
-use hulu_core::gateway_response::{Transaction, VerifyResponse};
+use hulu_core::gateway_response::VerifyResponse;
 use hulu_core::payment_gateway::{GatewayResponse, PaymentGateway, WebhookInfo};
 use hulu_core::payment_gateway_error::PaymentGatewayError;
 use hulu_core::payment_method::GatewayProvider;
@@ -12,7 +12,6 @@ use sea_orm::prelude::async_trait;
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::HashMap;
 use std::sync::Arc;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -218,20 +217,12 @@ impl PaymentGateway for ArifPayProvider {
             .verify_session(arif_config.base_url, arif_config.api_key, reference)
             .await
             .map(|v| VerifyResponse {
-                callbacks: None,
-                metadata: HashMap::new(),
-                items: vec![],
-                customer: None,
-                payment: None,
-                beneficiaries: vec![],
-                transaction: Transaction {
-                    id: v.transaction_id,
-                    reference: reference.to_string(),
-                    status: transaction.status.to_string(),
-                    charge: None,
-                    updated_at: transaction.updated_at,
-                    created_at: transaction.created_at,
-                },
+                id: v.transaction_id,
+                reference: reference.to_string(),
+                status: transaction.status.to_string(),
+                charge: None,
+                updated_at: transaction.updated_at,
+                created_at: transaction.created_at,
             })
     }
 

@@ -10,16 +10,6 @@ pub struct CheckoutResponse {
 }
 
 pub struct VerifyResponse {
-    pub customer: Option<CustomerInfo>,
-    pub payment: Option<PaymentOptions>,
-    pub items: Vec<Item>,
-    pub beneficiaries: Vec<Beneficiary>,
-    pub callbacks: Option<CallbackUrls>,
-    pub metadata: HashMap<String, serde_json::Value>,
-    pub transaction: Transaction,
-}
-
-pub struct Transaction {
     pub id: Option<String>,
     pub reference: String,
     pub status: String,

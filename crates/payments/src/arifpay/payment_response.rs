@@ -49,7 +49,7 @@ impl From<HuluError> for ArifResponse<serde_json::Value> {
     fn from(value: HuluError) -> Self {
         Self {
             error: true,
-            msg: "error".to_string(),
+            msg: value.to_string(),
             data: None,
         }
     }
@@ -67,9 +67,9 @@ impl From<VerifyResponse> for ArifResponse<ArifVerifyResponse> {
             error: false,
             msg: "payment status".to_string(),
             data: Some(ArifVerifyResponse {
-                session_id: value.transaction.reference,
-                transaction_id: value.transaction.id,
-                transaction_status: value.transaction.status,
+                session_id: value.reference,
+                transaction_id: value.id,
+                transaction_status: value.status,
             }),
         }
     }

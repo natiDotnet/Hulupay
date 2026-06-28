@@ -58,10 +58,6 @@ pub struct ChapaVerifyResponse {
 
 impl From<VerifyResponse> for ChapaResponse<ChapaVerifyResponse> {
     fn from(value: VerifyResponse) -> Self {
-        let customer = value.customer.unwrap();
-        let pay = value.payment.unwrap();
-        let tnx = value.transaction;
-        let custom = value.items.iter().next().unwrap().clone();
         let mut name = customer.name.split_whitespace();
         Self {
             status: "success".to_string(),

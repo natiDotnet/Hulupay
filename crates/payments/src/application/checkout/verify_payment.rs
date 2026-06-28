@@ -1,9 +1,9 @@
 use crate::application::cache_service::CacheService;
 use crate::application::merchants::get_merchant::get_merchant;
 use crate::domain::{
-    merchant_config, payment_provider, MerchantConfigs, PaymentOrders, PaymentTransactions,
+    MerchantConfigs, PaymentOrders, PaymentTransactions, merchant_config, payment_provider,
 };
-use crate::{domain, ProviderEngine};
+use crate::{ProviderEngine, domain};
 use async_trait::async_trait;
 use hulu_core::create_checkout::VerifyPayment;
 use hulu_core::gateway_response::VerifyResponse;
@@ -71,8 +71,9 @@ impl VerifyPayment for VerifyPaymentHandler {
             .into_active_model();
 
         let mut tnx = transaction.into_active_model();
-        tnx.status = Set(result.transaction.status.clone().parse().unwrap());
-        order.status = Set(result.transaction.status.clone().parse().unwrap());
+        tnx.status = Set(result.status.clone().parse().unwrap());
+
+        order.status = Set(result.status.clone().parse().unwrap());
 
         order
             .save(&self.db)

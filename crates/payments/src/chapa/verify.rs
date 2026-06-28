@@ -20,16 +20,5 @@ pub async fn chapa_verify_handler(
 ) -> Result<Json<ChapaResponse<ChapaVerifyResponse>>, ChapaApiErr> {
     let provider = verify.execute("master", &tx_ref).await?;
 
-    // let provider = ArifPayInitializeResponse {
-    //     error: false,
-    //     msg: "".to_string(),
-    //     data: Some(ArifPayInitializeData {
-    //         session_id: "qwertyuiop".to_string(),
-    //         payment_url: "qwertyuiop".to_string(),
-    //         cancel_url: "QWERTYUIOP".to_string(),
-    //         total_amount: Decimal::from_f64_retain(11.1).unwrap(),
-    //     }),
-    // };
-
     Ok(Json(provider.into()))
 }
