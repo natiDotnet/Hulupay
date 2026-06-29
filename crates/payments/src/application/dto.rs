@@ -4,6 +4,7 @@ use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+#[derive(Clone)]
 pub struct InitializePaymentCommand {
     pub merchant_id: Uuid,
     pub phone: String,
@@ -11,11 +12,15 @@ pub struct InitializePaymentCommand {
     pub amount: Decimal,
     pub currency: String,
 }
+
+#[derive(Clone)]
 pub struct CustomerInfo {
     pub phone: String,
     pub email: String,
     pub name: String,
 }
+
+#[derive(Clone)]
 pub struct PaymentOptions {
     pub reference: String,
     pub currency: String,
@@ -24,13 +29,14 @@ pub struct PaymentOptions {
     pub lang: String,
 }
 
+#[derive(Clone)]
 pub struct CallbackUrls {
     pub success_url: String,
     pub error_url: String,
     pub cancel_url: String,
     pub notify_url: String,
 }
-
+#[derive(Clone)]
 pub struct Item {
     pub name: String,
     pub quantity: u32,

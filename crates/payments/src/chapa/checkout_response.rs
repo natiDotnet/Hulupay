@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use hulu_core::gateway_response::{CheckoutResponse, VerifyResponse};
+use hulu_core::gateway_response::CheckoutResponse;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;

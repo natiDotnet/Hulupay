@@ -1,6 +1,6 @@
 use crate::domain::merchant;
 use anyhow::anyhow;
-use sea_orm::{DatabaseConnection, EntityTrait, ModelTrait};
+use sea_orm::{DatabaseConnection, EntityTrait};
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -19,12 +19,7 @@ impl DeleteMerchant {
         if result.rows_affected == 0 {
             return Err(anyhow!("Merchant not found"));
         }
-        // let merchant = merchant::Entity::find_by_id(id)
-        //     .one(&self.db)
-        //     .await?
-        //     .ok_or_else(|| anyhow!("Merchant not found"))?;
-        //
-        // merchant.delete(&self.db).await?;
+        
         Ok(())
     }
 }

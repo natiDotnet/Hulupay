@@ -1,55 +1,47 @@
-use crate::arifpay::arif_payment_method::ArifPaymentMethod;
 use crate::arifpay::arif_webhook::ArifWebhook;
 use crate::arifpay::payment_request::{ArifpayPaymentRequest, OtpRequest, VerifyOtpRequest};
 use crate::arifpay::payment_response::{ArifInitializeData, ArifResponse, ArifVerifyResponse};
-use hulu_core::payment_gateway::{PaymentStatus, WebhookInfo};
 use hulu_core::payment_gateway_error::PaymentGatewayError;
 use hulu_core::payment_method::PaymentMethod;
-use hulu_core::payment_request::CallbackUrls;
-use rust_decimal::Decimal;
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use strum;
-use strum_macros::Display;
 use tracing::debug;
-use tracing::field::debug;
 
 #[derive(Clone)]
 pub struct ArifpayService {
     client: reqwest::Client,
-    urls: HashMap<String, String>,
+    _urls: HashMap<String, String>,
 }
 
 impl ArifpayService {
     pub fn new(client: reqwest::Client) -> Self {
-        let mut urls = HashMap::new();
+        let mut _urls = HashMap::new();
 
-        urls.insert(
+        _urls.insert(
             PaymentMethod::Telebirr.to_string(),
             "/api/checkout/telebirr-ussd/transfer/direct".to_string(),
         );
-        urls.insert(
+        _urls.insert(
             PaymentMethod::CbeBirr.to_string(),
             "/api/checkout/v2/cbe/direct/transfer".to_string(),
         );
-        urls.insert(
+        _urls.insert(
             PaymentMethod::Mpesa.to_string(),
             "/api/checkout/mpesa/transfer/direct".to_string(),
         );
-        urls.insert(
+        _urls.insert(
             PaymentMethod::AwashBirr.to_string(),
             "/api/checkout/awash/direct/transfer".to_string(),
         );
-        urls.insert(
+        _urls.insert(
             PaymentMethod::Kacha.to_string(),
             "/api/checkout/kacha/direct/transfer".to_string(),
         );
-        urls.insert(
+        _urls.insert(
             PaymentMethod::ZamZam.to_string(),
             "/api/checkout/zamzam/direct/transfer".to_string(),
         );
 
-        Self { client, urls }
+        Self { client, _urls }
     }
 }
 
@@ -154,7 +146,7 @@ impl ArifpayService {
         request: ArifpayPaymentRequest,
     ) -> Result<ArifResponse<serde_json::Value>, PaymentGatewayError> {
         let path_segment = self
-            .urls
+            ._urls
             .get(&payment_method.to_string())
             .ok_or(PaymentGatewayError::UnsupportedPaymentMethod)?;
         let response = self

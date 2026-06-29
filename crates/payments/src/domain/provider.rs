@@ -1,5 +1,5 @@
-use crate::domain::error::DomainError;
 use crate::domain::PaymentMethod;
+use crate::domain::error::DomainError;
 use async_trait::async_trait;
 use hulu_core::payment_method::GatewayProvider;
 use sea_orm::sea_query::StringLen;
@@ -8,8 +8,6 @@ use serde::{Deserialize, Serialize};
 use strum_macros::{AsRefStr, Display, EnumString};
 use utoipa::ToSchema;
 
-// #[derive(Debug, Clone, PartialEq, sqlx::Type, serde::Serialize, serde::Deserialize)]
-// #[sqlx(type_name = "provider", rename_all = "snake_case")]
 #[derive(
     EnumIter,
     DeriveActiveEnum,
@@ -29,21 +27,12 @@ use utoipa::ToSchema;
     db_type = "String(StringLen::None)",
     rename_all = "UPPERCASE"
 )]
+#[strum(serialize_all = "UPPERCASE")]
+#[serde(rename_all = "UPPERCASE")]
 pub enum Provider {
-    #[strum(serialize = "STRIPE", to_string = "STRIPE")]
-    #[serde(rename = "STRIPE")]
     Stripe,
-
-    #[strum(serialize = "HULU", to_string = "HULU")]
-    #[serde(rename = "HULU")]
     Hulu,
-
-    #[strum(serialize = "CHAPA", to_string = "CHAPA")]
-    #[serde(rename = "CHAPA")]
     Chapa,
-
-    #[strum(serialize = "ARIFPAY", to_string = "ARIFPAY")]
-    #[serde(rename = "ARIFPAY")]
     ArifPay,
 }
 

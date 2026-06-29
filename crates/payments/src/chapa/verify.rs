@@ -38,7 +38,7 @@ async fn handle_chapa_verify(
         .one(db)
         .await
         .map_err(|_| HuluError::ConnectionError)?
-        .ok_or_else(|| HuluError::ProviderNotFound)?;
+        .ok_or(HuluError::ProviderNotFound)?;
     let customer = customer.ok_or(HuluError::ProviderNotFound)?;
 
     let verify = ChapaVerifyResponse {

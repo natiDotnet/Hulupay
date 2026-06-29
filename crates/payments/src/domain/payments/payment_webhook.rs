@@ -1,5 +1,4 @@
 use crate::domain;
-use crate::domain::payment_status::PaymentStatus;
 use crate::domain::provider;
 use chrono::Utc;
 use sea_orm::entity::prelude::*;
