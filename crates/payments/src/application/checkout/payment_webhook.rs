@@ -1,36 +1,23 @@
-use crate::application::cache_service::CacheService;
+use crate::ProviderEngine;
 use crate::application::checkout::process_webhook::process_webhook;
 use crate::domain::provider::Provider;
-use crate::domain::{payments, provider, PaymentOrders};
-use crate::{domain, ProviderEngine};
+use crate::domain::{PaymentOrders, payments, provider};
 use hulu_core::hulu_error::HuluError;
 use hulu_core::payment_gateway::{WebhookInfo, WebhookStatus};
 use hulu_core::request_context::RequestContext;
-use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, IntoActiveModel, QueryFilter,
-    Set,
-};
-use std::sync::Arc;
+use sea_orm::{ActiveModelTrait, DatabaseConnection, IntoActiveModel, Set};
 use tracing::debug;
 use uuid::Uuid;
+
 #[derive(Clone)]
 pub struct PaymentWebhookHandler {
     db: DatabaseConnection,
-    cache: Arc<dyn CacheService>,
     payment_engine: ProviderEngine,
 }
 
 impl PaymentWebhookHandler {
-    pub fn new(
-        db: DatabaseConnection,
-        cache: Arc<dyn CacheService>,
-        payment_engine: ProviderEngine,
-    ) -> Self {
-        Self {
-            db,
-            cache,
-            payment_engine,
-        }
+    pub fn new(db: DatabaseConnection, payment_engine: ProviderEngine) -> Self {
+        Self { db, payment_engine }
     }
 }
 
@@ -54,7 +41,7 @@ impl PaymentWebhookHandler {
         let order = PaymentOrders::find_by_order_ref(&webhook_info.client_reference)
             .one(&self.db)
             .await
-            .map_err(|e| HuluError::ConnectionError)?
+            .map_err(|_e| HuluError::ConnectionError)?
             .ok_or(HuluError::ResponseParseError)?;
 
         payments::payment_webhook::ActiveModel {

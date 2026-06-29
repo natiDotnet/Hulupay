@@ -2,9 +2,9 @@ use super::create_payment_provider::ProviderResponse;
 use crate::application::GetPaymentProvider;
 use auth::api::AuthUser;
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
-    Json,
 };
 use serde::Deserialize;
 use utoipa::IntoParams;
@@ -25,7 +25,7 @@ pub struct ProviderIdParams {
 pub async fn get_payment_provider_handler(
     State(usecase): State<GetPaymentProvider>,
     Path(params): Path<ProviderIdParams>,
-    AuthUser(user): AuthUser,
+    AuthUser(_user): AuthUser,
 ) -> Result<Json<ProviderResponse>, StatusCode> {
     let id = uuid::Uuid::parse_str(&params.id).map_err(|_| StatusCode::BAD_REQUEST)?;
 

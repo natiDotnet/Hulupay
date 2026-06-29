@@ -1,7 +1,7 @@
 use crate::chapa::chapa_service::ChapaService;
 use crate::chapa::chapa_webhook::{self, ChapaPaymentStatus, Customization};
 use crate::domain::payments::payment_callback;
-use crate::domain::{payments, PaymentOrders};
+use crate::domain::{PaymentOrders, payments};
 use hulu_core::gateway_response::VerifyResponse;
 use hulu_core::payment_gateway::{GatewayResponse, PaymentGateway, WebhookInfo};
 use hulu_core::payment_gateway_error::PaymentGatewayError;
@@ -73,10 +73,10 @@ impl PaymentGateway for ChapaProvider {
 
     async fn checkout(
         &self,
-        context: &RequestContext,
-        request: &PaymentRequest,
-        apikey_header: &str,
-        config: Value,
+        _context: &RequestContext,
+        _request: &PaymentRequest,
+        _apikey_header: &str,
+        _config: Value,
     ) -> Result<GatewayResponse, PaymentGatewayError> {
         todo!()
     }
@@ -125,19 +125,19 @@ impl PaymentGateway for ChapaProvider {
             .await
     }
 
-    fn webhook_info(&self, webhook: Value) -> Result<WebhookInfo, PaymentGatewayError> {
+    fn webhook_info(&self, _webhook: Value) -> Result<WebhookInfo, PaymentGatewayError> {
         todo!()
     }
 
     async fn verify(
         &self,
-        reference: &str,
-        config: Value,
+        _reference: &str,
+        _config: Value,
     ) -> Result<VerifyResponse, PaymentGatewayError> {
         todo!()
     }
 
-    async fn cancel(&self, reference: &str, config: Value) -> Result<(), PaymentGatewayError> {
+    async fn cancel(&self, _reference: &str, _config: Value) -> Result<(), PaymentGatewayError> {
         todo!()
     }
 }

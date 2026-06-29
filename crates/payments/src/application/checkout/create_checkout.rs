@@ -80,7 +80,7 @@ impl CreateCheckout for CreateCheckoutHandler {
 
         let apikey_header = request_provider.get_apikey_name();
         let result = provider
-            .checkout(&context, &payload, apikey_header, merchant_config.config)
+            .checkout(context, &payload, apikey_header, merchant_config.config)
             .await;
 
         let txn = self

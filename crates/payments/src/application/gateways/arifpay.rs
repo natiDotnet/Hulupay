@@ -1,11 +1,11 @@
 use crate::arifpay::arif_webhook::{ArifTransaction, ArifWebhook};
 use crate::arifpay::arifpay_service::ArifpayService;
 use crate::domain;
-use crate::domain::{payments, PaymentOrders, PaymentTransactions};
+use crate::domain::{PaymentOrders, PaymentTransactions, payments};
 use hulu_core::gateway_response::VerifyResponse;
 use hulu_core::payment_gateway::{GatewayResponse, PaymentGateway, WebhookInfo};
 use hulu_core::payment_gateway_error::PaymentGatewayError;
-use hulu_core::payment_method::GatewayProvider;
+use hulu_core::payment_method::{GatewayProvider, PaymentMethod};
 use hulu_core::request_context::RequestContext;
 use rust_decimal_macros::dec;
 use sea_orm::prelude::async_trait;
@@ -149,7 +149,7 @@ impl PaymentGateway for ArifPayProvider {
     }
 
     async fn webhook(&self, request: &WebhookInfo) -> Result<(), PaymentGatewayError> {
-        let (order, callback, customer) =
+        let (_order, callback, customer) =
             PaymentOrders::find_by_order_ref(&request.client_reference)
                 .find_also_related(payments::payment_callback::Entity)
                 .find_also_related(payments::payment_customer::Entity)
@@ -209,9 +209,9 @@ impl PaymentGateway for ArifPayProvider {
             .one(&self.db)
             .await
             .map_err(|_| PaymentGatewayError::InternalServerError)?
-            .ok_or_else(|| PaymentGatewayError::ProviderNotFound)?;
+            .ok_or(PaymentGatewayError::ProviderNotFound)?;
 
-        let order = order.ok_or_else(|| PaymentGatewayError::ProviderNotFound)?;
+        let order = order.ok_or(PaymentGatewayError::ProviderNotFound)?;
 
         self.service
             .verify_session(arif_config.base_url, arif_config.api_key, reference)
@@ -220,7 +220,9 @@ impl PaymentGateway for ArifPayProvider {
                 id: v.transaction_id,
                 reference: reference.to_string(),
                 status: transaction.status.to_string(),
-                charge: None,
+                payment_method: PaymentMethod::None,
+                charge: order.amount * dec!(2.875) / dec!(100),
+                amount: order.amount,
                 updated_at: transaction.updated_at,
                 created_at: transaction.created_at,
             })

@@ -3,6 +3,7 @@ use hulu_core::{payment_gateway::PaymentStatus, payment_method::PaymentMethod};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use strum_macros::Display;
+use utoipa::ToSchema;
 
 #[derive(Serialize, Deserialize)]
 pub struct Customization {
@@ -60,7 +61,7 @@ pub struct ChapaWebhook {
     pub meta: Option<serde_json::Value>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub enum ChapaPaymentMethod {
     #[serde(rename = "telebirr")]
     Telebirr,

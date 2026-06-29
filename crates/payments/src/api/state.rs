@@ -8,10 +8,12 @@ use crate::application::{
 // use crate::application::initiate_payment::InitiatePayment;
 use crate::ProviderEngine;
 use hulu_core::create_checkout::{CreateCheckout, VerifyPayment};
+use sea_orm::DatabaseConnection;
 use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct PaymentsState {
+    pub db: DatabaseConnection,
     pub provider_engine: ProviderEngine,
     pub create_payment_provider: CreatePaymentProvider,
     pub get_payment_provider: GetPaymentProvider,

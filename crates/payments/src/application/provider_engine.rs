@@ -1,7 +1,6 @@
 use crate::domain;
-use crate::domain::{merchant_config, MerchantConfigs, PaymentProviders};
+use crate::domain::{MerchantConfigs, PaymentProviders, merchant_config};
 use hulu_core::payment_gateway::PaymentGateway;
-use reqwest::Client;
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -12,20 +11,14 @@ use uuid::Uuid;
 pub struct ProviderEngine {
     providers: HashMap<String, Arc<dyn PaymentGateway>>,
     db: DatabaseConnection,
-    client: Client,
 }
 
 impl ProviderEngine {
     pub fn new(
         providers: HashMap<String, Arc<dyn PaymentGateway>>,
         db: DatabaseConnection,
-        client: Client,
     ) -> Self {
-        Self {
-            providers,
-            db,
-            client,
-        }
+        Self { providers, db }
     }
 
     /// Get a provider by name

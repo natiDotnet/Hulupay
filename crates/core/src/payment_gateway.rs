@@ -11,7 +11,7 @@ use strum_macros::Display;
 pub trait PaymentGateway: Send + Sync {
     fn change_callback_urls(
         &self,
-        host: &str,
+        _host: &str,
         request: &crate::payment_request::PaymentRequest,
     ) -> crate::payment_request::PaymentRequest {
         let mut request = request.clone();

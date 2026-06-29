@@ -38,9 +38,9 @@ use crate::application::{
 use crate::arifpay::arifpay_service::ArifpayService;
 use crate::chapa::chapa_service::ChapaService;
 use crate::infrastructure::redis_service::RedisCacheService;
-use crate::{domain, ArifPayProvider};
-use auth::api::middleware::AuthRouterExt;
+use crate::{ArifPayProvider, domain};
 use auth::Role;
+use auth::api::middleware::AuthRouterExt;
 use deadpool_redis::{Config, Runtime};
 use domain::provider;
 use hulu_core::create_checkout::{CreateCheckout, VerifyPayment};
@@ -143,7 +143,11 @@ impl FromRef<PaymentsState> for PaymentWebhookHandler {
         input.handle_payment_webhook.clone()
     }
 }
-
+impl FromRef<PaymentsState> for DatabaseConnection {
+    fn from_ref(input: &PaymentsState) -> Self {
+        input.db.clone()
+    }
+}
 // impl FromRef<PaymentsState> for InitiatePayment {
 //     fn from_ref(state: &PaymentsState) -> Self {
 //         state.handle_initiate_payment.clone()
@@ -233,6 +237,7 @@ fn build_state(db: &DatabaseConnection) -> PaymentsState {
     ));
 
     PaymentsState {
+        db: db.clone(),
         provider_engine: provider_engine.clone(),
         create_payment_provider: CreatePaymentProvider::new(db.clone()),
         get_payment_provider: GetPaymentProvider::new(db.clone()),
@@ -250,11 +255,7 @@ fn build_state(db: &DatabaseConnection) -> PaymentsState {
         handle_provider_webhook: HandleProviderWebhook::new(webhook_handlers),
         handle_create_checkout: checkout_handler,
         handle_verify_payment: verify_handler,
-        handle_payment_webhook: PaymentWebhookHandler::new(
-            db.clone(),
-            cache_service.clone(),
-            provider_engine.clone(),
-        ),
+        handle_payment_webhook: { PaymentWebhookHandler::new(db.clone(), provider_engine.clone()) },
         // handle_initiate_payment: InitiatePayment::new(
         //     db.clone(),
         //     cache_service,
@@ -305,7 +306,7 @@ fn build_provider_engine(db: &DatabaseConnection) -> ProviderEngine {
             db.clone(),
         )),
     );
-    ProviderEngine::new(providers, db.clone(), client)
+    ProviderEngine::new(providers, db.clone())
 }
 
 pub fn create_redis_pool() -> deadpool_redis::Pool {

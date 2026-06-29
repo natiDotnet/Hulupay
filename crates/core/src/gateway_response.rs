@@ -1,7 +1,6 @@
-use crate::payment_request::{Beneficiary, CallbackUrls, CustomerInfo, Item, PaymentOptions};
+use crate::payment_method::PaymentMethod;
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
-use std::collections::HashMap;
 
 pub struct CheckoutResponse {
     pub reference: String,
@@ -13,7 +12,9 @@ pub struct VerifyResponse {
     pub id: Option<String>,
     pub reference: String,
     pub status: String,
-    pub charge: Option<Decimal>,
+    pub amount: Decimal,
+    pub payment_method: PaymentMethod,
+    pub charge: Decimal,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

@@ -94,6 +94,5 @@ pub async fn process_webhook(
     }
     if let Err(err) = webhook_am.save(&db).await {
         tracing::error!(?err, "failed to update webhook status");
-        return;
     }
 }
