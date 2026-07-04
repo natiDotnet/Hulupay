@@ -8,9 +8,11 @@ path = "src/lib.rs"
 
 [dependencies]
 # Domain dependencies
+hulucore = { path = "../core", package = "core" }
 uuid = { version = "1.21.0", features = ["v4", "v7", "serde"] }
 time = "0.3.47"
-
+strum = "0.28.0"
+strum_macros = "0.28.0"
 # Application layer dependencies
 async-trait = "0.1.89"
 serde = { version = "1.0.228", features = ["derive"] }

@@ -5,6 +5,7 @@ pub mod application;
 pub mod arifpay;
 pub mod chapa;
 pub mod domain;
+pub mod hulupay;
 pub mod infrastructure;
 
 pub use api::{router, PaymentsState};

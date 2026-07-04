@@ -1,8 +1,8 @@
+use sea_orm::sea_query::StringLen;
 use sea_orm::{DeriveActiveEnum, EnumIter};
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::str::FromStr;
-use sea_orm::sea_query::StringLen;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, EnumIter, DeriveActiveEnum)]
 #[sea_orm(
@@ -13,6 +13,11 @@ use sea_orm::sea_query::StringLen;
 pub enum Role {
     MasterAdmin,
     MerchantAdmin,
+    Owner,
+    Admin,
+    Developer,
+    Finance,
+    Viewer,
 }
 
 impl Role {
@@ -37,6 +42,11 @@ impl Display for Role {
         let str = match self {
             Role::MasterAdmin => "MASTER_ADMIN".to_string(),
             Role::MerchantAdmin => "MERCHANT_ADMIN".to_string(),
+            Role::Owner => "OWNER".to_string(),
+            Role::Admin => "ADMIN".to_string(),
+            Role::Developer => "DEVELOPER".to_string(),
+            Role::Finance => "FINANCE".to_string(),
+            Role::Viewer => "VIEWER".to_string(),
         };
         write!(f, "{}", str)
     }

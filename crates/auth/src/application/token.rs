@@ -10,7 +10,7 @@ pub trait TokenService: Send + Sync {
         user_id: Uuid,
         email: &str,
         role: &str,
-        merchant_id: Option<Uuid>,
+        merchant_id: Uuid,
     ) -> Result<String, AuthError>;
     fn validate(&self, token: &str) -> Result<UserContext, AuthError>;
 }

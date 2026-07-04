@@ -5,7 +5,7 @@ use uuid::Uuid;
 pub struct UserContext {
     pub sub: Uuid,
     pub email: String,
-    pub merchant_id: Option<Uuid>,
+    pub merchant_id: Uuid,
     pub role: String,
     pub exp: usize,
 }

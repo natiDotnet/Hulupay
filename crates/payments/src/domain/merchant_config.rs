@@ -1,4 +1,5 @@
 use crate::domain;
+use crate::domain::environment::Environment;
 use sea_orm::entity::prelude::*;
 use sea_orm::ActiveModelBehavior;
 use sea_orm::DeriveEntityModel;
@@ -16,12 +17,17 @@ pub struct Model {
     #[sea_orm(unique_key = "merchant_provider")]
     pub provider_id: Uuid,
     pub is_test_mode: bool,
-    pub config: serde_json::Value,
-    pub is_active: bool,
+    pub environment: Environment,
+    pub priority: i32,
     #[sea_orm(default_value = "false")]
     pub is_default: bool,
+    pub is_active: bool,
+
+    pub config: serde_json::Value,
+
     pub created_at: DateTimeUtc,
     pub updated_at: DateTimeUtc,
+
     #[sea_orm(belongs_to, from = "provider_id", to = "id")]
     pub payment: HasOne<domain::payment_provider::Entity>,
     #[sea_orm(belongs_to, from = "merchant_id", to = "id")]

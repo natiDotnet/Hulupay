@@ -7,7 +7,7 @@ pub struct RegisterUserRequest {
     pub email: String,
     pub password: String,
     pub role: String,
-    pub merchant_id: Option<Uuid>,
+    pub merchant_id: Uuid,
 }
 
 #[derive(Serialize, ToSchema)]

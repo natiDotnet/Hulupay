@@ -3,8 +3,27 @@ use crate::domain::PaymentProviderConfig;
 use anyhow::anyhow;
 use chrono::Utc;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
+use serde::Deserialize;
 use serde_json::Value;
+use utoipa::ToSchema;
 use uuid::Uuid;
+use crate::domain::environment::Environment;
+
+#[derive(Deserialize, ToSchema)]
+pub struct CreatePaymentProviderConfigRequest {
+    pub merchant_id: Uuid,
+    pub provider_id: Uuid,
+    pub environment: Environment,
+    pub priority: i32,
+    pub config: serde_json::Value,
+    #[serde(default = "default_is_active")]
+    pub is_active: bool,
+    pub is_default: bool,
+}
+
+fn default_is_active() -> bool {
+    true
+}
 
 #[derive(Clone)]
 pub struct CreatePaymentProviderConfig {
@@ -18,26 +37,23 @@ impl CreatePaymentProviderConfig {
 
     pub async fn execute(
         &self,
-        merchant_id: Uuid,
-        provider_id: Uuid,
-        is_test_mode: bool,
-        config: Value,
-        is_active: bool,
-        is_default: bool,
+        request: CreatePaymentProviderConfigRequest,
     ) -> anyhow::Result<PaymentProviderConfig> {
-        domain::payment_provider::Entity::find_by_id(provider_id)
+        domain::payment_provider::Entity::find_by_id(request.provider_id)
             .one(&self.db)
             .await?
             .ok_or_else(|| anyhow!("Payment provider does not exist"))?;
 
         let config_entity = domain::merchant_config::ActiveModel {
             id: Set(Uuid::now_v7()),
-            merchant_id: Set(merchant_id),
-            provider_id: Set(provider_id),
-            is_test_mode: Set(is_test_mode),
-            config: Set(config),
-            is_active: Set(is_active),
-            is_default: Set(is_default),
+            merchant_id: Set(request.merchant_id),
+            provider_id: Set(request.provider_id),
+            is_test_mode: Set(request.environment == Environment::Sandbox),
+            environment: Set(request.environment),
+            priority: Set(request.priority),
+            config: Set(request.config),
+            is_active: Set(request.is_active),
+            is_default: Set(request.is_default),
             created_at: Set(Utc::now()),
             updated_at: Set(Utc::now()),
         }

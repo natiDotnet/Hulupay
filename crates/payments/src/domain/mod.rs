@@ -1,3 +1,4 @@
+pub mod environment;
 mod error;
 mod errors;
 pub mod merchant_config;

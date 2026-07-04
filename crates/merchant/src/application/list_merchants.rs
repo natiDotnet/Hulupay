@@ -46,6 +46,10 @@ impl ListMerchants {
             .map(|m| MerchantResponse {
                 id: m.id,
                 name: m.name,
+                email: m.email,
+                phone: m.phone,
+                website: m.website,
+                status: m.status,
                 is_active: m.is_active,
             })
             .collect();

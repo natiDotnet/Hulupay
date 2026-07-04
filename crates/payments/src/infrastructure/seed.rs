@@ -4,6 +4,9 @@ use chrono::Utc;
 use domain::payment_provider;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
 use uuid::Uuid;
+use auth::domain::status::AccountStatus;
+use hulu_core::create_slug;
+use merchant::domain::merchant_status::MerchantStatus;
 
 pub struct DataSeeder {
     db: DatabaseConnection,
@@ -34,8 +37,13 @@ impl DataSeeder {
         }
         let _ = merchant::domain::merchant::ActiveModel {
             id: Set(merchant_id),
+            slug: Set(create_slug(name)),
             name: Set(name.to_string()),
+            email: Set(format!("{}@gmail.com", name)),
+            phone: Set("+251994000000".to_string()),
+            website: Set("https://www.hulupay.com".to_string()),
             is_active: Set(true),
+            status: Set(MerchantStatus::Active),
             created_at: Set(Utc::now()),
             updated_at: Set(Some(Utc::now())),
         }
@@ -55,11 +63,13 @@ impl DataSeeder {
         }
         let _ = auth::domain::user::ActiveModel {
             id: Set(Uuid::now_v7()),
+            name: Set("admin".to_string()),
             email: Set(email.into()),
             password_hash: Set(auth::application::password::hash_password("admin")?),
-            merchant_id: Set(Some(merchant_id)),
+            merchant_id: Set(merchant_id),
             role: Set(Role::MasterAdmin),
             is_active: Set(true),
+            status: Set(AccountStatus::Active),
             created_at: Set(Utc::now()),
             updated_at: Set(Some(Utc::now())),
         }

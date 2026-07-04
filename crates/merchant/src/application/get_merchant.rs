@@ -28,6 +28,10 @@ impl GetMerchant {
         Ok(MerchantResponse {
             id: merchant.id,
             name: merchant.name,
+            email: merchant.email,
+            phone: merchant.phone,
+            website: merchant.website,
+            status: merchant.status,
             is_active: merchant.is_active,
         })
     }

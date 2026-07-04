@@ -20,13 +20,9 @@ pub async fn update_merchant_handler(
     Path(id): Path<Uuid>,
     Json(payload): Json<UpdateMerchantRequest>,
 ) -> Result<Json<&'static str>, StatusCode> {
-    // Ensure the ID in the path matches the payload
-    if id != payload.id {
-        return Err(StatusCode::BAD_REQUEST);
-    }
 
     usecase
-        .execute(payload.id, payload.name, payload.is_active)
+        .execute(id, payload)
         .await
         .map_err(|e| {
             eprintln!("Error updating merchant: {:?}", e);

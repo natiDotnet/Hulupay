@@ -1,4 +1,5 @@
 use crate::domain::error::DomainError;
+use crate::domain::merchant_status::MerchantStatus;
 use sea_orm::entity::prelude::*;
 use sea_orm::prelude::DateTimeUtc;
 use sea_orm::{ActiveModelBehavior, DeriveEntityModel, Set};
@@ -8,14 +9,21 @@ use sqlx::types::chrono::Utc;
 use uuid::Uuid;
 
 #[sea_orm::model]
-#[derive(Debug, Deserialize, Serialize, DeriveEntityModel, Clone)]
+#[derive(Debug, DeriveEntityModel, Clone)]
 #[sea_orm(table_name = "merchants")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: Uuid,
     #[sea_orm(unique)]
     pub name: String,
+    #[sea_orm(unique)]
+    pub slug: String,
+    #[sea_orm(unique)]
+    pub email: String,
+    pub phone: String,
+    pub website: String,
     pub is_active: bool,
+    pub status: MerchantStatus,
     pub created_at: DateTimeUtc,
     pub updated_at: Option<DateTimeUtc>,
 }
@@ -25,6 +33,7 @@ impl ActiveModelBehavior for ActiveModel {
         Self {
             id: Set(Uuid::now_v7()),
             is_active: Set(true),
+            status: Set(MerchantStatus::Active),
             created_at: Set(Utc::now()),
             updated_at: Set(None),
             ..ActiveModelTrait::default()

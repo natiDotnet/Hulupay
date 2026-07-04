@@ -21,7 +21,7 @@ impl TokenService for JwtTokenService {
         user_id: Uuid,
         email: &str,
         role: &str,
-        merchant_id: Option<Uuid>,
+        merchant_id: Uuid,
     ) -> Result<String, AuthError> {
         let expiration = SystemTime::now()
             .duration_since(UNIX_EPOCH)

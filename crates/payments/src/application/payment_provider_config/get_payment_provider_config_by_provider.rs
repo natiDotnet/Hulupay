@@ -25,9 +25,7 @@ impl GetPaymentProviderConfigByProvider {
         user_context: UserContext,
         provider_code: domain::provider::Provider,
     ) -> anyhow::Result<PaymentProviderConfig> {
-        let merchant_id = user_context
-            .merchant_id
-            .ok_or_else(|| anyhow!("Merchant ID not found"))?;
+        let merchant_id = user_context.merchant_id;
 
         let provider = payment_provider::Entity::find_by_code(provider_code.to_string())
             .one(&self.db)

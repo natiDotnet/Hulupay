@@ -1,6 +1,8 @@
 use crate::application::ApplicationError;
 use crate::domain::merchant;
 use crate::domain::merchant::ActiveModel;
+use crate::domain::merchant_status::MerchantStatus;
+use crate::UpdateMerchantRequest;
 use anyhow::anyhow;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
 use sqlx::types::chrono::Utc;
@@ -19,8 +21,7 @@ impl UpdateMerchant {
     pub async fn execute(
         &self,
         id: Uuid,
-        name: String,
-        is_active: bool,
+        request: UpdateMerchantRequest,
     ) -> Result<(), ApplicationError> {
         let merchant = merchant::Entity::find_by_id(id)
             .one(&self.db)
@@ -31,8 +32,12 @@ impl UpdateMerchant {
             })?;
         // .ok_or_else(|| anyhow!("Merchant not found with given id"))?;
         let mut merchant: ActiveModel = merchant.into();
-        merchant.name = Set(name);
-        merchant.is_active = Set(is_active);
+        merchant.name = Set(request.name);
+        merchant.email = Set(request.email);
+        merchant.phone = Set(request.phone);
+        merchant.website = Set(request.website);
+        merchant.status = Set(request.status);
+        merchant.is_active = Set(request.status == MerchantStatus::Active);
         merchant.updated_at = Set(Some(Utc::now()));
         merchant
             .update(&self.db)
