@@ -23,7 +23,7 @@ sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio", "macros"] }
 anyhow = "1.0.102"
 dotenvy = "0.15.7"
 utoipa = { version = "5.4.0", features = ["axum_extras", "uuid"] }
-utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
+#utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
 utoipa-axum = { version = "0.2.0" }
 utoipa-scalar = { version = "0.3.0", features = ["axum"] }
 tracing-subscriber = { version = "0.3.22", features = ["env-filter", "fmt", "json"] }

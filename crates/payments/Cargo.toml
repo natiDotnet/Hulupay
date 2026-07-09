@@ -24,7 +24,7 @@ rust_decimal_macros = "1.40.0"
 # Error handling
 anyhow = "1.0.102"
 thiserror = "2.0.18"
-phonenumber = "0.3.9+9.0.21"
+phonenumber = "0.3.9"
 
 # API documentation
 utoipa = { version = "5.4.0", features = ["axum_extras", "uuid", "decimal"] }

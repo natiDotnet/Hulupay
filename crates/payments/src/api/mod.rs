@@ -47,6 +47,7 @@ use hulu_core::create_checkout::{CreateCheckout, VerifyPayment};
 use hulu_core::payment_gateway::PaymentGateway;
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
+use auth::api::get_token_service;
 
 impl FromRef<PaymentsState> for ProviderEngine {
     fn from_ref(state: &PaymentsState) -> Self {
@@ -206,10 +207,14 @@ pub fn router(db: &DatabaseConnection) -> OpenApiRouter {
     // .merge(arif::api::arifpay_route::arifpay_routes());
     // .merge(arif::chapa::chapa_routes(&state.handle_create_checkout));
     OpenApiRouter::<PaymentsState>::new()
-        .merge(master_admin_routes)
-        .merge(merchant_admin_routes)
-        .merge(authenticated_payment_routes)
-        .merge(public_routes)
+        .nest("/api", OpenApiRouter::new()
+            .merge(master_admin_routes)
+            .merge(merchant_admin_routes)
+            .merge(authenticated_payment_routes)
+            .layer(axum::middleware::from_fn(auth::api::authentication))
+            .layer(axum::Extension(get_token_service().clone()))
+            .merge(public_routes)
+        )
         .merge(crate::chapa::chapa_routes::chapa_routes())
         .merge(crate::arifpay::arifpay_route::arifpay_routes())
         .with_state(state)

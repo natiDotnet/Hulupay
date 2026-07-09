@@ -11,7 +11,7 @@ pub struct Model {
     pub id: Uuid,
     pub merchant_id: Uuid,
     #[sea_orm(unique)]
-    pub name: String, 
+    pub name: String,
     pub prefix: String,
     pub hash: String,
     pub scopes: Vec<u8>,

@@ -8,11 +8,12 @@ use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
 use utoipa::OpenApi;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_scalar::{Scalar, Servable};
-use utoipa_swagger_ui::SwaggerUi;
+// use utoipa_swagger_ui::SwaggerUi;
 
 // Feature crate routers
 use auth;
 use auth::{JwtTokenService, TokenService};
+use auth::api::get_token_service;
 use merchant;
 use payments;
 
@@ -20,10 +21,10 @@ use payments;
 #[openapi(info(title = "My API", version = "1.0", description = "An example API"))]
 pub struct ApiDoc;
 
-pub fn api_routes(db: &DatabaseConnection) -> Router {
-    let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
-    let token_service: Arc<dyn TokenService> = Arc::new(JwtTokenService::new(jwt_secret));
 
+pub fn api_routes(db: &DatabaseConnection) -> Router {
+    
+    let token_service = get_token_service();
     let mut open_api = ApiDoc::openapi();
     open_api
         .components
@@ -67,7 +68,8 @@ pub fn api_routes(db: &DatabaseConnection) -> Router {
         .merge(payments::router(db))
         .split_for_parts();
 
-    app.merge(SwaggerUi::new("/swagger-ui").url("/api-doc/openapi.json", doc.clone()))
+    app
+        // .merge(SwaggerUi::new("/swagger-ui").url("/api-doc/openapi.json", doc.clone()))
         .merge(Scalar::with_url("/scalar", doc.clone()))
         .layer(cors)
 }

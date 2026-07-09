@@ -4,6 +4,7 @@ pub mod middleware;
 mod register;
 mod state;
 
+use std::env;
 pub use extractor::AuthUser;
 pub use middleware::{authentication, authorization, AuthorizationPolicy};
 pub use state::AuthState;
@@ -43,4 +44,10 @@ pub fn router(db: &DatabaseConnection) -> OpenApiRouter {
         .routes(routes!(register::register_user_handler))
         .routes(routes!(login::login_user_handler))
         .with_state(state)
+}
+
+pub fn get_token_service() -> Arc<dyn TokenService> {
+    let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+    let token_service: Arc<dyn TokenService> = Arc::new(JwtTokenService::new(jwt_secret));
+    token_service
 }

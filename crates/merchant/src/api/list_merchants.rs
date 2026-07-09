@@ -1,9 +1,9 @@
-use crate::application::{ListMerchants, PaginatedResponse};
 use crate::MerchantResponse;
+use crate::application::{ListMerchants, PaginatedResponse};
 use axum::{
+    Json,
     extract::{Query, State},
     http::StatusCode,
-    Json,
 };
 use serde::Deserialize;
 use utoipa::IntoParams;
