@@ -1,7 +1,7 @@
 use crate::arifpay::arif_webhook::{ArifTransaction, ArifWebhook};
 use crate::arifpay::arifpay_service::ArifpayService;
+use crate::domain::{payments, PaymentOrders, PaymentTransactions};
 use crate::domain;
-use crate::domain::{PaymentOrders, PaymentTransactions, payments};
 use hulu_core::gateway_response::VerifyResponse;
 use hulu_core::payment_gateway::{GatewayResponse, PaymentGateway, WebhookInfo};
 use hulu_core::payment_gateway_error::PaymentGatewayError;
@@ -18,6 +18,7 @@ use std::sync::Arc;
 pub struct ArifPayConfig {
     pub api_key: String,
     pub base_url: String,
+    pub sandbox_url: String,
     pub cancel_url: Option<String>,
     pub success_url: Option<String>,
     pub error_url: Option<String>,
@@ -29,16 +30,11 @@ pub struct ArifPayConfig {
 
 impl ArifPayConfig {
     pub fn new(api_key: String, is_test_key: bool) -> Self {
-        let base_url = if is_test_key {
-            "https://gateway.sandbox.arifpay.org".to_string()
-        } else {
-            "https://gateway.arifpay.org".to_string()
-        };
-
         Self {
             api_key,
             is_test_key,
-            base_url,
+            base_url: "https://gateway.arifpay.net".to_string(),
+            sandbox_url: "https://gateway.arifpay.org".to_string(),
             notify_url: "".to_string(),
             cancel_url: None,
             success_url: None,
@@ -102,6 +98,10 @@ impl ArifPayProvider {
 
 #[async_trait::async_trait]
 impl PaymentGateway for ArifPayProvider {
+    fn get_config(&self) -> Value {
+        serde_json::json!(ArifPayConfig::new(String::new(), true))
+    }
+
     fn get_name(&self) -> GatewayProvider {
         GatewayProvider::Arifpay
     }

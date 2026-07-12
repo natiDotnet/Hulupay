@@ -10,6 +10,34 @@ use hulu_core::request_context::RequestContext;
 use sea_orm::DatabaseConnection;
 use serde_json::Value;
 use std::sync::Arc;
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChapaConfig {
+    pub api_key: String,
+    pub base_url: String,
+    pub sandbox_url: String,
+    pub return_url: Option<String>,
+    pub notify_url: String,
+    pub account_number: String,
+    pub bank: String,
+    pub is_test_key: bool,
+}
+
+impl ChapaConfig {
+    pub fn new(api_key: String, is_test_key: bool) -> Self {
+        Self {
+            api_key,
+            is_test_key,
+            base_url: "https://gateway.arifpay.net".to_string(),
+            sandbox_url: "https://gateway.arifpay.org".to_string(),
+            return_url: None,
+            notify_url: "".to_string(),
+            account_number: "01320811436100".to_string(),
+            bank: "AWINETAA".to_string(),
+        }
+    }
+}
 
 #[derive(Clone)]
 pub struct ChapaProvider {
@@ -63,6 +91,10 @@ impl ChapaProvider {
 }
 #[async_trait::async_trait]
 impl PaymentGateway for ChapaProvider {
+    fn get_config(&self) -> Value {
+        serde_json::json!(ChapaConfig::new(String::new(), true))
+    }
+
     fn get_name(&self) -> hulu_core::payment_method::GatewayProvider {
         hulu_core::payment_method::GatewayProvider::Chapa
     }

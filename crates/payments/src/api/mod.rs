@@ -249,6 +249,7 @@ fn build_state(db: &DatabaseConnection) -> PaymentsState {
         get_payment_provider_config: GetPaymentProviderConfig::new(db.clone()),
         get_payment_provider_config_by_provider: GetPaymentProviderConfigByProvider::new(
             db.clone(),
+            provider_engine.clone(),
         ),
         update_payment_provider_config: UpdatePaymentProviderConfig::new(db.clone()),
         delete_payment_provider_config: DeletePaymentProviderConfig::new(db.clone()),

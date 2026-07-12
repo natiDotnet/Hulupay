@@ -1,6 +1,6 @@
-use crate::domain::provider::Provider;
+use crate::domain::environment::Environment;
 use crate::domain::{merchant_config, PaymentProviderConfig};
-use crate::{domain, ArifPayConfig};
+use crate::{domain, ProviderEngine};
 use anyhow::anyhow;
 use auth::UserContext;
 use chrono::Utc;
@@ -9,16 +9,16 @@ use sea_orm::ColumnTrait;
 use sea_orm::QueryFilter;
 use sea_orm::{DatabaseConnection, EntityTrait, JoinType, QuerySelect, RelationTrait};
 use uuid::Uuid;
-use crate::domain::environment::Environment;
 
 #[derive(Clone)]
 pub struct GetPaymentProviderConfigByProvider {
     db: DatabaseConnection,
+    provider_engine: ProviderEngine,
 }
 
 impl GetPaymentProviderConfigByProvider {
-    pub fn new(db: DatabaseConnection) -> Self {
-        Self { db }
+    pub fn new(db: DatabaseConnection, provider_engine: ProviderEngine) -> Self {
+        Self { db, provider_engine }
     }
 
     pub async fn execute(
@@ -56,17 +56,14 @@ impl GetPaymentProviderConfigByProvider {
                 created_at: p.created_at,
                 updated_at: p.updated_at,
             });
-
+        let gateway = self.provider_engine.get_provider(None, Some(&provider_code)).await
+            .ok_or(anyhow!("provider not found"))?;
         match result {
-            None => match &provider_code {
-                Provider::Hulu => Err(anyhow!("provider not found")),
-                Provider::Stripe => Err(anyhow!("provider not found")),
-                Provider::Chapa => Err(anyhow!("provider not found")),
-                Provider::ArifPay => Ok(PaymentProviderConfig {
+            None => Ok(PaymentProviderConfig {
                     id: Uuid::nil(),
                     merchant_id,
                     provider_id: provider.id,
-                    config: serde_json::json!(ArifPayConfig::new(String::new(), true)),
+                    config: gateway.get_config(),
                     priority: 1,
                     environment: Environment::Sandbox,
                     // is_test_mode: true,
@@ -75,7 +72,6 @@ impl GetPaymentProviderConfigByProvider {
                     created_at: Utc::now(),
                     updated_at: Utc::now(),
                 }),
-            },
             Some(config) => Ok(config),
         }
     }
