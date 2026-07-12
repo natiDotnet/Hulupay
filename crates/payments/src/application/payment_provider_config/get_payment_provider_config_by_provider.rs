@@ -9,6 +9,7 @@ use sea_orm::ColumnTrait;
 use sea_orm::QueryFilter;
 use sea_orm::{DatabaseConnection, EntityTrait, JoinType, QuerySelect, RelationTrait};
 use uuid::Uuid;
+use crate::domain::environment::Environment;
 
 #[derive(Clone)]
 pub struct GetPaymentProviderConfigByProvider {
@@ -46,7 +47,9 @@ impl GetPaymentProviderConfigByProvider {
                 id: p.id,
                 merchant_id: p.merchant_id,
                 provider_id: p.provider_id,
-                is_test_mode: p.is_test_mode,
+                priority: p.priority,
+                environment: p.environment,
+                // is_test_mode: p.is_test_mode,
                 config: p.config,
                 is_active: p.is_active,
                 is_default: p.is_default,
@@ -64,7 +67,9 @@ impl GetPaymentProviderConfigByProvider {
                     merchant_id,
                     provider_id: provider.id,
                     config: serde_json::json!(ArifPayConfig::new(String::new(), true)),
-                    is_test_mode: true,
+                    priority: 1,
+                    environment: Environment::Sandbox,
+                    // is_test_mode: true,
                     is_active: false,
                     is_default: false,
                     created_at: Utc::now(),

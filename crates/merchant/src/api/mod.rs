@@ -100,6 +100,7 @@ pub fn router(db: &DatabaseConnection) -> OpenApiRouter {
             delete_merchant::delete_merchant_handler,
             update_merchant::update_merchant_handler
         ))
+        .require_role(Role::MasterAdmin)
         .routes(routes!(
             create_apikey::create_apikey_handler,
             list_apikeys::list_apikeys_handler
@@ -108,6 +109,6 @@ pub fn router(db: &DatabaseConnection) -> OpenApiRouter {
             delete_apikey::delete_apikey_handler,
             update_apikey::update_apikey_handler
         ))
-        .require_role(Role::MasterAdmin)
+        .require_auth()
         .with_state(state)
 }

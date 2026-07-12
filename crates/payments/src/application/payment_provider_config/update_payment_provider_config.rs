@@ -1,4 +1,5 @@
 use crate::domain;
+use crate::domain::environment::Environment;
 use anyhow::anyhow;
 use chrono::Utc;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, IntoActiveModel, Set};
@@ -18,7 +19,7 @@ impl UpdatePaymentProviderConfig {
     pub async fn execute(
         &self,
         id: Uuid,
-        is_test_mode: bool,
+        environment: Environment,
         config: Value,
         is_active: bool,
     ) -> anyhow::Result<()> {
@@ -28,7 +29,8 @@ impl UpdatePaymentProviderConfig {
             .ok_or_else(|| anyhow!("merchant provider config not found"))?;
 
         let mut config_entity = config_entity.into_active_model();
-        config_entity.is_test_mode = Set(is_test_mode);
+        config_entity.environment = Set(environment.clone());
+        config_entity.is_test_mode = Set(environment == Environment::Sandbox);
         config_entity.config = Set(config);
         config_entity.is_active = Set(is_active);
         config_entity.updated_at = Set(Utc::now());

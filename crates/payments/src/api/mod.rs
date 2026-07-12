@@ -1,20 +1,16 @@
 pub mod arifpay_api;
-mod create_payment_provider;
 mod create_payment_provider_config;
-mod delete_payment_provider;
 mod delete_payment_provider_config;
-mod get_payment_provider;
 mod get_payment_provider_config;
 mod get_payment_provider_config_by_provider;
 mod initialize;
 mod list_payment_provider_configs;
-mod list_payment_providers;
 pub mod request_context;
 mod state;
-mod update_payment_provider;
 mod update_payment_provider_config;
 mod verify;
 mod webhook;
+pub mod providers;
 
 pub use state::PaymentsState;
 use std::collections::HashMap;
@@ -38,7 +34,7 @@ use crate::application::{
 use crate::arifpay::arifpay_service::ArifpayService;
 use crate::chapa::chapa_service::ChapaService;
 use crate::infrastructure::redis_service::RedisCacheService;
-use crate::{ArifPayProvider, domain};
+use crate::{domain, ArifPayProvider};
 use auth::Role;
 use auth::api::middleware::AuthRouterExt;
 use deadpool_redis::{Config, Runtime};
@@ -160,13 +156,13 @@ pub fn router(db: &DatabaseConnection) -> OpenApiRouter {
 
     let master_admin_routes = OpenApiRouter::new()
         .routes(routes!(
-            create_payment_provider::create_payment_provider_handler,
+            providers::create_payment_provider::create_payment_provider_handler,
             // list_payment_providers::list_payment_providers_handler,
         ))
         .routes(routes!(
-            get_payment_provider::get_payment_provider_handler,
-            update_payment_provider::update_payment_provider_handler,
-            delete_payment_provider::delete_payment_provider_handler,
+            providers::get_payment_provider::get_payment_provider_handler,
+            providers::update_payment_provider::update_payment_provider_handler,
+            providers::delete_payment_provider::delete_payment_provider_handler,
         ))
         .require_role(Role::MasterAdmin);
 
@@ -187,7 +183,7 @@ pub fn router(db: &DatabaseConnection) -> OpenApiRouter {
 
     let authenticated_payment_routes = OpenApiRouter::new()
         .routes(routes!(
-            list_payment_providers::list_payment_providers_handler,
+            providers::list_payment_providers::list_payment_providers_handler,
         ))
         // .routes(routes!(
         //     create_checkout_session_handler,

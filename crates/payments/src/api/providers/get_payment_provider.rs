@@ -1,4 +1,4 @@
-use super::create_payment_provider::ProviderResponse;
+use crate::api::providers::create_payment_provider::ProviderResponse;
 use crate::application::GetPaymentProvider;
 use auth::api::AuthUser;
 use axum::{
@@ -42,6 +42,7 @@ pub async fn get_payment_provider_handler(
         id: provider.id,
         code: provider.code,
         name: provider.name,
+        logo: provider.logo,
         is_active: provider.is_active,
         created_at: provider.created_at,
     }))

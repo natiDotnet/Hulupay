@@ -5,6 +5,8 @@ use chrono::{DateTime, Utc};
 use serde::Serialize;
 use utoipa::ToSchema;
 use uuid::Uuid;
+use crate::domain::environment::Environment;
+
 #[utoipa::path(
     post,
     tag = "payment-provider-configs",
@@ -30,7 +32,9 @@ pub struct PaymentProviderConfigResponse {
     pub id: Uuid,
     pub merchant_id: Uuid,
     pub provider_id: Uuid,
-    pub is_test_mode: bool,
+    pub environment: Environment,
+    pub priority: i32,
+    // pub is_test_mode: bool,
     pub config: serde_json::Value,
     pub is_active: bool,
     pub is_default: bool,
@@ -48,7 +52,9 @@ impl From<crate::domain::PaymentProviderConfig> for PaymentProviderConfigRespons
             id: config.id,
             merchant_id: config.merchant_id,
             provider_id: config.provider_id,
-            is_test_mode: config.is_test_mode,
+            priority: config.priority,
+            environment: config.environment,
+            // is_test_mode: config,
             config: config.config,
             is_active: config.is_active,
             is_default: config.is_default,

@@ -37,6 +37,7 @@ impl ListPaymentProviders {
                 id: p.id,
                 code: p.code,
                 name: p.name,
+                logo: p.logo,
                 is_active: p.is_active,
                 created_at: p.created_at,
             })

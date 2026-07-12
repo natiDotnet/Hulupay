@@ -83,12 +83,14 @@ impl DataSeeder {
         let arifpay = payment_provider::ActiveModel {
             name: Set(domain::provider::Provider::ArifPay.to_string()),
             code: Set(domain::provider::Provider::ArifPay.to_string()),
+            logo: Set("https://dashboard.arifpay.net/logo.png".to_string()),
             ..Default::default()
         };
 
         let chapa = payment_provider::ActiveModel {
             name: Set(domain::provider::Provider::Chapa.to_string()),
             code: Set(domain::provider::Provider::Chapa.to_string()),
+            logo: Set("https://ethiopianlogos.com/logos/chapa/chapa.png".to_string()),
             ..Default::default()
         };
         

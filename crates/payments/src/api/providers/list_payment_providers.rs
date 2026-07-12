@@ -1,4 +1,4 @@
-use super::create_payment_provider::ProviderResponse;
+use crate::api::providers::create_payment_provider::ProviderResponse;
 use crate::application::ListPaymentProviders;
 use axum::{
     extract::{Query, State},
@@ -59,6 +59,7 @@ pub async fn list_payment_providers_handler(
             id: p.id,
             code: p.code.clone(),
             name: p.name.clone(),
+            logo: p.logo.clone(),
             is_active: p.is_active,
             created_at: p.created_at,
         })

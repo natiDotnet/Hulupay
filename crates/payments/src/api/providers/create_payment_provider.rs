@@ -3,18 +3,9 @@ use axum::{extract::State, http::StatusCode, Json};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
+use crate::application::payment_provider::create_payment_provider::CreatePaymentProviderRequest;
 
-#[derive(Deserialize, ToSchema)]
-pub struct CreatePaymentProviderRequest {
-    pub code: String,
-    pub name: String,
-    #[serde(default = "default_is_active")]
-    pub is_active: bool,
-}
 
-fn default_is_active() -> bool {
-    true
-}
 
 #[utoipa::path(
     post,
@@ -28,7 +19,7 @@ pub async fn create_payment_provider_handler(
     Json(payload): Json<CreatePaymentProviderRequest>,
 ) -> Result<Json<ProviderResponse>, StatusCode> {
     let provider = usecase
-        .execute(payload.code, payload.name, payload.is_active)
+        .execute(payload)
         .await
         .map_err(|e| {
             eprintln!("Error creating payment provider: {:?}", e);
@@ -39,6 +30,7 @@ pub async fn create_payment_provider_handler(
         id: provider.id,
         code: provider.code,
         name: provider.name,
+        logo: provider.logo,
         is_active: provider.is_active,
         created_at: provider.created_at,
     }))
@@ -49,6 +41,7 @@ pub struct ProviderResponse {
     pub id: uuid::Uuid,
     pub code: String,
     pub name: String,
+    pub logo: String,
     pub is_active: bool,
     // #[serde(with = "time::serde::rfc3339")]
     #[schema(value_type = String, format = DateTime)]

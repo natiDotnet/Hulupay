@@ -7,6 +7,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 use uuid::Uuid;
+use crate::domain::environment::Environment;
 
 #[derive(Deserialize, IntoParams)]
 pub struct ConfigIdParams {
@@ -17,7 +18,7 @@ pub struct ConfigIdParams {
 pub struct UpdatePaymentProviderConfigRequest {
     pub merchant_id: Uuid,
     pub provider_id: Uuid,
-    pub is_test_mode: bool,
+    pub environment: Environment,
     pub config: serde_json::Value,
     pub is_active: bool,
 }
@@ -39,7 +40,7 @@ pub async fn update_payment_provider_config_handler(
     let id = uuid::Uuid::parse_str(&params.id).map_err(|_| StatusCode::BAD_REQUEST)?;
 
     usecase
-        .execute(id, payload.is_test_mode, payload.config, payload.is_active)
+        .execute(id, payload.environment, payload.config, payload.is_active)
         .await
         .map_err(|e| {
             eprintln!("Error updating payment provider config: {:?}", e);

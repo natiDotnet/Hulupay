@@ -9,6 +9,7 @@ use axum::{
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
+use crate::domain::environment::Environment;
 
 #[derive(Deserialize, IntoParams)]
 pub struct ProviderNameParams {
@@ -21,7 +22,9 @@ pub struct PaymentProviderConfigByProviderResponse {
     pub id: uuid::Uuid,
     pub merchant_id: uuid::Uuid,
     pub provider_id: uuid::Uuid,
-    pub is_test_mode: bool,
+    // pub is_test_mode: bool,
+    pub environment: Environment,
+    pub priority: i32,
     pub config: serde_json::Value,
     pub is_active: bool,
     // #[serde(with = "time::serde::rfc3339")]
@@ -38,7 +41,9 @@ impl From<crate::domain::PaymentProviderConfig> for PaymentProviderConfigByProvi
             id: config.id,
             merchant_id: config.merchant_id,
             provider_id: config.provider_id,
-            is_test_mode: config.is_test_mode,
+            environment: config.environment,
+            priority: config.priority,
+            // is_test_mode: config.is_test_mode,
             config: config.config,
             is_active: config.is_active,
             created_at: config.created_at,

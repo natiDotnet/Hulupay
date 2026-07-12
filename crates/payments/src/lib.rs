@@ -7,6 +7,7 @@ pub mod chapa;
 pub mod domain;
 pub mod hulupay;
 pub mod infrastructure;
+pub mod hulu;
 
 pub use api::{router, PaymentsState};
 pub use application::{
