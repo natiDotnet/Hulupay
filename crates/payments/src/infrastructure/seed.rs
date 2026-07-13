@@ -1,12 +1,12 @@
 use crate::domain;
 use auth::Role;
+use auth::domain::status::AccountStatus;
 use chrono::Utc;
 use domain::payment_provider;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
-use uuid::Uuid;
-use auth::domain::status::AccountStatus;
 use hulu_core::create_slug;
 use merchant::domain::merchant_status::MerchantStatus;
+use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
+use uuid::Uuid;
 
 pub struct DataSeeder {
     db: DatabaseConnection,
@@ -93,7 +93,7 @@ impl DataSeeder {
             logo: Set("https://ethiopianlogos.com/logos/chapa/chapa.png".to_string()),
             ..Default::default()
         };
-        
+
         payment_provider::Entity::insert_many([arifpay, chapa])
             .exec(&self.db)
             .await?;

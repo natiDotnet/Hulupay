@@ -1,9 +1,9 @@
 use crate::api::providers::create_payment_provider::ProviderResponse;
 use crate::application::ListPaymentProviders;
 use axum::{
+    Json,
     extract::{Query, State},
     http::StatusCode,
-    Json,
 };
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};

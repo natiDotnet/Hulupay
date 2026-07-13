@@ -1,6 +1,6 @@
 use crate::application::cache_service::CacheService;
 use anyhow::Result;
-use deadpool_redis::{redis::AsyncCommands, Pool};
+use deadpool_redis::{Pool, redis::AsyncCommands};
 
 pub struct RedisCacheService {
     pool: Pool,

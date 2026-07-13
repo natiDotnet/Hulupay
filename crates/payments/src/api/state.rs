@@ -2,8 +2,9 @@ use crate::application::checkout::payment_webhook::PaymentWebhookHandler;
 use crate::application::{
     CreatePaymentProvider, CreatePaymentProviderConfig, DeletePaymentProvider,
     DeletePaymentProviderConfig, GetPaymentProvider, GetPaymentProviderConfig,
-    GetPaymentProviderConfigByProvider, HandleProviderWebhook, ListPaymentProviderConfigs,
-    ListPaymentProviders, UpdatePaymentProvider, UpdatePaymentProviderConfig,
+    GetPaymentProviderConfigByProvider, HandleProviderWebhook, ListMerchantWebhooks,
+    ListPaymentProviderConfigs, ListPaymentProviders, UpdatePaymentProvider,
+    UpdatePaymentProviderConfig,
 };
 // use crate::application::initiate_payment::InitiatePayment;
 use crate::ProviderEngine;
@@ -26,6 +27,7 @@ pub struct PaymentsState {
     pub update_payment_provider_config: UpdatePaymentProviderConfig,
     pub delete_payment_provider_config: DeletePaymentProviderConfig,
     pub list_payment_provider_configs: ListPaymentProviderConfigs,
+    pub list_merchant_webhooks: ListMerchantWebhooks,
 
     pub handle_provider_webhook: HandleProviderWebhook,
     pub handle_create_checkout: Arc<dyn CreateCheckout>,

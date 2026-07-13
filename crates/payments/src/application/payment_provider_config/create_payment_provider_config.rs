@@ -1,5 +1,6 @@
 use crate::domain;
 use crate::domain::PaymentProviderConfig;
+use crate::domain::environment::Environment;
 use anyhow::anyhow;
 use chrono::Utc;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
@@ -7,7 +8,6 @@ use serde::Deserialize;
 use serde_json::Value;
 use utoipa::ToSchema;
 use uuid::Uuid;
-use crate::domain::environment::Environment;
 
 #[derive(Deserialize, ToSchema)]
 pub struct CreatePaymentProviderConfigRequest {

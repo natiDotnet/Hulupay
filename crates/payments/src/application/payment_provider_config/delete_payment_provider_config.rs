@@ -8,8 +8,7 @@ pub struct DeletePaymentProviderConfig {
 }
 
 impl DeletePaymentProviderConfig {
-    pub fn new(
-        db: DatabaseConnection, ) -> Self {
+    pub fn new(db: DatabaseConnection) -> Self {
         Self { db }
     }
 

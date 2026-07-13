@@ -1,4 +1,4 @@
-use crate::domain::{merchant_config, MerchantConfigs, PaymentProviderConfig};
+use crate::domain::{MerchantConfigs, PaymentProviderConfig, merchant_config};
 use anyhow::anyhow;
 use merchant::application::ApplicationError;
 use sea_orm::ColumnTrait;

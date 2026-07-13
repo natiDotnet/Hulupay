@@ -8,9 +8,9 @@ use hulu_core::payment_gateway_error::PaymentGatewayError;
 use hulu_core::payment_request::PaymentRequest;
 use hulu_core::request_context::RequestContext;
 use sea_orm::DatabaseConnection;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::sync::Arc;
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChapaConfig {

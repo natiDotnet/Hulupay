@@ -1,11 +1,9 @@
 use crate::application::CreatePaymentProvider;
-use axum::{extract::State, http::StatusCode, Json};
+use crate::application::payment_provider::create_payment_provider::CreatePaymentProviderRequest;
+use axum::{Json, extract::State, http::StatusCode};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-use crate::application::payment_provider::create_payment_provider::CreatePaymentProviderRequest;
-
-
 
 #[utoipa::path(
     post,
@@ -18,13 +16,10 @@ pub async fn create_payment_provider_handler(
     State(usecase): State<CreatePaymentProvider>,
     Json(payload): Json<CreatePaymentProviderRequest>,
 ) -> Result<Json<ProviderResponse>, StatusCode> {
-    let provider = usecase
-        .execute(payload)
-        .await
-        .map_err(|e| {
-            eprintln!("Error creating payment provider: {:?}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+    let provider = usecase.execute(payload).await.map_err(|e| {
+        eprintln!("Error creating payment provider: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
     Ok(Json(ProviderResponse {
         id: provider.id,

@@ -1,4 +1,4 @@
-use crate::{domain, PaymentMethod};
+use crate::{PaymentMethod, domain};
 use sea_orm::entity::prelude::*;
 use sea_orm::{ActiveModelBehavior, DeriveEntityModel};
 use uuid::Uuid;

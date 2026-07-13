@@ -1,5 +1,5 @@
-use crate::domain::payment_status::TransitionError;
 use crate::domain::Provider;
+use crate::domain::payment_status::TransitionError;
 use rust_decimal::Decimal;
 use uuid::Uuid;
 

@@ -1,13 +1,13 @@
 use crate::application::UpdatePaymentProviderConfig;
+use crate::domain::environment::Environment;
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
-    Json,
 };
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 use uuid::Uuid;
-use crate::domain::environment::Environment;
 
 #[derive(Deserialize, IntoParams)]
 pub struct ConfigIdParams {

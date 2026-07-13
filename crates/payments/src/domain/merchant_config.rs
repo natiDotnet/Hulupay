@@ -1,8 +1,8 @@
 use crate::domain;
 use crate::domain::environment::Environment;
-use sea_orm::entity::prelude::*;
 use sea_orm::ActiveModelBehavior;
 use sea_orm::DeriveEntityModel;
+use sea_orm::entity::prelude::*;
 use uuid::Uuid;
 
 #[sea_orm::model]

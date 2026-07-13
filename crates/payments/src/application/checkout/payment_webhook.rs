@@ -59,6 +59,18 @@ impl PaymentWebhookHandler {
             HuluError::ConnectionError
         })?;
 
+        payments::merchant_webhook::ActiveModel::from_webhook(
+            webhook_info.clone(),
+            order.merchant_id,
+            order.id,
+        )
+        .insert(&self.db)
+        .await
+        .map_err(|e| {
+            debug!(?e, "database error");
+            HuluError::ConnectionError
+        })?;
+
         self.callback(order.id, &order.request_provider, &webhook_info)
             .await?;
         let mut order = order.into_active_model();

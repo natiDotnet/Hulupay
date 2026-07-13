@@ -1,15 +1,15 @@
 use crate::application::GetPaymentProviderConfigByProvider;
 use crate::domain;
+use crate::domain::environment::Environment;
 use auth::api::AuthUser;
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
-    Json,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
-use crate::domain::environment::Environment;
 
 #[derive(Deserialize, IntoParams)]
 pub struct ProviderNameParams {

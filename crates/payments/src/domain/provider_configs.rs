@@ -1,6 +1,6 @@
+use crate::domain::environment::Environment;
 use sea_orm::prelude::DateTimeUtc;
 use uuid::Uuid;
-use crate::domain::environment::Environment;
 
 #[derive(Debug, Clone)]
 pub struct PaymentProvider {

@@ -1,5 +1,5 @@
-use crate::domain::error::DomainError;
 use crate::PaymentMethod;
+use crate::domain::error::DomainError;
 use serde::{Deserialize, Serialize};
 use sqlx::Type;
 use strum_macros::{Display, EnumString};

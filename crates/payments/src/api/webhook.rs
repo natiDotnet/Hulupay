@@ -2,7 +2,7 @@ use crate::api::request_context::RequestCtx;
 use crate::application::checkout::payment_webhook::PaymentWebhookHandler;
 use crate::domain;
 use axum::extract::Path;
-use axum::{extract::State, http::StatusCode, Json};
+use axum::{Json, extract::State, http::StatusCode};
 use tracing::debug;
 
 #[utoipa::path(

@@ -1,7 +1,7 @@
 use crate::arifpay::arif_webhook::{ArifTransaction, ArifWebhook};
 use crate::arifpay::arifpay_service::ArifpayService;
-use crate::domain::{payments, PaymentOrders, PaymentTransactions};
 use crate::domain;
+use crate::domain::{PaymentOrders, PaymentTransactions, payments};
 use hulu_core::gateway_response::VerifyResponse;
 use hulu_core::payment_gateway::{GatewayResponse, PaymentGateway, WebhookInfo};
 use hulu_core::payment_gateway_error::PaymentGatewayError;
@@ -187,6 +187,7 @@ impl PaymentGateway for ArifPayProvider {
             client_reference: w.nonce,
             charge: w.total_amount * dec!(2.875) / dec!(100),
             payment_method: w.payment_method.into(),
+            received_at: chrono::Utc::now(),
         })
     }
 

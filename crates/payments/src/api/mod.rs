@@ -4,13 +4,14 @@ mod delete_payment_provider_config;
 mod get_payment_provider_config;
 mod get_payment_provider_config_by_provider;
 mod initialize;
+mod list_merchant_webhooks;
 mod list_payment_provider_configs;
+pub mod providers;
 pub mod request_context;
 mod state;
 mod update_payment_provider_config;
 mod verify;
 mod webhook;
-pub mod providers;
 
 pub use state::PaymentsState;
 use std::collections::HashMap;
@@ -27,15 +28,16 @@ use crate::application::gateways::chapa::ChapaProvider;
 use crate::application::{
     ArifWebhook, CreatePaymentProvider, CreatePaymentProviderConfig, DeletePaymentProvider,
     DeletePaymentProviderConfig, GetPaymentProvider, GetPaymentProviderConfig,
-    GetPaymentProviderConfigByProvider, HandleProviderWebhook, ListPaymentProviderConfigs,
-    ListPaymentProviders, ProviderEngine, UpdatePaymentProvider, UpdatePaymentProviderConfig,
-    WebhookHandler,
+    GetPaymentProviderConfigByProvider, HandleProviderWebhook, ListMerchantWebhooks,
+    ListPaymentProviderConfigs, ListPaymentProviders, ProviderEngine, UpdatePaymentProvider,
+    UpdatePaymentProviderConfig, WebhookHandler,
 };
 use crate::arifpay::arifpay_service::ArifpayService;
 use crate::chapa::chapa_service::ChapaService;
 use crate::infrastructure::redis_service::RedisCacheService;
-use crate::{domain, ArifPayProvider};
+use crate::{ArifPayProvider, domain};
 use auth::Role;
+use auth::api::get_token_service;
 use auth::api::middleware::AuthRouterExt;
 use deadpool_redis::{Config, Runtime};
 use domain::provider;
@@ -43,7 +45,6 @@ use hulu_core::create_checkout::{CreateCheckout, VerifyPayment};
 use hulu_core::payment_gateway::PaymentGateway;
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
-use auth::api::get_token_service;
 
 impl FromRef<PaymentsState> for ProviderEngine {
     fn from_ref(state: &PaymentsState) -> Self {
@@ -117,6 +118,12 @@ impl FromRef<PaymentsState> for ListPaymentProviderConfigs {
     }
 }
 
+impl FromRef<PaymentsState> for ListMerchantWebhooks {
+    fn from_ref(state: &PaymentsState) -> Self {
+        state.list_merchant_webhooks.clone()
+    }
+}
+
 impl FromRef<PaymentsState> for HandleProviderWebhook {
     fn from_ref(state: &PaymentsState) -> Self {
         state.handle_provider_webhook.clone()
@@ -171,6 +178,7 @@ pub fn router(db: &DatabaseConnection) -> OpenApiRouter {
             create_payment_provider_config::create_payment_provider_config_handler,
             list_payment_provider_configs::list_payment_provider_configs_handler,
         ))
+        .routes(routes!(list_merchant_webhooks::list_merchant_webhooks_handler,))
         .routes(routes!(
             get_payment_provider_config::get_payment_provider_config_handler,
             update_payment_provider_config::update_payment_provider_config_handler,
@@ -203,13 +211,15 @@ pub fn router(db: &DatabaseConnection) -> OpenApiRouter {
     // .merge(arif::api::arifpay_route::arifpay_routes());
     // .merge(arif::chapa::chapa_routes(&state.handle_create_checkout));
     OpenApiRouter::<PaymentsState>::new()
-        .nest("/api", OpenApiRouter::new()
-            .merge(master_admin_routes)
-            .merge(merchant_admin_routes)
-            .merge(authenticated_payment_routes)
-            .layer(axum::middleware::from_fn(auth::api::authentication))
-            .layer(axum::Extension(get_token_service().clone()))
-            .merge(public_routes)
+        .nest(
+            "/api",
+            OpenApiRouter::new()
+                .merge(master_admin_routes)
+                .merge(merchant_admin_routes)
+                .merge(authenticated_payment_routes)
+                .layer(axum::middleware::from_fn(auth::api::authentication))
+                .layer(axum::Extension(get_token_service().clone()))
+                .merge(public_routes),
         )
         .merge(crate::chapa::chapa_routes::chapa_routes())
         .merge(crate::arifpay::arifpay_route::arifpay_routes())
@@ -254,6 +264,7 @@ fn build_state(db: &DatabaseConnection) -> PaymentsState {
         update_payment_provider_config: UpdatePaymentProviderConfig::new(db.clone()),
         delete_payment_provider_config: DeletePaymentProviderConfig::new(db.clone()),
         list_payment_provider_configs: ListPaymentProviderConfigs::new(db.clone()),
+        list_merchant_webhooks: ListMerchantWebhooks::new(db.clone()),
         handle_provider_webhook: HandleProviderWebhook::new(webhook_handlers),
         handle_create_checkout: checkout_handler,
         handle_verify_payment: verify_handler,

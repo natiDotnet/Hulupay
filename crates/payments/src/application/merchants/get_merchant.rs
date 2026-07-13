@@ -1,6 +1,6 @@
 use crate::application::cache_service::CacheService;
 use crate::{cache_get, cache_set};
-use merchant::{domain, Merchant};
+use merchant::{Merchant, domain};
 use sea_orm::DatabaseConnection;
 use tracing::debug;
 

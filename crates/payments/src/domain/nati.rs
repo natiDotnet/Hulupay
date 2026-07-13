@@ -1,5 +1,5 @@
-use sea_orm::entity::prelude::*;
 use sea_orm::DeriveEntityModel;
+use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 #[sea_orm::model]

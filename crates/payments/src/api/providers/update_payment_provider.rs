@@ -1,4 +1,5 @@
 use crate::application::UpdatePaymentProvider;
+use crate::application::payment_provider::update_payment_provider::UpdatePaymentProviderRequest;
 use axum::{
     Json,
     extract::{Path, State},
@@ -6,14 +7,11 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
-use crate::application::payment_provider::update_payment_provider::UpdatePaymentProviderRequest;
 
 #[derive(Deserialize, IntoParams)]
 pub struct ProviderIdParams {
     pub id: String,
 }
-
-
 
 #[utoipa::path(
     put,
@@ -31,13 +29,10 @@ pub async fn update_payment_provider_handler(
 ) -> Result<StatusCode, StatusCode> {
     let id = uuid::Uuid::parse_str(&params.id).map_err(|_| StatusCode::BAD_REQUEST)?;
 
-    usecase
-        .execute(id, payload)
-        .await
-        .map_err(|e| {
-            eprintln!("Error updating payment provider: {:?}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+    usecase.execute(id, payload).await.map_err(|e| {
+        eprintln!("Error updating payment provider: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
     Ok(StatusCode::NO_CONTENT)
 }

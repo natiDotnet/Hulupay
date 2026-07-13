@@ -93,6 +93,7 @@ pub struct WebhookInfo {
     pub charge: Decimal,
     pub client_reference: String,
     pub txn_reference: String,
+    pub received_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Display)]

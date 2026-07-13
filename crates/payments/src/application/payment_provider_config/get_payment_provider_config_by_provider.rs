@@ -1,6 +1,6 @@
 use crate::domain::environment::Environment;
-use crate::domain::{merchant_config, PaymentProviderConfig};
-use crate::{domain, ProviderEngine};
+use crate::domain::{PaymentProviderConfig, merchant_config};
+use crate::{ProviderEngine, domain};
 use anyhow::anyhow;
 use auth::UserContext;
 use chrono::Utc;
@@ -18,7 +18,10 @@ pub struct GetPaymentProviderConfigByProvider {
 
 impl GetPaymentProviderConfigByProvider {
     pub fn new(db: DatabaseConnection, provider_engine: ProviderEngine) -> Self {
-        Self { db, provider_engine }
+        Self {
+            db,
+            provider_engine,
+        }
     }
 
     pub async fn execute(
@@ -56,22 +59,25 @@ impl GetPaymentProviderConfigByProvider {
                 created_at: p.created_at,
                 updated_at: p.updated_at,
             });
-        let gateway = self.provider_engine.get_provider(None, Some(&provider_code)).await
+        let gateway = self
+            .provider_engine
+            .get_provider(None, Some(&provider_code))
+            .await
             .ok_or(anyhow!("provider not found"))?;
         match result {
             None => Ok(PaymentProviderConfig {
-                    id: Uuid::nil(),
-                    merchant_id,
-                    provider_id: provider.id,
-                    config: gateway.get_config(),
-                    priority: 1,
-                    environment: Environment::Sandbox,
-                    // is_test_mode: true,
-                    is_active: false,
-                    is_default: false,
-                    created_at: Utc::now(),
-                    updated_at: Utc::now(),
-                }),
+                id: Uuid::nil(),
+                merchant_id,
+                provider_id: provider.id,
+                config: gateway.get_config(),
+                priority: 1,
+                environment: Environment::Sandbox,
+                // is_test_mode: true,
+                is_active: false,
+                is_default: false,
+                created_at: Utc::now(),
+                updated_at: Utc::now(),
+            }),
             Some(config) => Ok(config),
         }
     }

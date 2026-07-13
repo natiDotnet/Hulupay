@@ -2,7 +2,7 @@ use crate::api::request_context::RequestCtx;
 use crate::arifpay::arif_api_error::ArifpayApiErr;
 use crate::arifpay::payment_request::ArifpayPaymentRequest;
 use crate::arifpay::payment_response::{ArifInitializeData, ArifResponse};
-use axum::{extract::State, Json};
+use axum::{Json, extract::State};
 use hulu_core::create_checkout::CreateCheckout;
 use hulu_core::payment_method::GatewayProvider;
 use hulu_core::payment_request::PaymentRequest;

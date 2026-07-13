@@ -26,10 +26,7 @@ impl CreatePaymentProvider {
         Self { db }
     }
 
-    pub async fn execute(
-        &self,
-        request: CreatePaymentProviderRequest,
-    ) -> anyhow::Result<Provider> {
+    pub async fn execute(&self, request: CreatePaymentProviderRequest) -> anyhow::Result<Provider> {
         let provider = domain::payment_provider::ActiveModel {
             id: NotSet,
             code: Set(request.code),
