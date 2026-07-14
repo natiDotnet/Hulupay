@@ -69,19 +69,22 @@ impl CreateCheckout for CreateCheckoutHandler {
             .map_err(|_| HuluError::ProviderNotFound)?;
 
         // Build (gateway, merchant_config) pairs for each resolved provider, preserving order.
-        let mut candidates: Vec<(Arc<dyn hulu_core::payment_gateway::PaymentGateway>, merchant_config::Model)> = Vec::new();
-        for pid in &provider_ids {
-            if let Some(gateway) = self.payment_engine.get_provider_by_id(*pid).await {
-                if let Ok(Some(cfg)) = MerchantConfigs::find()
-                    .inner_join(PaymentProviders)
-                    .filter(merchant_config::Column::MerchantId.eq(merchant.id))
-                    .filter(payment_provider::Column::Id.eq(*pid))
-                    .filter(merchant_config::Column::IsActive.eq(true))
-                    .one(&self.db)
-                    .await
-                {
-                    candidates.push((gateway.clone(), cfg));
-                }
+        // 1. Fetch all valid configs for these providers at once
+        let configs = MerchantConfigs::find()
+            .inner_join(PaymentProviders)
+            .filter(merchant_config::Column::MerchantId.eq(merchant.id))
+            .filter(payment_provider::Column::Id.is_in(provider_ids))
+            .filter(merchant_config::Column::IsActive.eq(true))
+            .all(&self.db)
+            .await
+            .map_err(|_| HuluError::InternalServerError)?;
+
+        // 2. Map them to your gateways
+        let mut candidates = Vec::new();
+        for cfg in configs {
+            // Assuming you can get the ID from the model
+            if let Some(gateway) = self.payment_engine.get_provider_by_id(cfg.id).await {
+                candidates.push((gateway, cfg));
             }
         }
         let (provider, merchant_config) = candidates
