@@ -1,13 +1,18 @@
 use crate::application::checkout::payment_webhook::PaymentWebhookHandler;
+use crate::application::routing::routing_rules::{
+    CreateRoutingRule, DeleteRoutingRule, ListRoutingRules, UpdateRoutingRule,
+};
+use crate::application::routing::routing_strategy::{
+    GetRoutingStrategy, UpsertRoutingStrategy,
+};
 use crate::application::{
     CreatePaymentProvider, CreatePaymentProviderConfig, DeletePaymentProvider,
     DeletePaymentProviderConfig, GetPaymentProvider, GetPaymentProviderConfig,
     GetPaymentProviderConfigByProvider, HandleProviderWebhook, ListMerchantWebhooks,
-    ListPaymentProviderConfigs, ListPaymentProviders, UpdatePaymentProvider,
-    UpdatePaymentProviderConfig,
+    ListPaymentProviderConfigs, ListPaymentProviders, ProviderEngine, RoutingEngine,
+    UpdatePaymentProvider, UpdatePaymentProviderConfig,
 };
 // use crate::application::initiate_payment::InitiatePayment;
-use crate::ProviderEngine;
 use hulu_core::create_checkout::{CreateCheckout, VerifyPayment};
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
@@ -16,6 +21,7 @@ use std::sync::Arc;
 pub struct PaymentsState {
     pub db: DatabaseConnection,
     pub provider_engine: ProviderEngine,
+    pub routing_engine: RoutingEngine,
     pub create_payment_provider: CreatePaymentProvider,
     pub get_payment_provider: GetPaymentProvider,
     pub update_payment_provider: UpdatePaymentProvider,
@@ -28,6 +34,12 @@ pub struct PaymentsState {
     pub delete_payment_provider_config: DeletePaymentProviderConfig,
     pub list_payment_provider_configs: ListPaymentProviderConfigs,
     pub list_merchant_webhooks: ListMerchantWebhooks,
+    pub get_routing_strategy: GetRoutingStrategy,
+    pub upsert_routing_strategy: UpsertRoutingStrategy,
+    pub list_routing_rules: ListRoutingRules,
+    pub create_routing_rule: CreateRoutingRule,
+    pub update_routing_rule: UpdateRoutingRule,
+    pub delete_routing_rule: DeleteRoutingRule,
 
     pub handle_provider_webhook: HandleProviderWebhook,
     pub handle_create_checkout: Arc<dyn CreateCheckout>,

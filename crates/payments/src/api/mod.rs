@@ -8,6 +8,7 @@ mod list_merchant_webhooks;
 mod list_payment_provider_configs;
 pub mod providers;
 pub mod request_context;
+pub mod routing;
 mod state;
 mod update_payment_provider_config;
 mod verify;
@@ -29,8 +30,14 @@ use crate::application::{
     ArifWebhook, CreatePaymentProvider, CreatePaymentProviderConfig, DeletePaymentProvider,
     DeletePaymentProviderConfig, GetPaymentProvider, GetPaymentProviderConfig,
     GetPaymentProviderConfigByProvider, HandleProviderWebhook, ListMerchantWebhooks,
-    ListPaymentProviderConfigs, ListPaymentProviders, ProviderEngine, UpdatePaymentProvider,
-    UpdatePaymentProviderConfig, WebhookHandler,
+    ListPaymentProviderConfigs, ListPaymentProviders, ProviderEngine, RoutingEngine,
+    UpdatePaymentProvider, UpdatePaymentProviderConfig, WebhookHandler,
+};
+use crate::application::routing::routing_rules::{
+    CreateRoutingRule, DeleteRoutingRule, ListRoutingRules, UpdateRoutingRule,
+};
+use crate::application::routing::routing_strategy::{
+    GetRoutingStrategy, UpsertRoutingStrategy,
 };
 use crate::arifpay::arifpay_service::ArifpayService;
 use crate::chapa::chapa_service::ChapaService;
@@ -152,6 +159,48 @@ impl FromRef<PaymentsState> for DatabaseConnection {
         input.db.clone()
     }
 }
+
+impl FromRef<PaymentsState> for RoutingEngine {
+    fn from_ref(state: &PaymentsState) -> Self {
+        state.routing_engine.clone()
+    }
+}
+
+impl FromRef<PaymentsState> for GetRoutingStrategy {
+    fn from_ref(state: &PaymentsState) -> Self {
+        state.get_routing_strategy.clone()
+    }
+}
+
+impl FromRef<PaymentsState> for UpsertRoutingStrategy {
+    fn from_ref(state: &PaymentsState) -> Self {
+        state.upsert_routing_strategy.clone()
+    }
+}
+
+impl FromRef<PaymentsState> for ListRoutingRules {
+    fn from_ref(state: &PaymentsState) -> Self {
+        state.list_routing_rules.clone()
+    }
+}
+
+impl FromRef<PaymentsState> for CreateRoutingRule {
+    fn from_ref(state: &PaymentsState) -> Self {
+        state.create_routing_rule.clone()
+    }
+}
+
+impl FromRef<PaymentsState> for UpdateRoutingRule {
+    fn from_ref(state: &PaymentsState) -> Self {
+        state.update_routing_rule.clone()
+    }
+}
+
+impl FromRef<PaymentsState> for DeleteRoutingRule {
+    fn from_ref(state: &PaymentsState) -> Self {
+        state.delete_routing_rule.clone()
+    }
+}
 // impl FromRef<PaymentsState> for InitiatePayment {
 //     fn from_ref(state: &PaymentsState) -> Self {
 //         state.handle_initiate_payment.clone()
@@ -187,6 +236,18 @@ pub fn router(db: &DatabaseConnection) -> OpenApiRouter {
         .routes(routes!(
         get_payment_provider_config_by_provider::get_payment_provider_config_by_provider_handler,
     ))
+        .routes(routes!(
+            routing::strategy::get_strategy_handler,
+            routing::strategy::upsert_strategy_handler,
+        ))
+        .routes(routes!(
+            routing::rules::list_rules_handler,
+            routing::rules::create_rule_handler,
+        ))
+        .routes(routes!(
+            routing::rules::update_rule_handler,
+            routing::rules::delete_rule_handler,
+        ))
         .require_role(Role::MerchantAdmin);
 
     let authenticated_payment_routes = OpenApiRouter::new()
@@ -240,6 +301,7 @@ fn build_state(db: &DatabaseConnection) -> PaymentsState {
         db.clone(),
         cache_service.clone(),
         provider_engine.clone(),
+        RoutingEngine::new(db.clone()),
     ));
     let verify_handler: Arc<dyn VerifyPayment> = Arc::new(VerifyPaymentHandler::new(
         db.clone(),
@@ -250,6 +312,7 @@ fn build_state(db: &DatabaseConnection) -> PaymentsState {
     PaymentsState {
         db: db.clone(),
         provider_engine: provider_engine.clone(),
+        routing_engine: RoutingEngine::new(db.clone()),
         create_payment_provider: CreatePaymentProvider::new(db.clone()),
         get_payment_provider: GetPaymentProvider::new(db.clone()),
         update_payment_provider: UpdatePaymentProvider::new(db.clone()),
@@ -265,6 +328,12 @@ fn build_state(db: &DatabaseConnection) -> PaymentsState {
         delete_payment_provider_config: DeletePaymentProviderConfig::new(db.clone()),
         list_payment_provider_configs: ListPaymentProviderConfigs::new(db.clone()),
         list_merchant_webhooks: ListMerchantWebhooks::new(db.clone()),
+        get_routing_strategy: GetRoutingStrategy::new(db.clone()),
+        upsert_routing_strategy: UpsertRoutingStrategy::new(db.clone()),
+        list_routing_rules: ListRoutingRules::new(db.clone()),
+        create_routing_rule: CreateRoutingRule::new(db.clone()),
+        update_routing_rule: UpdateRoutingRule::new(db.clone()),
+        delete_routing_rule: DeleteRoutingRule::new(db.clone()),
         handle_provider_webhook: HandleProviderWebhook::new(webhook_handlers),
         handle_create_checkout: checkout_handler,
         handle_verify_payment: verify_handler,

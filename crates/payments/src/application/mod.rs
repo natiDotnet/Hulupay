@@ -5,13 +5,14 @@ mod dto;
 pub mod gateways;
 mod handle_webhook;
 pub mod helper;
-pub mod initiate_payment;
+mod initiate_payment;
 mod merchant_webhook;
-pub mod merchants;
+mod merchants;
 pub mod payment_gateway;
 pub mod payment_provider;
 pub mod payment_provider_config;
 mod provider_engine;
+pub mod routing;
 mod repository;
 mod transaction_repository;
 
@@ -36,4 +37,5 @@ pub use payment_provider_config::list_payment_provider_configs::ListPaymentProvi
 pub use payment_provider_config::update_payment_provider_config::UpdatePaymentProviderConfig;
 pub use provider_engine::ProviderEngine;
 pub use repository::{PaymentProviderConfigRepository, PaymentProviderRepository};
+pub use routing::engine::RoutingEngine;
 // pub use transaction_repository::TransactionRepository;

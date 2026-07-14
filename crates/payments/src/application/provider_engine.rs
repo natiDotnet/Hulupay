@@ -48,4 +48,18 @@ impl ProviderEngine {
 
         self.providers.get(&provider)
     }
+
+    /// Get a gateway implementation by the provider's UUID. Looks up the
+    /// `payment_providers` row, then resolves the gateway by its name.
+    pub async fn get_provider_by_id(
+        &self,
+        provider_id: Uuid,
+    ) -> Option<Arc<dyn PaymentGateway>> {
+        let row = PaymentProviders::find_by_id(provider_id)
+            .one(&self.db)
+            .await
+            .ok()
+            .flatten()?;
+        self.providers.get(&row.name).cloned()
+    }
 }

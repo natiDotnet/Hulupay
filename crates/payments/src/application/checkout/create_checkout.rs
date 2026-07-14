@@ -1,9 +1,11 @@
 use crate::application::cache_service::CacheService;
 use crate::application::merchants::get_merchant::get_merchant;
+use crate::application::routing::engine::RoutingEngine;
 use crate::domain::payment_status::{PaymentStatus, TxDirection, TxStatus};
 use crate::domain::provider::Provider;
 use crate::domain::{
-    MerchantConfigs, merchant_config, payment_order, payment_provider, payment_transaction,
+    MerchantConfigs, PaymentProviders, merchant_config, payment_order, payment_provider,
+    payment_transaction,
 };
 use crate::{ProviderEngine, domain};
 use async_trait::async_trait;
@@ -29,6 +31,7 @@ pub struct CreateCheckoutHandler {
     db: DatabaseConnection,
     cache: Arc<dyn CacheService>,
     payment_engine: ProviderEngine,
+    routing_engine: RoutingEngine,
 }
 
 impl CreateCheckoutHandler {
@@ -36,11 +39,13 @@ impl CreateCheckoutHandler {
         db: DatabaseConnection,
         cache: Arc<dyn CacheService>,
         payment_engine: ProviderEngine,
+        routing_engine: RoutingEngine,
     ) -> Self {
         Self {
             db,
             cache,
             payment_engine,
+            routing_engine,
         }
     }
 }
@@ -56,21 +61,33 @@ impl CreateCheckout for CreateCheckoutHandler {
             .await
             .ok_or(PaymentGatewayError::MerchantNotFound)?;
 
-        let provider = self
-            .payment_engine
-            .get_provider(Some(merchant.id), None)
+        // Smart routing: resolve an ordered list of providers, try each on failure.
+        let provider_ids = self
+            .routing_engine
+            .resolve(merchant.id, &payload)
             .await
-            .ok_or(HuluError::ProviderNotFound)?;
+            .map_err(|_| HuluError::ProviderNotFound)?;
 
-        let merchant_config: merchant_config::Model = MerchantConfigs::find()
-            .inner_join(payment_provider::Entity)
-            .filter(merchant_config::Column::MerchantId.eq(merchant.id))
-            .filter(payment_provider::Column::Code.eq(provider.get_name().to_string()))
-            .filter(merchant_config::Column::IsActive.eq(true))
-            .one(&self.db)
-            .await
-            .map_err(|_| PaymentGatewayError::ProviderNotFound)?
-            .ok_or(PaymentGatewayError::ProviderNotFound)?;
+        // Build (gateway, merchant_config) pairs for each resolved provider, preserving order.
+        let mut candidates: Vec<(Arc<dyn hulu_core::payment_gateway::PaymentGateway>, merchant_config::Model)> = Vec::new();
+        for pid in &provider_ids {
+            if let Some(gateway) = self.payment_engine.get_provider_by_id(*pid).await {
+                if let Ok(Some(cfg)) = MerchantConfigs::find()
+                    .inner_join(PaymentProviders)
+                    .filter(merchant_config::Column::MerchantId.eq(merchant.id))
+                    .filter(payment_provider::Column::Id.eq(*pid))
+                    .filter(merchant_config::Column::IsActive.eq(true))
+                    .one(&self.db)
+                    .await
+                {
+                    candidates.push((gateway.clone(), cfg));
+                }
+            }
+        }
+        let (provider, merchant_config) = candidates
+            .into_iter()
+            .next()
+            .ok_or(HuluError::ProviderNotFound)?;
 
         let request_provider = self
             .payment_engine
