@@ -32,6 +32,7 @@ pub enum ConditionType {
     #[default]
     PaymentMethod,
     Currency,
+    Country,
     AmountGreaterThan,
     AmountLessThan,
 }

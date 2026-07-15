@@ -115,6 +115,10 @@ impl RoutingEngine {
             RoutingStrategy::Amount => {
                 route_by_amount(&healthy, request.payment.amount)
             }
+            RoutingStrategy::Country => {
+                let country = request.payment.lang.clone().unwrap_or_default();
+                route_by_country(&healthy, &country)
+            }
             RoutingStrategy::LowestCost => {
                 let mut sorted = healthy;
                 sorted.sort_by(|(a, _), (b, _)| {
@@ -194,6 +198,15 @@ fn matches_rule(rule: &merchant_routing_rule::Model, request: &PaymentRequest) -
         crate::domain::routing_rule::ConditionType::Currency => {
             rule.condition_value.to_uppercase() == request.payment.currency.to_uppercase()
         }
+        crate::domain::routing_rule::ConditionType::Country => {
+            let country = request
+                .payment
+                .lang
+                .as_deref()
+                .unwrap_or("")
+                .to_uppercase();
+            rule.condition_value.to_uppercase() == country
+        }
         crate::domain::routing_rule::ConditionType::AmountGreaterThan => {
             let threshold: f64 = rule.condition_value.parse().unwrap_or(0.0);
             let amount: f64 = request.payment.amount.to_string().parse().unwrap_or(0.0);
@@ -254,4 +267,26 @@ fn route_by_amount(
     let mut sorted = providers.to_vec();
     sorted.sort_by_key(|(c, _)| c.priority);
     sorted.into_iter().map(|(_, p)| p.id).collect()
+}
+
+fn route_by_country(
+    providers: &[(merchant_config::Model, payment_provider::Model)],
+    country: &str,
+) -> Vec<Uuid> {
+    let upper = country.to_uppercase();
+    let mut matched: Vec<_> = providers
+        .iter()
+        .filter(|(c, _)| {
+            c.config
+                .get("supported_countries")
+                .and_then(|v| v.as_array())
+                .map(|arr| arr.iter().any(|s| s.as_str().unwrap_or("").to_uppercase() == upper))
+                .unwrap_or(true)
+        })
+        .map(|(_, p)| p.id)
+        .collect();
+    if matched.is_empty() {
+        matched = providers.iter().map(|(_, p)| p.id).collect();
+    }
+    matched
 }

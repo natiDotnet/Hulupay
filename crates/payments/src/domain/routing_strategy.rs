@@ -40,6 +40,8 @@ pub enum RoutingStrategy {
     Currency,
     /// Route by the payment amount thresholds.
     Amount,
+    /// Route by the customer's country.
+    Country,
     /// Route to the provider with the lowest configured fee.
     LowestCost,
     /// Evaluate the merchant's explicit ordered routing rules first.

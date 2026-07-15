@@ -2,34 +2,81 @@ use hulu_core::payment_request::{
     Beneficiary, CallbackUrls, CustomerInfo, Item, PaymentOptions, PaymentRequest,
 };
 use rust_decimal::Decimal;
-use serde::{Deserialize, Serialize};
+use sea_orm::{ColIdx, Iden};
+use serde::{Deserialize, Deserializer, Serialize};
+use serde_json::Value;
 use std::collections::HashMap;
 use utoipa::ToSchema;
 
 use crate::application::helper::normalize;
 
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct ChapaInitializeRequest {
     pub amount: Decimal,
     pub currency: String,
-
     pub email: String,
-
     pub first_name: String,
-
     pub last_name: String,
-
     pub phone_number: String,
-
     pub tx_ref: String,
-
     pub callback_url: String,
-
     pub return_url: String,
-
-    pub customization: Customization,
-
+    pub customization: HashMap<String, serde_json::Value>,
     pub meta: HashMap<String, serde_json::Value>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ChapaInitializeRequestHelper {
+    amount: Decimal,
+    currency: String,
+    email: String,
+    first_name: String,
+    last_name: String,
+    phone_number: String,
+    tx_ref: String,
+    callback_url: String,
+    return_url: String,
+
+    #[serde(flatten)]
+    extra: HashMap<String, serde_json::Value>,
+}
+
+impl<'de> Deserialize<'de> for ChapaInitializeRequest {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let helper = ChapaInitializeRequestHelper::deserialize(deserializer)?;
+
+        let mut customization = HashMap::new();
+        let mut meta = HashMap::new();
+
+        for (key, value) in helper.extra {
+            if let Some(field) = key
+                .strip_prefix("customization[")
+                .and_then(|s| s.strip_suffix(']'))
+            {
+                customization.insert(field.to_owned(), value);
+            } else if let Some(field) = key.strip_prefix("meta[").and_then(|s| s.strip_suffix(']'))
+            {
+                meta.insert(field.to_owned(), value);
+            }
+        }
+
+        Ok(Self {
+            amount: helper.amount,
+            currency: helper.currency,
+            email: helper.email,
+            first_name: helper.first_name,
+            last_name: helper.last_name,
+            phone_number: helper.phone_number,
+            tx_ref: helper.tx_ref,
+            callback_url: helper.callback_url,
+            return_url: helper.return_url,
+            customization,
+            meta,
+        })
+    }
 }
 
 impl From<ChapaInitializeRequest> for PaymentRequest {
@@ -52,8 +99,18 @@ impl From<ChapaInitializeRequest> for PaymentRequest {
                 image: None,
                 quantity: 1,
                 price: value.amount,
-                name: value.customization.title,
-                description: value.customization.description,
+                name: value
+                    .customization
+                    .get("title")
+                    .and_then(Value::as_str)
+                    .unwrap_or("")
+                    .to_string(),
+                description: value
+                    .customization
+                    .get("description")
+                    .and_then(Value::as_str)
+                    .unwrap_or("")
+                    .to_string(),
             }],
             callbacks: CallbackUrls {
                 notify_url: value.callback_url,
