@@ -34,6 +34,7 @@ pub enum Provider {
     Hulu,
     Chapa,
     ArifPay,
+    Simulator,
 }
 
 impl Provider {
@@ -43,6 +44,7 @@ impl Provider {
             Provider::Chapa => "CHAPA",
             Provider::Stripe => "STRIPE",
             Provider::Hulu => "HULU",
+            Provider::Simulator => "SIMULATOR",
         }
     }
 }
@@ -55,10 +57,11 @@ impl Provider {
     // SLA window in seconds before the watchdog kicks in
     pub fn sla_timeout_secs(&self) -> i64 {
         match self {
-            Self::Stripe => 300,   //  5 min
-            Self::Chapa => 900,    // 15 min
-            Self::ArifPay => 1200, // 20 min
-            Self::Hulu => 1800,    // 30 min
+            Self::Stripe => 300,     //  5 min
+            Self::Chapa => 900,      // 15 min
+            Self::ArifPay => 1200,   // 20 min
+            Self::Hulu => 1800,      // 30 min
+            Self::Simulator => 300,  //  5 min (instant for testing)
         }
     }
 }
@@ -69,6 +72,7 @@ impl From<GatewayProvider> for Provider {
             GatewayProvider::Arifpay => Provider::ArifPay,
             GatewayProvider::Chapa => Provider::Chapa,
             GatewayProvider::Hulu => Provider::Hulu,
+            GatewayProvider::Simulator => Provider::Simulator,
         }
     }
 }

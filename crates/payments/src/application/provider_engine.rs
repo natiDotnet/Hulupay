@@ -62,4 +62,15 @@ impl ProviderEngine {
             .flatten()?;
         self.providers.get(&row.name).cloned()
     }
+
+    /// Register (or replace) a gateway implementation under the given name.
+    ///
+    /// This is useful for injecting the `SimulationProvider` at startup
+    /// without requiring a database row:
+    /// ```ignore
+    /// engine.register("Simulator", Arc::new(SimulationProvider::new(SimulationMode::Success)));
+    /// ```
+    pub fn register(&mut self, name: String, gateway: Arc<dyn PaymentGateway>) {
+        self.providers.insert(name, gateway);
+    }
 }

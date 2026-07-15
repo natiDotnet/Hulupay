@@ -27,4 +27,5 @@ pub enum GatewayProvider {
     Hulu,
     Arifpay,
     Chapa,
+    Simulator,
 }
