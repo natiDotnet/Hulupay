@@ -1,7 +1,7 @@
 use crate::application::dto::ApiKeyResponse;
 use crate::application::error::ApplicationError;
-use crate::domain::apikey;
 use anyhow::anyhow;
+use auth::domain::apikey;
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, Order, QueryFilter, QueryOrder};
 use uuid::Uuid;
 

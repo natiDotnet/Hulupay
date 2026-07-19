@@ -35,7 +35,9 @@ pub struct MerchantResponse {
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateApiKeyRequest {
     pub name: String,
-    pub scopes: Vec<u8>,
+    /// Dot-notation permission strings granted to this key,
+    /// e.g. `["payment.create", "payment.read"]`.
+    pub scopes: Vec<String>,
     #[schema(value_type = String, format = DateTime)]
     pub expires_at: DateTimeUtc,
 }
@@ -43,7 +45,7 @@ pub struct CreateApiKeyRequest {
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct UpdateApiKeyRequest {
     pub name: Option<String>,
-    pub scopes: Option<Vec<u8>>,
+    pub scopes: Option<Vec<String>>,
     pub is_active: Option<bool>,
     #[schema(value_type = String, format = DateTime)]
     pub expires_at: Option<DateTimeUtc>,
@@ -55,7 +57,7 @@ pub struct ApiKeyResponse {
     pub merchant_id: Uuid,
     pub name: String,
     pub prefix: String,
-    pub scopes: Vec<u8>,
+    pub scopes: Vec<String>,
     pub is_active: bool,
     #[schema(value_type = String, format = DateTime)]
     pub expires_at: DateTimeUtc,
@@ -74,8 +76,8 @@ pub struct CreateApiKeyResponse {
     pub key: String,
 }
 
-impl From<crate::domain::apikey::Model> for ApiKeyResponse {
-    fn from(value: crate::domain::apikey::Model) -> Self {
+impl From<auth::domain::apikey::Model> for ApiKeyResponse {
+    fn from(value: auth::domain::apikey::Model) -> Self {
         Self {
             id: value.id,
             merchant_id: value.merchant_id,

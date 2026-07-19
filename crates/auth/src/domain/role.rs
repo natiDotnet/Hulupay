@@ -33,6 +33,11 @@ impl FromStr for Role {
         match s.to_uppercase().as_str() {
             "MASTER_ADMIN" => Ok(Role::MasterAdmin),
             "MERCHANT_ADMIN" => Ok(Role::MerchantAdmin),
+            "OWNER" => Ok(Role::Owner),
+            "ADMIN" => Ok(Role::Admin),
+            "DEVELOPER" => Ok(Role::Developer),
+            "FINANCE" => Ok(Role::Finance),
+            "VIEWER" => Ok(Role::Viewer),
             _ => Err(()),
         }
     }

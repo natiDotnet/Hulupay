@@ -6,8 +6,9 @@ pub mod response;
 
 pub use api::{router, AuthState};
 pub use application::{
-    LoginRequest, LoginResponse, LoginUser, RegisterUser, RegisterUserRequest,
-    RegisterUserResponse, TokenService, UserContext,
+    AuthenticationType, ChangePassword, ForgotPassword, GetCurrentUser, LoginRequest,
+    LoginResponse, LoginUser, RefreshTokens, RegisterUser, RegisterUserRequest,
+    RegisterUserResponse, ResetPassword, TokenService, UserContext, VerifyEmail,
 };
-pub use domain::{AuthError as DomainAuthError, Role};
+pub use domain::{AuthError as DomainAuthError, Permission, Role};
 pub use infrastructure::JwtTokenService;

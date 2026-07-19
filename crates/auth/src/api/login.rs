@@ -1,4 +1,4 @@
-use crate::application::LoginUser;
+use crate::api::state::AuthState;
 use crate::{LoginRequest, LoginResponse};
 use axum::{extract::State, http::StatusCode, Json};
 
@@ -6,13 +6,14 @@ use axum::{extract::State, http::StatusCode, Json};
     post,
     tag = "auth",
     path = "/auth/login",
+    request_body = LoginRequest,
     responses((status = OK, body = LoginResponse))
 )]
 pub async fn login_user_handler(
-    State(usecase): State<LoginUser>,
+    State(state): State<AuthState>,
     Json(payload): Json<LoginRequest>,
 ) -> Result<Json<LoginResponse>, StatusCode> {
-    let res = usecase.execute(payload).await.map_err(|e| {
+    let res = state.login_use_case.execute(payload).await.map_err(|e| {
         eprintln!("Error logging in user: {:?}", e);
         StatusCode::BAD_REQUEST
     })?;
