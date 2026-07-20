@@ -1,0 +1,58 @@
+use sea_orm::sea_query::StringLen;
+use sea_orm::{DeriveActiveEnum, EnumIter};
+use serde::{Deserialize, Serialize};
+use std::fmt::Display;
+use std::str::FromStr;
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, EnumIter, DeriveActiveEnum)]
+#[sea_orm(
+    rs_type = "String",
+    db_type = "String(StringLen::None)",
+    rename_all = "snake_case"
+)]
+pub enum Role {
+    MasterAdmin,
+    MerchantAdmin,
+    Owner,
+    Admin,
+    Developer,
+    Finance,
+    Viewer,
+}
+
+impl Role {
+    pub fn from_string(s: &str) -> Option<Self> {
+        Self::from_str(s).ok()
+    }
+}
+
+impl FromStr for Role {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_uppercase().as_str() {
+            "MASTER_ADMIN" => Ok(Role::MasterAdmin),
+            "MERCHANT_ADMIN" => Ok(Role::MerchantAdmin),
+            "OWNER" => Ok(Role::Owner),
+            "ADMIN" => Ok(Role::Admin),
+            "DEVELOPER" => Ok(Role::Developer),
+            "FINANCE" => Ok(Role::Finance),
+            "VIEWER" => Ok(Role::Viewer),
+            _ => Err(()),
+        }
+    }
+}
+impl Display for Role {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let str = match self {
+            Role::MasterAdmin => "MASTER_ADMIN".to_string(),
+            Role::MerchantAdmin => "MERCHANT_ADMIN".to_string(),
+            Role::Owner => "OWNER".to_string(),
+            Role::Admin => "ADMIN".to_string(),
+            Role::Developer => "DEVELOPER".to_string(),
+            Role::Finance => "FINANCE".to_string(),
+            Role::Viewer => "VIEWER".to_string(),
+        };
+        write!(f, "{}", str)
+    }
+}

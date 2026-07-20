@@ -1,0 +1,72 @@
+# Rustfmt Configuration
+# See: https://rust-lang.github.io/rustfmt/
+
+# Maximum width of each line
+max_width = 100
+
+# Preferred width for wrap points
+wrap_comments = true
+
+# Format code in doc comments
+format_code_in_doc_comments = true
+
+# Format strings where possible
+format_strings = true
+
+# Reorder import and extern crate statements alphabetically
+reorder_imports = true
+reorder_modules = true
+
+# Use small heuristics for formatting decisions
+use_small_heuristics = "Default"
+
+# Normalize comments
+normalize_comments = true
+
+# Normalize doc attributes
+normalize_doc_attributes = true
+
+# Use Unix line endings
+newline_style = "Unix"
+
+# Remove nested parentheses
+remove_nested_parens = true
+
+# Merge derive attributes into a single attribute
+merge_derives = true
+
+# Use field initialize shorthand
+use_field_init_shorthand = true
+
+# Force multiline format for closure blocks
+force_multiline_blocks = true
+
+# Put where clauses on a new line
+where_single_line = false
+
+# Brace style for control flow
+brace_style = "SameLineWhere"
+
+# Control flow brace style
+control_brace_style = "AlwaysSameLine"
+
+# Trailing semicolon behavior
+trailing_semicolon = true
+
+# Trailing comma behavior
+trailing_comma = "Vertical"
+
+# Blank lines upper bound
+blank_lines_upper_bound = 1
+
+# Blank lines lower bound
+blank_lines_lower_bound = 0
+
+# Version of rustfmt to use
+version = "Two"
+
+# Unstable features (requires nightly)
+# unstable_features = true
+
+# Ignore files
+# ignore = ["src/generated/*.rs"]

@@ -1,0 +1,32 @@
+## Clippy Configuration
+## See: https://rust-lang.github.io/rust-clippy/master/index.html
+#
+## Allow threshold for too many arguments (default is 7)
+#too_many_arguments = "allow"
+#
+## Allow threshold for type complexity (default is 200)
+#type_complexity = "allow"
+#
+## Warn on manual bit shifts that could use pow()
+#manual_bits = "warn"
+#
+## Warn on unnecessary clones
+#redundant_clone = "warn"
+#
+## Warn on inefficient string concatenation
+#assign_op_pattern = "warn"
+#
+## Allow println! macros (sometimes needed for debugging)
+#print_stdout = "allow"
+#print_stderr = "allow"
+#
+#unwrap_used = "deny"
+#
+## Allow unwrap in tests
+#unwrap_in_test = "allow"
+#
+## Allow expect in tests
+#expect_in_test = "allow"
+#
+## Allow panic in tests
+#panic_in_test = "allow"

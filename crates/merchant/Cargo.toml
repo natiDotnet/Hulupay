@@ -1,0 +1,36 @@
+[package]
+name = "merchant"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+# Domain dependencies
+hulucore = { path = "../core", package = "core" }
+uuid = { version = "1.21.0", features = ["v4", "v7", "serde"] }
+time = "0.3.47"
+strum = "0.28.0"
+strum_macros = "0.28.0"
+# Application layer dependencies
+async-trait = "0.1.89"
+serde = { version = "1.0.228", features = ["derive"] }
+
+# Infrastructure dependencies
+sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio", "macros", "uuid", "time", "chrono"] }
+
+# Error handling
+anyhow = "1.0.102"
+thiserror = "2.0.18"
+
+# API documentation
+utoipa = { version = "5.4.0", features = ["axum_extras", "uuid"] }
+utoipa-axum = { version = "0.2.0" }
+
+# HTTP framework (for API layer)
+axum = { version = "0.8.8" }
+
+# Auth dependency (for middleware and role-based access)
+auth = { path = "../auth" }
+sea-orm = "2.0.0-rc.38"
