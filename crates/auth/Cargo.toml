@@ -19,7 +19,7 @@ password-hash = "0.6.0-rc.12"
 
 # Infrastructure dependencies
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
-sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio", "macros", "uuid", "time", "chrono"] }
+sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio-rustls", "macros", "uuid", "time", "chrono"] }
 jsonwebtoken = { version = "10.3.0", default-features = false, features = ["rust_crypto"] }
 
 # Error handling
@@ -33,7 +33,7 @@ utoipa-axum = { version = "0.2.0" }
 # HTTP framework (for API layer)
 axum = { version = "0.8.8" }
 
-sea-orm = { version = "2.0.0-rc.38" }
+sea-orm = { version = "2.0.0-rc.38", features = ["sqlx-postgres", "runtime-tokio-rustls", "macros", "schema-sync", "debug-print", "with-chrono", "with-json", "with-uuid", "entity-registry"] }
 strum = "0.28.0"
 strum_macros = "0.28.0"
 tokio = { version = "1.49.0", features = ["rt"] }

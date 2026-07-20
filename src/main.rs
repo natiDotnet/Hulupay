@@ -11,17 +11,19 @@ use tracing_subscriber::{EnvFilter, fmt};
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     dotenv().ok();
-    let db_url = env::var("DATABASE_URL")?;
+    let db_url = env::var("DATABASE_URL")
+        .expect("DATABASE_URL must be set in the .env file");
 
     tracing_subscriber::registry()
         .with(EnvFilter::from_default_env())
         .with(fmt::layer().json().pretty().with_target(false))
         .init();
 
-    let db = &Database::connect(db_url).await?;
-    auto_apply(db).await?;
+    let db = Database::connect(db_url).await;
+    let db = db.map_err(|e| anyhow::anyhow!("db eerrrrrrrrrrr{:?}", e))?;
+    auto_apply(&db).await?;
 
-    let app = api_routes(db);
+    let app = api_routes(&db);
     let listener = tokio::net::TcpListener::bind("0.0.0.0:5000").await?;
     axum::serve(listener, app).await?;
     println!("Server started");
