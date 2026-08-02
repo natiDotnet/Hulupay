@@ -1,27 +1,30 @@
 use crate::application::login_request::ForgotPasswordRequest;
-use crate::domain::password_reset;
-use crate::domain::user;
+use crate::domain::password_reset::PasswordReset;
+use crate::domain::user::User;
 use crate::infrastructure::MailService;
+use crate::util;
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
 use std::sync::Arc;
 
 /// Generates a password-reset token, persists its hash, and emails the raw
 /// token to the user. Always returns 200 (to avoid user enumeration).
 #[derive(Clone)]
 pub struct ForgotPassword {
-    db: DatabaseConnection,
+    db: toasty::Db,
     mail_service: Option<Arc<dyn MailService>>,
 }
 
 impl ForgotPassword {
-    pub fn new(db: DatabaseConnection, mail_service: Option<Arc<dyn MailService>>) -> Self {
+    pub fn new(db: toasty::Db, mail_service: Option<Arc<dyn MailService>>) -> Self {
         Self { db, mail_service }
     }
 
     pub async fn execute(&self, request: ForgotPasswordRequest) -> anyhow::Result<()> {
-        let user = user::Entity::find_by_email(&request.email)
-            .one(&self.db)
+        let mut db = self.db.clone();
+
+        let user = User::filter_by_email(&request.email)
+            .first()
+            .exec(&mut db)
             .await?;
 
         // Whether or not the user exists, we return Ok to avoid enumeration.
@@ -30,16 +33,17 @@ impl ForgotPassword {
         };
 
         // Invalidate any previous unused resets for this user.
-        let old_rows = password_reset::Entity::find()
-            .filter(password_reset::Column::UserId.eq(user.id))
-            .filter(password_reset::Column::UsedAt.is_null())
-            .all(&self.db)
-            .await?;
+        let old_rows = PasswordReset::filter(PasswordReset::fields().user_id().eq(user.id))
+            .filter(PasswordReset::fields().used_at().is_none())
+            .exec(&mut db)
+            .await
+            .unwrap_or_default();
 
-        for row in old_rows {
-            let mut am: password_reset::ActiveModel = row.into();
-            am.used_at = Set(Some(Utc::now())); // soft-invalidate
-            let _ = am.update(&self.db).await;
+        let now = util::now_jiff();
+        for mut row in old_rows {
+            let _ = toasty::update!(row { used_at: now })
+                .exec(&mut db)
+                .await;
         }
 
         // Create a new reset token.
@@ -50,15 +54,14 @@ impl ForgotPassword {
             .and_then(|v| v.parse().ok())
             .unwrap_or(1);
 
-        let row = password_reset::ActiveModel {
-            id: Set(uuid::Uuid::now_v7()),
-            user_id: Set(user.id),
-            token_hash: Set(token_hash),
-            expires_at: Set(Utc::now() + chrono::Duration::hours(ttl_hours)),
-            used_at: Set(None),
-            created_at: Set(Utc::now()),
-        };
-        row.insert(&self.db).await?;
+        let expires_at = util::to_jiff(Utc::now() + chrono::Duration::hours(ttl_hours));
+        toasty::create!(PasswordReset {
+            user_id: user.id,
+            token_hash,
+            expires_at,
+        })
+        .exec(&mut db)
+        .await?;
 
         // Email the raw token (link) to the user.
         if let Some(mail) = &self.mail_service {

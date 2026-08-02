@@ -1,11 +1,12 @@
 use crate::application::cache_service::CacheService;
 use crate::{cache_get, cache_set};
-use merchant::{Merchant, domain};
-use sea_orm::DatabaseConnection;
+use merchant::Merchant;
+use merchant::domain::merchant::Merchant as MerchantModel;
+use toasty::Db;
 use tracing::debug;
 
 pub async fn get_merchant(
-    db: &DatabaseConnection,
+    db: &Db,
     cache: &dyn CacheService,
     name: &str,
 ) -> Option<Merchant> {
@@ -14,8 +15,10 @@ pub async fn get_merchant(
         return Some(cached);
     }
     debug!(?name, "Getting merchant from database");
-    let merchant = domain::merchant::Entity::find_by_name(name.to_owned())
-        .one(db)
+    let mut db_mut = db.clone();
+    let merchant = MerchantModel::filter(MerchantModel::fields().name().eq(name.to_owned()))
+        .first()
+        .exec(&mut db_mut)
         .await
         .ok()?
         .map(Into::into);

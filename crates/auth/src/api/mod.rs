@@ -17,7 +17,6 @@ pub use extractor::AuthUser;
 pub use middleware::{authentication, authorization, AuthorizationPolicy};
 pub use state::AuthState;
 
-use sea_orm::DatabaseConnection;
 use std::sync::Arc;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
@@ -25,7 +24,7 @@ use utoipa_axum::routes;
 use crate::application::TokenService;
 use crate::infrastructure::JwtTokenService;
 
-pub fn router(db: &DatabaseConnection) -> OpenApiRouter {
+pub fn router(db: &toasty::Db) -> OpenApiRouter {
     let jwt_secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
     let token_service: Arc<dyn TokenService> = Arc::new(JwtTokenService::new(jwt_secret));
 

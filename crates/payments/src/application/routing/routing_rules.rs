@@ -1,11 +1,7 @@
+use crate::domain::merchant_routing_rule::MerchantRoutingRule;
 use crate::domain::routing_rule::{ConditionOperator, ConditionType};
-use crate::domain::{MerchantRoutingRules, merchant_routing_rule};
-use chrono::Utc;
-use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait,
-    QueryFilter, QueryOrder, Set,
-};
 use serde::{Deserialize, Serialize};
+use toasty::Db;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -53,8 +49,8 @@ pub struct RuleResponse {
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
-impl From<merchant_routing_rule::Model> for RuleResponse {
-    fn from(m: merchant_routing_rule::Model) -> Self {
+impl From<MerchantRoutingRule> for RuleResponse {
+    fn from(m: MerchantRoutingRule) -> Self {
         Self {
             id: m.id,
             merchant_id: m.merchant_id,
@@ -65,8 +61,8 @@ impl From<merchant_routing_rule::Model> for RuleResponse {
             condition_value: m.condition_value,
             target_provider_id: m.target_provider_id,
             fallback_provider_id: m.fallback_provider_id,
-            created_at: m.created_at,
-            updated_at: m.updated_at,
+            created_at: crate::util::to_chrono(m.created_at),
+            updated_at: crate::util::to_chrono(m.updated_at),
         }
     }
 }
@@ -83,11 +79,11 @@ pub struct PaginatedRulesResponse {
 
 #[derive(Clone)]
 pub struct ListRoutingRules {
-    db: DatabaseConnection,
+    db: Db,
 }
 
 impl ListRoutingRules {
-    pub fn new(db: DatabaseConnection) -> Self {
+    pub fn new(db: Db) -> Self {
         Self { db }
     }
 
@@ -97,18 +93,27 @@ impl ListRoutingRules {
         page: u64,
         page_size: u64,
     ) -> anyhow::Result<PaginatedRulesResponse> {
-        let paginator = MerchantRoutingRules::find()
-            .filter(merchant_routing_rule::Column::MerchantId.eq(merchant_id))
-            .order_by_asc(merchant_routing_rule::Column::Priority)
-            .paginate(&self.db, page_size);
+        let mut db = self.db.clone();
 
-        let total = paginator.num_items().await?;
-        let items = paginator
-            .fetch_page(page - 1)
-            .await?
-            .into_iter()
-            .map(RuleResponse::from)
-            .collect();
+        let all = MerchantRoutingRule::filter(
+            MerchantRoutingRule::fields().merchant_id().eq(merchant_id),
+        )
+        .exec(&mut db)
+        .await?;
+        let total = all.len() as u64;
+
+        let offset = if page > 1 { (page - 1) * page_size } else { 0 };
+        let items = MerchantRoutingRule::filter(
+            MerchantRoutingRule::fields().merchant_id().eq(merchant_id),
+        )
+        .order_by(MerchantRoutingRule::fields().priority().asc())
+        .limit(page_size as usize)
+        .offset(offset as usize)
+        .exec(&mut db)
+        .await?
+        .into_iter()
+        .map(RuleResponse::from)
+        .collect();
 
         Ok(PaginatedRulesResponse {
             items,
@@ -121,11 +126,11 @@ impl ListRoutingRules {
 
 #[derive(Clone)]
 pub struct CreateRoutingRule {
-    db: DatabaseConnection,
+    db: Db,
 }
 
 impl CreateRoutingRule {
-    pub fn new(db: DatabaseConnection) -> Self {
+    pub fn new(db: Db) -> Self {
         Self { db }
     }
 
@@ -134,20 +139,21 @@ impl CreateRoutingRule {
         merchant_id: Uuid,
         req: CreateRuleRequest,
     ) -> anyhow::Result<RuleResponse> {
-        let row = merchant_routing_rule::ActiveModel {
-            id: Set(Uuid::now_v7()),
-            merchant_id: Set(merchant_id),
-            priority: Set(req.priority),
-            enabled: Set(req.enabled),
-            condition_type: Set(req.condition_type),
-            operator: Set(req.operator),
-            condition_value: Set(req.condition_value),
-            target_provider_id: Set(req.target_provider_id),
-            fallback_provider_id: Set(req.fallback_provider_id),
-            created_at: Set(Utc::now()),
-            updated_at: Set(Utc::now()),
-        }
-        .insert(&self.db)
+        let mut db = self.db.clone();
+        let now = crate::util::now_jiff();
+        let row = toasty::create!(MerchantRoutingRule {
+            merchant_id,
+            priority: req.priority,
+            enabled: req.enabled,
+            condition_type: req.condition_type,
+            operator: req.operator,
+            condition_value: req.condition_value,
+            target_provider_id: req.target_provider_id,
+            fallback_provider_id: req.fallback_provider_id,
+            created_at: now,
+            updated_at: now,
+        })
+        .exec(&mut db)
         .await?;
 
         Ok(RuleResponse::from(row))
@@ -156,11 +162,11 @@ impl CreateRoutingRule {
 
 #[derive(Clone)]
 pub struct UpdateRoutingRule {
-    db: DatabaseConnection,
+    db: Db,
 }
 
 impl UpdateRoutingRule {
-    pub fn new(db: DatabaseConnection) -> Self {
+    pub fn new(db: Db) -> Self {
         Self { db }
     }
 
@@ -169,53 +175,77 @@ impl UpdateRoutingRule {
         rule_id: Uuid,
         req: UpdateRuleRequest,
     ) -> anyhow::Result<RuleResponse> {
-        let existing = MerchantRoutingRules::find_by_id(rule_id)
-            .one(&self.db)
+        let mut db = self.db.clone();
+
+        let mut existing = MerchantRoutingRule::filter_by_id(rule_id)
+            .first()
+            .exec(&mut db)
             .await?
             .ok_or_else(|| anyhow::anyhow!("Rule not found"))?;
 
-        let mut active: merchant_routing_rule::ActiveModel = existing.into();
+        // Apply conditional updates via a single toasty::update! per field.
         if let Some(v) = req.priority {
-            active.priority = Set(v);
+            toasty::update!(existing { priority: v, updated_at: crate::util::now_jiff() })
+                .exec(&mut db)
+                .await?;
         }
         if let Some(v) = req.enabled {
-            active.enabled = Set(v);
+            toasty::update!(existing { enabled: v, updated_at: crate::util::now_jiff() })
+                .exec(&mut db)
+                .await?;
         }
         if let Some(v) = req.condition_type {
-            active.condition_type = Set(v);
+            toasty::update!(existing { condition_type: v, updated_at: crate::util::now_jiff() })
+                .exec(&mut db)
+                .await?;
         }
         if let Some(v) = req.operator {
-            active.operator = Set(v);
+            toasty::update!(existing { operator: v, updated_at: crate::util::now_jiff() })
+                .exec(&mut db)
+                .await?;
         }
         if let Some(v) = req.condition_value {
-            active.condition_value = Set(v);
+            toasty::update!(existing { condition_value: v, updated_at: crate::util::now_jiff() })
+                .exec(&mut db)
+                .await?;
         }
         if let Some(v) = req.target_provider_id {
-            active.target_provider_id = Set(v);
+            toasty::update!(existing { target_provider_id: v, updated_at: crate::util::now_jiff() })
+                .exec(&mut db)
+                .await?;
         }
         if let Some(v) = req.fallback_provider_id {
-            active.fallback_provider_id = Set(Some(v));
+            toasty::update!(existing { fallback_provider_id: v, updated_at: crate::util::now_jiff() })
+                .exec(&mut db)
+                .await?;
         }
-        active.updated_at = Set(Utc::now());
 
-        let row = active.update(&self.db).await?;
+        // Reload the updated row to return the latest state.
+        let row = MerchantRoutingRule::filter_by_id(rule_id)
+            .first()
+            .exec(&mut db)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("Rule not found"))?;
+
         Ok(RuleResponse::from(row))
     }
 }
 
 #[derive(Clone)]
 pub struct DeleteRoutingRule {
-    db: DatabaseConnection,
+    db: Db,
 }
 
 impl DeleteRoutingRule {
-    pub fn new(db: DatabaseConnection) -> Self {
+    pub fn new(db: Db) -> Self {
         Self { db }
     }
 
     pub async fn execute(&self, rule_id: Uuid) -> anyhow::Result<()> {
-        MerchantRoutingRules::delete_by_id(rule_id)
-            .exec(&self.db)
+        let mut db = self.db.clone();
+        MerchantRoutingRule::filter_by_id(rule_id)
+            .delete()
+            .exec(&mut db)
             .await?;
         Ok(())
     }

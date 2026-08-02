@@ -1,15 +1,15 @@
 use crate::application::dto::{CreateMerchantRequest, MerchantResponse};
-use crate::domain::merchant;
+use crate::domain::merchant::Merchant;
 use hulucore::create_slug;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, Set};
+use toasty::Db;
 
 #[derive(Clone)]
 pub struct CreateMerchant {
-    db: DatabaseConnection,
+    db: Db,
 }
 
 impl CreateMerchant {
-    pub fn new(db: DatabaseConnection) -> Self {
+    pub fn new(db: Db) -> Self {
         Self { db }
     }
 
@@ -17,15 +17,15 @@ impl CreateMerchant {
         &self,
         request: CreateMerchantRequest,
     ) -> anyhow::Result<MerchantResponse> {
-        let merchant = merchant::ActiveModel {
-            slug: Set(create_slug(&request.name)),
-            name: Set(request.name),
-            email: Set(request.email),
-            phone: Set(request.phone),
-            website: Set(request.website),
-            ..Default::default()
-        }
-        .insert(&self.db)
+        let mut db = self.db.clone();
+        let merchant = toasty::create!(Merchant {
+            slug: create_slug(&request.name),
+            name: request.name,
+            email: request.email,
+            phone: request.phone,
+            website: request.website,
+        })
+        .exec(&mut db)
         .await?;
 
         Ok(MerchantResponse {

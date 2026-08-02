@@ -1,6 +1,6 @@
 use crate::domain;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, IntoActiveModel, Set};
 use serde::{Deserialize, Serialize};
+use toasty::Db;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -13,15 +13,11 @@ pub struct UpdatePaymentProviderRequest {
 }
 #[derive(Clone)]
 pub struct UpdatePaymentProvider {
-    db: DatabaseConnection,
-    // repository: Arc<dyn PaymentProviderRepository>,
+    db: Db,
 }
 
 impl UpdatePaymentProvider {
-    pub fn new(
-        db: DatabaseConnection,
-        // repository: Arc<dyn PaymentProviderRepository>,
-    ) -> Self {
+    pub fn new(db: Db) -> Self {
         Self { db }
     }
 
@@ -30,18 +26,23 @@ impl UpdatePaymentProvider {
         id: Uuid,
         request: UpdatePaymentProviderRequest,
     ) -> anyhow::Result<()> {
-        let mut provider = domain::payment_provider::Entity::find_by_id(id)
-            .one(&self.db)
+        let mut db = self.db.clone();
+
+        let mut provider = domain::payment_provider::PaymentProvider::filter_by_id(id)
+            .first()
+            .exec(&mut db)
             .await?
-            .ok_or_else(|| anyhow::anyhow!("Payment provider not found"))?
-            .into_active_model();
+            .ok_or_else(|| anyhow::anyhow!("Payment provider not found"))?;
 
-        provider.code = Set(request.code);
-        provider.name = Set(request.name);
-        provider.logo = Set(request.logo);
-        provider.is_active = Set(request.is_active);
+        toasty::update!(provider {
+            code: request.code,
+            name: request.name,
+            logo: request.logo,
+            is_active: request.is_active,
+        })
+        .exec(&mut db)
+        .await?;
 
-        provider.save(&self.db).await?;
         Ok(())
     }
 }

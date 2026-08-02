@@ -1,6 +1,5 @@
 use axum::routing::get;
 use axum::Router;
-use sea_orm::DatabaseConnection;
 use std::env;
 use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
@@ -8,7 +7,6 @@ use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
 use utoipa::OpenApi;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_scalar::{Scalar, Servable};
-// use utoipa_swagger_ui::SwaggerUi;
 
 // Feature crate routers
 use auth;
@@ -22,8 +20,8 @@ use payments;
 pub struct ApiDoc;
 
 
-pub fn api_routes(db: &DatabaseConnection) -> Router {
-    
+pub fn api_routes(toasty_db: &toasty::Db) -> Router {
+
     let token_service = get_token_service();
     let mut open_api = ApiDoc::openapi();
     open_api
@@ -40,43 +38,38 @@ pub fn api_routes(db: &DatabaseConnection) -> Router {
             ),
         );
 
-    seed_database(db);
+    seed_database(toasty_db);
 
     // Configure CORS to allow all origins (for development)
-    // In production, you should restrict this to specific origins
     let cors = CorsLayer::new()
         .allow_origin(Any)
         .allow_methods(Any)
         .allow_headers(Any);
-    // .allow_credentials(true);
 
     let (app, doc) = OpenApiRouter::with_openapi(open_api)
         .nest(
             "/api",
             OpenApiRouter::new()
                 // Auth routes (no auth required for login/register)
-                .merge(auth::router(db))
+                .merge(auth::router(toasty_db))
                 // Merchant routes (requires MasterAdmin role)
-                .merge(merchant::router(db))
+                .merge(merchant::router(toasty_db))
                 // Payment routes (requires authentication)
-                // .merge(payments::router(db))
-                // .merge(payments::chapa::router(db))
                 .merge(OpenApiRouter::new().route("/test", get(|| async { "Hello, World!" }))),
         )
         .layer(axum::middleware::from_fn(auth::api::authentication))
         .layer(axum::Extension(token_service.clone()))
-        .layer(axum::Extension(db.clone()))
-        .merge(payments::router(db))
+        .layer(axum::Extension(toasty_db.clone()))
+        .merge(payments::router(toasty_db))
         .split_for_parts();
 
     app
-        // .merge(SwaggerUi::new("/swagger-ui").url("/api-doc/openapi.json", doc.clone()))
         .merge(Scalar::with_url("/scalar", doc.clone()))
         .layer(cors)
 }
 
-pub fn seed_database(db: &DatabaseConnection) {
-    let seeder = payments::infrastructure::seed::DataSeeder::new(db.clone());
+pub fn seed_database(toasty_db: &toasty::Db) {
+    let seeder = payments::infrastructure::seed::DataSeeder::new(toasty_db.clone());
     tokio::spawn(async move {
         if let Err(err) = seeder.seed().await {
             tracing::error!("Failed to run seeder: {:?}", err);

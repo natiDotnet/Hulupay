@@ -1,63 +1,47 @@
 use crate::domain::error::DomainError;
 use crate::domain::merchant_status::MerchantStatus;
-use sea_orm::entity::prelude::*;
-use sea_orm::prelude::DateTimeUtc;
-use sea_orm::{ActiveModelBehavior, DeriveEntityModel, Set};
 use serde::{Deserialize, Serialize};
-use sqlx::types::chrono;
-use sqlx::types::chrono::Utc;
 use uuid::Uuid;
 
-#[sea_orm::model]
-#[derive(Debug, DeriveEntityModel, Clone)]
-#[sea_orm(table_name = "merchants")]
-pub struct Model {
-    #[sea_orm(primary_key)]
+/// Merchant entity.
+///
+/// Primary key is UUID v7 (time-ordered, auto-generated).
+#[derive(Debug, Clone, Serialize, Deserialize, toasty::Model)]
+pub struct Merchant {
+    #[key]
+    #[auto]
     pub id: Uuid,
-    #[sea_orm(unique)]
+    #[unique]
     pub name: String,
-    #[sea_orm(unique)]
+    #[unique]
     pub slug: String,
-    #[sea_orm(unique)]
+    #[unique]
     pub email: String,
     pub phone: String,
     pub website: String,
     pub is_active: bool,
     pub status: MerchantStatus,
-    pub created_at: DateTimeUtc,
-    pub updated_at: Option<DateTimeUtc>,
-}
-
-impl ActiveModelBehavior for ActiveModel {
-    fn new() -> Self {
-        Self {
-            id: Set(Uuid::now_v7()),
-            is_active: Set(true),
-            status: Set(MerchantStatus::Active),
-            created_at: Set(Utc::now()),
-            updated_at: Set(None),
-            ..ActiveModelTrait::default()
-        }
-    }
+    pub created_at: jiff::Timestamp,
+    pub updated_at: Option<jiff::Timestamp>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct Merchant {
+pub struct MerchantView {
     pub id: Uuid,
     pub name: String,
     pub is_active: bool,
-    pub created_at: chrono::DateTime<Utc>,
-    pub updated_at: Option<chrono::DateTime<Utc>>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-impl Merchant {
-    pub fn new(name: String, is_active: bool) -> Self {
+impl MerchantView {
+    pub fn new(id: Uuid, name: String, is_active: bool, created_at: jiff::Timestamp, updated_at: Option<jiff::Timestamp>) -> Self {
         Self {
-            id: Uuid::now_v7(),
+            id,
             name,
             is_active,
-            created_at: Utc::now(),
-            updated_at: Some(Utc::now()),
+            created_at: crate::util::to_chrono(created_at),
+            updated_at: updated_at.map(crate::util::to_chrono),
         }
     }
 
@@ -69,14 +53,8 @@ impl Merchant {
     }
 }
 
-impl From<Model> for Merchant {
-    fn from(value: Model) -> Self {
-        Self {
-            id: value.id,
-            name: value.name,
-            is_active: value.is_active,
-            created_at: value.created_at,
-            updated_at: value.updated_at,
-        }
+impl From<Merchant> for MerchantView {
+    fn from(value: Merchant) -> Self {
+        Self::new(value.id, value.name, value.is_active, value.created_at, value.updated_at)
     }
 }

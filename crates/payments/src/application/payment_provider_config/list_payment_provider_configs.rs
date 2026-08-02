@@ -1,18 +1,15 @@
-use crate::domain::{MerchantConfigs, PaymentProviderConfig, merchant_config};
-use anyhow::anyhow;
-use merchant::application::ApplicationError;
-use sea_orm::ColumnTrait;
-use sea_orm::QueryFilter;
-use sea_orm::{DatabaseConnection, EntityTrait, PaginatorTrait, QueryOrder};
+use crate::domain::PaymentProviderConfig;
+use crate::domain::merchant_config::MerchantConfig;
+use toasty::Db;
 use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct ListPaymentProviderConfigs {
-    db: DatabaseConnection,
+    db: Db,
 }
 
 impl ListPaymentProviderConfigs {
-    pub fn new(db: DatabaseConnection) -> Self {
+    pub fn new(db: Db) -> Self {
         Self { db }
     }
 
@@ -22,19 +19,20 @@ impl ListPaymentProviderConfigs {
         page: u64,
         page_size: u64,
     ) -> anyhow::Result<PaginatedResponse<PaymentProviderConfig>> {
-        let paginator = MerchantConfigs::find()
-            .filter(merchant_config::Column::MerchantId.eq(merchant_id))
-            .order_by_desc(merchant_config::Column::CreatedAt)
-            .paginate(&self.db, page_size);
+        let mut db = self.db.clone();
 
-        let total = paginator
-            .num_items()
-            .await
-            .map_err(|e| ApplicationError::Internal(anyhow!(e)))?;
-        let items = paginator
-            .fetch_page(page - 1)
+        let all = MerchantConfig::filter(MerchantConfig::fields().merchant_id().eq(merchant_id))
+            .exec(&mut db)
+            .await?;
+        let total = all.len() as u64;
+
+        let offset = if page > 1 { (page - 1) * page_size } else { 0 };
+        let items = MerchantConfig::filter(MerchantConfig::fields().merchant_id().eq(merchant_id))
+            .order_by(MerchantConfig::fields().created_at().desc())
+            .limit(page_size as usize)
+            .offset(offset as usize)
+            .exec(&mut db)
             .await?
-            // .map_err(|e| ApplicationError::Internal(anyhow!(e)))?
             .into_iter()
             .map(|p| PaymentProviderConfig {
                 id: p.id,
@@ -44,17 +42,11 @@ impl ListPaymentProviderConfigs {
                 is_active: p.is_active,
                 priority: p.priority,
                 environment: p.environment,
-                // is_test_mode: p.is_test_mode,
-                created_at: p.created_at,
-                updated_at: p.updated_at,
+                created_at: crate::util::to_chrono(p.created_at),
+                updated_at: crate::util::to_chrono(p.updated_at),
                 is_default: p.is_default,
             })
             .collect();
-        // let offset = (page - 1) * page_size;
-        // let (configs, total) = self
-        //     .repository
-        //     .list_by_merchant(merchant_id, offset, page_size)
-        //     .await?;
 
         Ok(PaginatedResponse {
             items,

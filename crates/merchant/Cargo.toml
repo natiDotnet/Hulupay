@@ -18,7 +18,9 @@ async-trait = "0.1.89"
 serde = { version = "1.0.228", features = ["derive"] }
 
 # Infrastructure dependencies
-sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio-rustls", "macros", "uuid", "time", "chrono"] }
+toasty = { workspace = true }
+jiff = { workspace = true }
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
 
 # Error handling
 anyhow = "1.0.102"
@@ -33,4 +35,3 @@ axum = { version = "0.8.8" }
 
 # Auth dependency (for middleware and role-based access)
 auth = { path = "../auth" }
-sea-orm = { version = "2.0.0-rc.38", features = ["sqlx-postgres", "runtime-tokio-rustls", "macros", "schema-sync", "debug-print", "with-chrono", "with-json", "with-uuid", "entity-registry"] }

@@ -2,7 +2,6 @@ use hulu_core::payment_request::{
     Beneficiary, CallbackUrls, CustomerInfo, Item, PaymentOptions, PaymentRequest,
 };
 use rust_decimal::Decimal;
-use sea_orm::{ColIdx, Iden};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;

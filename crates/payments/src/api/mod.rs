@@ -50,7 +50,6 @@ use deadpool_redis::{Config, Runtime};
 use domain::provider;
 use hulu_core::create_checkout::{CreateCheckout, VerifyPayment};
 use hulu_core::payment_gateway::PaymentGateway;
-use sea_orm::DatabaseConnection;
 use std::sync::Arc;
 
 impl FromRef<PaymentsState> for ProviderEngine {
@@ -154,7 +153,7 @@ impl FromRef<PaymentsState> for PaymentWebhookHandler {
         input.handle_payment_webhook.clone()
     }
 }
-impl FromRef<PaymentsState> for DatabaseConnection {
+impl FromRef<PaymentsState> for toasty::Db {
     fn from_ref(input: &PaymentsState) -> Self {
         input.db.clone()
     }
@@ -207,7 +206,7 @@ impl FromRef<PaymentsState> for DeleteRoutingRule {
 //     }
 // }
 
-pub fn router(db: &DatabaseConnection) -> OpenApiRouter {
+pub fn router(db: &toasty::Db) -> OpenApiRouter {
     let state = build_state(db);
 
     let master_admin_routes = OpenApiRouter::new()
@@ -287,7 +286,7 @@ pub fn router(db: &DatabaseConnection) -> OpenApiRouter {
         .with_state(state)
 }
 
-fn build_state(db: &DatabaseConnection) -> PaymentsState {
+fn build_state(db: &toasty::Db) -> PaymentsState {
     let provider_engine = build_provider_engine(db);
 
     let mut webhook_handlers: HashMap<String, Arc<dyn WebhookHandler>> = HashMap::new();
@@ -357,7 +356,7 @@ fn build_state(db: &DatabaseConnection) -> PaymentsState {
 //     // Arc::new(crate::infrastructure::PgPaymentProviderConfigRepository::new(pool))
 // }
 
-fn build_provider_engine(db: &DatabaseConnection) -> ProviderEngine {
+fn build_provider_engine(db: &toasty::Db) -> ProviderEngine {
     // let arifpay_config = ArifPayConfig::new(
     //     env::var("ARIFPAY_API_KEY").unwrap_or_else(|_| "test_key".to_string()),
     //     env::var("ARIFPAY_IS_TEST_KEY").unwrap_or_else(|_| "true".to_string()) == "true",

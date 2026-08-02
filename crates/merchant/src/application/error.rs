@@ -7,4 +7,7 @@ pub enum ApplicationError {
 
     #[error("Internal error: {0}")]
     Internal(#[from] anyhow::Error),
+
+    #[error("Database error: {0}")]
+    Database(#[from] toasty::Error),
 }

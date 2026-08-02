@@ -6,7 +6,7 @@ pub mod permission;
 pub mod refresh_token;
 pub mod revoked_token;
 pub mod role_permission;
-mod role;
+pub mod role;
 pub mod status;
 pub mod user;
 

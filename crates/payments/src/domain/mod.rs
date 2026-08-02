@@ -28,12 +28,3 @@ pub use payment_method::PaymentMethod;
 pub use provider::{InitializePayment, PaymentProvider, ProviderInitResponse};
 pub use provider_configs::{PaymentProvider as Provider, PaymentProviderConfig};
 pub use transaction::{Transaction, TransactionStatus};
-
-pub use merchant_config::Entity as MerchantConfigs;
-pub use merchant_routing_rule::Entity as MerchantRoutingRules;
-pub use merchant_routing_strategy::Entity as MerchantRoutingStrategy;
-pub use payment_order::Entity as PaymentOrders;
-pub use payment_provider::Entity as PaymentProviders;
-pub use payment_transaction::Entity as PaymentTransactions;
-pub use provider_payment_method::Entity as ProviderPaymentMethods;
-pub use provider_metric::Entity as ProviderMetric;

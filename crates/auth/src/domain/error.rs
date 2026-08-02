@@ -54,14 +54,8 @@ pub enum AuthError {
     SamePassword,
 }
 
-impl From<sqlx::Error> for AuthError {
-    fn from(err: sqlx::Error) -> Self {
-        AuthError::DatabaseError(err.to_string())
-    }
-}
-
-impl From<sea_orm::DbErr> for AuthError {
-    fn from(err: sea_orm::DbErr) -> Self {
+impl From<toasty::Error> for AuthError {
+    fn from(err: toasty::Error) -> Self {
         AuthError::DatabaseError(err.to_string())
     }
 }

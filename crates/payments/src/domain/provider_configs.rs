@@ -1,5 +1,5 @@
 use crate::domain::environment::Environment;
-use sea_orm::prelude::DateTimeUtc;
+use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
 #[derive(Debug, Clone)]
@@ -9,7 +9,7 @@ pub struct PaymentProvider {
     pub name: String,
     pub logo: String,
     pub is_active: bool,
-    pub created_at: DateTimeUtc,
+    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone)]
@@ -19,10 +19,9 @@ pub struct PaymentProviderConfig {
     pub provider_id: Uuid,
     pub priority: i32,
     pub environment: Environment,
-    // pub is_test_mode: bool,
     pub config: serde_json::Value,
     pub is_active: bool,
     pub is_default: bool,
-    pub created_at: DateTimeUtc,
-    pub updated_at: DateTimeUtc,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }

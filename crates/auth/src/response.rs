@@ -3,7 +3,7 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use hulu_core::hulu_error::HuluError;
 use hulu_core::hulu_response::HuluResponse;
-use sea_orm::sea_query::prelude::serde_json;
+use serde_json;
 
 pub struct ApiError(pub HuluError);
 

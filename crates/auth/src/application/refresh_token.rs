@@ -1,10 +1,10 @@
 use crate::application::login_request::{RefreshRequest, RefreshResponse};
 use crate::application::permission_service::PermissionService;
 use crate::application::token::TokenService;
-use crate::domain::refresh_token;
+use crate::domain::refresh_token::RefreshToken;
+use crate::util;
 use crate::DomainAuthError;
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
 use std::sync::Arc;
 
 /// Rotation with theft detection:
@@ -16,14 +16,14 @@ use std::sync::Arc;
 ///    refresh row (same family_id).
 #[derive(Clone)]
 pub struct RefreshTokens {
-    db: DatabaseConnection,
+    db: toasty::Db,
     token_service: Arc<dyn TokenService>,
     permission_service: PermissionService,
 }
 
 impl RefreshTokens {
     pub fn new(
-        db: DatabaseConnection,
+        db: toasty::Db,
         token_service: Arc<dyn TokenService>,
         permission_service: PermissionService,
     ) -> Self {
@@ -39,13 +39,16 @@ impl RefreshTokens {
             .token_service
             .validate_refresh(&request.refresh_token)?;
 
-        let row = refresh_token::Entity::find_by_id(claims.jti)
-            .one(&self.db)
+        let mut db = self.db.clone();
+
+        let row = RefreshToken::filter_by_id(claims.jti)
+            .first()
+            .exec(&mut db)
             .await?
             .ok_or(DomainAuthError::InvalidRefreshToken)?;
 
         // Expired row?
-        if row.expires_at < Utc::now() {
+        if row.expires_at < util::now_jiff() {
             return Err(anyhow::anyhow!(DomainAuthError::TokenExpired));
         }
 
@@ -56,9 +59,10 @@ impl RefreshTokens {
         }
 
         // Revoke the current row (rotation).
-        let mut current: refresh_token::ActiveModel = row.clone().into();
-        current.revoked_at = Set(Some(Utc::now()));
-        current.update(&self.db).await?;
+        let mut current = row.clone();
+        toasty::update!(current { revoked_at: util::now_jiff() })
+            .exec(&mut db)
+            .await?;
 
         // Mint new tokens.
         let permissions = self
@@ -75,7 +79,7 @@ impl RefreshTokens {
         )?;
 
         let new_id = uuid::Uuid::now_v7();
-        let refresh_ttl_secs: u64 = std::env::var("JWT_REFRESH_TTL_SECS")
+        let refresh_ttl_secs: i64 = std::env::var("JWT_REFRESH_TTL_SECS")
             .ok()
             .and_then(|v| v.parse().ok())
             .unwrap_or(604_800);
@@ -88,16 +92,18 @@ impl RefreshTokens {
             new_id,
         )?;
 
-        let refresh_row = refresh_token::ActiveModel {
-            id: Set(new_id),
-            user_id: Set(claims.sub),
-            token_hash: Set(crate::infrastructure::hash_token(&new_refresh)),
-            family_id: Set(row.family_id),
-            expires_at: Set(Utc::now() + chrono::Duration::seconds(refresh_ttl_secs as i64)),
-            revoked_at: Set(None),
-            created_at: Set(Utc::now()),
-        };
-        refresh_row.insert(&self.db).await?;
+        let expires_at =
+            util::to_jiff(Utc::now() + chrono::Duration::seconds(refresh_ttl_secs));
+        toasty::create!(RefreshToken {
+            id: new_id,
+            user_id: claims.sub,
+            token_hash: crate::infrastructure::hash_token(&new_refresh),
+            family_id: row.family_id,
+            expires_at,
+            created_at: util::to_jiff(Utc::now()),
+        })
+        .exec(&mut db)
+        .await?;
 
         Ok(RefreshResponse {
             access_token,
@@ -107,17 +113,19 @@ impl RefreshTokens {
 
     /// Revoke every refresh token in the given family.
     async fn revoke_family(&self, family_id: uuid::Uuid) {
-        let rows = refresh_token::Entity::find()
-            .filter(refresh_token::Column::FamilyId.eq(family_id))
-            .filter(refresh_token::Column::RevokedAt.is_null())
-            .all(&self.db)
+        let mut db = self.db.clone();
+
+        let rows = RefreshToken::filter(RefreshToken::fields().family_id().eq(family_id))
+            .filter(RefreshToken::fields().revoked_at().is_none())
+            .exec(&mut db)
             .await;
 
         if let Ok(rows) = rows {
-            for row in rows {
-                let mut am: refresh_token::ActiveModel = row.into();
-                am.revoked_at = Set(Some(Utc::now()));
-                let _ = am.update(&self.db).await;
+            let now = util::now_jiff();
+            for mut row in rows {
+                let _ = toasty::update!(row { revoked_at: now })
+                    .exec(&mut db)
+                    .await;
             }
         }
     }

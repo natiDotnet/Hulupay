@@ -1,9 +1,9 @@
 use crate::application::dto::MerchantResponse;
 use crate::application::error::ApplicationError;
-use crate::domain::merchant;
+use crate::domain::merchant::Merchant;
 use anyhow::anyhow;
-use sea_orm::{DatabaseConnection, EntityTrait, Order, PaginatorTrait};
 use serde::Serialize;
+use toasty::Db;
 use utoipa::ToSchema;
 
 #[derive(Serialize, ToSchema)]
@@ -16,11 +16,11 @@ pub struct PaginatedResponse<T> {
 
 #[derive(Clone)]
 pub struct ListMerchants {
-    db: DatabaseConnection,
+    db: Db,
 }
 
 impl ListMerchants {
-    pub fn new(db: DatabaseConnection) -> Self {
+    pub fn new(db: Db) -> Self {
         Self { db }
     }
 
@@ -29,17 +29,18 @@ impl ListMerchants {
         page: u64,
         page_size: u64,
     ) -> Result<PaginatedResponse<MerchantResponse>, ApplicationError> {
-        let paginator = merchant::Entity::find()
-            .order_by_id(Order::Desc)
-            .paginate(&self.db, page_size);
+        let mut db = self.db.clone();
 
-        let total = paginator
-            .num_items()
-            .await
-            .map_err(|e| ApplicationError::Internal(anyhow!(e)))?;
+        // Count total merchants
+        let total = Merchant::all().exec(&mut db).await.map_err(|e| ApplicationError::Internal(anyhow!(e)))?.len() as u64;
 
-        let items = paginator
-            .fetch_page(page - 1)
+        // Fetch page with offset pagination (keeps ?page= API contract)
+        let offset = if page > 1 { (page - 1) * page_size } else { 0 };
+        let items = Merchant::all()
+            .order_by(Merchant::fields().id().desc())
+            .limit(page_size as usize)
+            .offset(offset as usize)
+            .exec(&mut db)
             .await
             .map_err(|e| ApplicationError::Internal(anyhow!(e)))?
             .into_iter()

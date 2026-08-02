@@ -1,18 +1,16 @@
-use crate::domain::payments::merchant_webhook;
+use crate::domain::payments::merchant_webhook::MerchantWebhook;
 use anyhow::anyhow;
 use merchant::application::ApplicationError;
-use sea_orm::{
-    ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder,
-};
+use toasty::Db;
 use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct ListMerchantWebhooks {
-    db: DatabaseConnection,
+    db: Db,
 }
 
 impl ListMerchantWebhooks {
-    pub fn new(db: DatabaseConnection) -> Self {
+    pub fn new(db: Db) -> Self {
         Self { db }
     }
 
@@ -21,17 +19,23 @@ impl ListMerchantWebhooks {
         merchant_id: Uuid,
         page: u64,
         page_size: u64,
-    ) -> anyhow::Result<PaginatedResponse<merchant_webhook::Model>> {
-        let paginator = merchant_webhook::Entity::find()
-            .filter(merchant_webhook::Column::MerchantId.eq(merchant_id))
-            .order_by_desc(merchant_webhook::Column::CreatedAt)
-            .paginate(&self.db, page_size);
+    ) -> anyhow::Result<PaginatedResponse<MerchantWebhook>> {
+        let mut db = self.db.clone();
 
-        let total = paginator
-            .num_items()
+        let all = MerchantWebhook::filter(MerchantWebhook::fields().merchant_id().eq(merchant_id))
+            .exec(&mut db)
             .await
             .map_err(|e| ApplicationError::Internal(anyhow!(e)))?;
-        let items = paginator.fetch_page(page.saturating_sub(1)).await?;
+        let total = all.len() as u64;
+
+        let offset = if page > 1 { (page - 1) * page_size } else { 0 };
+        let items = MerchantWebhook::filter(MerchantWebhook::fields().merchant_id().eq(merchant_id))
+            .order_by(MerchantWebhook::fields().created_at().desc())
+            .limit(page_size as usize)
+            .offset(offset as usize)
+            .exec(&mut db)
+            .await
+            .map_err(|e| ApplicationError::Internal(anyhow!(e)))?;
 
         Ok(PaginatedResponse {
             items,

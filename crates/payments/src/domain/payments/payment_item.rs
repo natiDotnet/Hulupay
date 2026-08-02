@@ -1,31 +1,18 @@
-use crate::domain;
 use rust_decimal::Decimal;
-use sea_orm::entity::prelude::*;
-use sea_orm::{DeriveEntityModel, Set};
 use uuid::Uuid;
 
-#[sea_orm::model]
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
-#[sea_orm(table_name = "payment_items")]
-pub struct Model {
-    #[sea_orm(primary_key)]
+#[derive(Debug, Clone, toasty::Model)]
+pub struct PaymentItem {
+    #[key]
+    #[auto]
     pub id: Uuid,
     pub payment_order_id: Uuid,
     pub name: String,
     pub description: String,
     pub quantity: u32,
     pub image: Option<String>,
+    #[column(type = "text")]
     pub unit_price: Decimal,
+    #[column(type = "text")]
     pub total_price: Decimal,
-    #[sea_orm(belongs_to, from = "payment_order_id", to = "id")]
-    pub payment_order: HasOne<domain::payment_order::Entity>,
-}
-
-impl ActiveModelBehavior for ActiveModel {
-    fn new() -> Self {
-        Self {
-            id: Set(Uuid::now_v7()),
-            ..ActiveModelTrait::default()
-        }
-    }
 }

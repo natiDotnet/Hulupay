@@ -1,22 +1,25 @@
 use crate::application::login_request::CurrentUserResponse;
-use crate::domain::user;
+use crate::domain::user::User;
+use crate::util;
 use crate::DomainAuthError;
-use sea_orm::{DatabaseConnection, EntityTrait};
 use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct GetCurrentUser {
-    db: DatabaseConnection,
+    db: toasty::Db,
 }
 
 impl GetCurrentUser {
-    pub fn new(db: DatabaseConnection) -> Self {
+    pub fn new(db: toasty::Db) -> Self {
         Self { db }
     }
 
     pub async fn execute(&self, user_id: Uuid) -> anyhow::Result<CurrentUserResponse> {
-        let user = user::Entity::find_by_id(user_id)
-            .one(&self.db)
+        let mut db = self.db.clone();
+
+        let user = User::filter_by_id(user_id)
+            .first()
+            .exec(&mut db)
             .await?
             .ok_or(DomainAuthError::UserNotFound)?;
 
@@ -27,7 +30,7 @@ impl GetCurrentUser {
             role: user.role.to_string(),
             merchant_id: user.merchant_id,
             email_verified: user.email_verified_at.is_some(),
-            created_at: user.created_at.to_rfc3339(),
+            created_at: util::to_chrono(user.created_at).to_rfc3339(),
         })
     }
 }

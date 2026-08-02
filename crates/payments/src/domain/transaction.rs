@@ -1,12 +1,11 @@
 use crate::PaymentMethod;
 use crate::domain::error::DomainError;
 use serde::{Deserialize, Serialize};
-use sqlx::Type;
 use strum_macros::{Display, EnumString};
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Display, EnumString, Type)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Display, EnumString)]
 #[strum(serialize_all = "snake_case")]
 pub enum TransactionStatus {
     Pending,
@@ -17,7 +16,7 @@ pub enum TransactionStatus {
     Refunded,
 }
 
-#[derive(Debug, Clone, sqlx::FromRow)]
+#[derive(Debug, Clone)]
 pub struct Transaction {
     pub id: Uuid,
     pub merchant_id: Uuid,

@@ -1,20 +1,20 @@
 use crate::application::payment_gateway::WebhookHandler;
-// use crate::application::PaymentGatewayError;
-use crate::domain;
 use crate::domain::payment_status::{PaymentStatus, TxStatus};
-use crate::domain::{ArifPayment, ArifTransactionStatus, payment_order, payment_transaction};
+use crate::domain::{ArifPayment, ArifTransactionStatus};
+use crate::domain::payment_order::PaymentOrder;
+use crate::domain::payment_transaction::PaymentTransaction;
 use async_trait::async_trait;
 use hulu_core::payment_gateway_error::PaymentGatewayError;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, Set, TransactionTrait};
 use serde_json::Value;
+use toasty::Db;
 use tracing::debug;
 
 #[derive(Clone)]
 pub struct ArifWebhook {
-    db: DatabaseConnection,
+    db: Db,
 }
 impl ArifWebhook {
-    pub fn new(db: DatabaseConnection) -> Self {
+    pub fn new(db: Db) -> Self {
         Self { db }
     }
 }
@@ -51,56 +51,62 @@ impl WebhookHandler for ArifWebhook {
     ) -> Result<(), PaymentGatewayError> {
         let webhook: ArifPayment = serde_json::from_value(request.clone())
             .map_err(|_| PaymentGatewayError::InvalidResponse)?;
-        // Ok(())
-        let order = domain::payment_order::Entity::find_by_idempotency_key(&webhook.nonce)
-            .one(&self.db)
+
+        let mut db = self.db.clone();
+
+        let mut order = PaymentOrder::filter(
+            PaymentOrder::fields().idempotency_key().eq(webhook.nonce.clone()),
+        )
+        .first()
+        .exec(&mut db)
+        .await
+        .map_err(|err| {
+            println!("Error creating order: {:?}", err);
+            PaymentGatewayError::InvalidResponse
+        })?
+        .ok_or(PaymentGatewayError::TransactionNotFound)?;
+
+        let mut txn = db
+            .transaction()
             .await
-            .map_err(|err| {
-                println!("Error creating order: {:?}", err);
-                PaymentGatewayError::InvalidResponse
-            })?;
+            .map_err(|_| PaymentGatewayError::InvalidResponse)?;
 
-        match order {
-            Some(order) => {
-                let txn = self
-                    .db
-                    .begin()
-                    .await
-                    .map_err(|_| PaymentGatewayError::InvalidResponse)?;
-                payment_transaction::ActiveModel::new_state(
-                    &order,
-                    &status,
-                    rust_decimal::Decimal::try_from(webhook.total_amount).unwrap(),
-                    request.clone(),
-                )
-                .save(&self.db)
-                .await
-                .map_err(|_| PaymentGatewayError::InvalidResponse)?;
+        let now = crate::util::now_jiff();
+        let _ = toasty::create!(PaymentTransaction {
+            status: status.clone(),
+            amount: rust_decimal::Decimal::try_from(webhook.total_amount).unwrap(),
+            payment_order_id: order.id,
+            provider_tx_id: None,
+            direction: crate::domain::payment_status::TxDirection::Charge,
+            currency: webhook.payment_method.clone(),
+            provider: crate::domain::provider::Provider::ArifPay,
+            provider_response: Some(request.clone()),
+            updated_at: now,
+            created_at: now,
+        })
+        .exec(&mut txn)
+        .await
+        .map_err(|_| PaymentGatewayError::InvalidResponse)?;
 
-                let mut order: payment_order::ActiveModel = order.into();
-                order.status = Set(match status {
-                    TxStatus::Pending => PaymentStatus::Processing,
-                    TxStatus::Success => PaymentStatus::Completed,
-                    TxStatus::Failed => PaymentStatus::Failed,
-                });
-                order.currency = Set(webhook.payment_method.clone());
+        let order_status = match status {
+            TxStatus::Pending => PaymentStatus::Processing,
+            TxStatus::Success => PaymentStatus::Completed,
+            TxStatus::Failed => PaymentStatus::Failed,
+        };
 
-                order
-                    .save(&self.db)
-                    .await
-                    .map_err(|_| PaymentGatewayError::InvalidResponse)?;
+        toasty::update!(order {
+            status: order_status,
+            currency: webhook.payment_method.clone(),
+        })
+        .exec(&mut txn)
+        .await
+        .map_err(|_| PaymentGatewayError::InvalidResponse)?;
 
-                txn.commit()
-                    .await
-                    .map_err(|_| PaymentGatewayError::InvalidResponse)?;
-                debug!(?webhook, "Payment successful");
-                Ok(())
-            }
-            None => {
-                // Handle case where transaction is not found
-                debug!(?webhook.nonce, "Transaction not found");
-                Err(PaymentGatewayError::TransactionNotFound)
-            }
-        }
+        txn.commit()
+            .await
+            .map_err(|_| PaymentGatewayError::InvalidResponse)?;
+
+        debug!(?webhook, "Payment successful");
+        Ok(())
     }
 }

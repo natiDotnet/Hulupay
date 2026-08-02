@@ -1,43 +1,48 @@
 use crate::application::login_request::ResetPasswordRequest;
 use crate::application::password::{hash_password, verify_password};
-use crate::domain::password_reset;
-use crate::domain::user;
+use crate::domain::password_reset::PasswordReset;
+use crate::domain::user::User;
+use crate::util;
 use crate::DomainAuthError;
-use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
 
 #[derive(Clone)]
 pub struct ResetPassword {
-    db: DatabaseConnection,
+    db: toasty::Db,
 }
 
 impl ResetPassword {
-    pub fn new(db: DatabaseConnection) -> Self {
+    pub fn new(db: toasty::Db) -> Self {
         Self { db }
     }
 
     pub async fn execute(&self, request: ResetPasswordRequest) -> anyhow::Result<()> {
+        let mut db = self.db.clone();
+
         let token_hash = crate::infrastructure::hash_token(&request.token);
 
-        let row = password_reset::Entity::find()
-            .filter(password_reset::Column::TokenHash.eq(&token_hash))
-            .filter(password_reset::Column::UsedAt.is_null())
-            .one(&self.db)
+        let mut row = PasswordReset::filter(PasswordReset::fields().token_hash().eq(&token_hash))
+            .filter(PasswordReset::fields().used_at().is_none())
+            .first()
+            .exec(&mut db)
             .await?
             .ok_or(DomainAuthError::InvalidResetToken)?;
 
-        if row.expires_at < Utc::now() {
+        if row.expires_at < util::now_jiff() {
             return Err(anyhow::anyhow!(DomainAuthError::ResetTokenExpired));
         }
 
+        let user_id = row.user_id;
+        let now = util::now_jiff();
+
         // Mark reset token as used (single-use).
-        let mut reset_am: password_reset::ActiveModel = row.clone().into();
-        reset_am.used_at = Set(Some(Utc::now()));
-        reset_am.update(&self.db).await?;
+        toasty::update!(row { used_at: now })
+            .exec(&mut db)
+            .await?;
 
         // Load the user.
-        let user = user::Entity::find_by_id(row.user_id)
-            .one(&self.db)
+        let mut user = User::filter_by_id(user_id)
+            .first()
+            .exec(&mut db)
             .await?
             .ok_or(DomainAuthError::UserNotFound)?;
 
@@ -48,11 +53,13 @@ impl ResetPassword {
 
         // Update password.
         let new_hash = hash_password(&request.new_password)?;
-        let mut user_am: user::ActiveModel = user.into();
-        user_am.password_hash = Set(new_hash);
-        user_am.password_changed_at = Set(Some(Utc::now()));
-        user_am.updated_at = Set(Some(Utc::now()));
-        user_am.update(&self.db).await?;
+        toasty::update!(user {
+            password_hash: new_hash,
+            password_changed_at: now,
+            updated_at: now,
+        })
+        .exec(&mut db)
+        .await?;
 
         Ok(())
     }

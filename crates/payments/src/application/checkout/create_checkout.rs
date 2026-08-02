@@ -1,15 +1,17 @@
 use crate::application::cache_service::CacheService;
 use crate::application::merchants::get_merchant::get_merchant;
 use crate::application::routing::engine::RoutingEngine;
+use crate::domain::merchant_config::MerchantConfig;
+use crate::domain::payment_order::PaymentOrder;
+use crate::domain::payment_provider::PaymentProvider;
 use crate::domain::payment_status::{PaymentStatus, TxDirection, TxStatus};
+use crate::domain::payment_transaction::PaymentTransaction;
+use crate::domain::payments::payment_callback::PaymentCallback;
+use crate::domain::payments::payment_customer::PaymentCustomer;
+use crate::domain::payments::payment_item::PaymentItem;
 use crate::domain::provider::Provider;
-use crate::domain::{
-    MerchantConfigs, PaymentProviders, merchant_config, payment_order, payment_provider,
-    payment_transaction,
-};
 use crate::{ProviderEngine, domain};
 use async_trait::async_trait;
-use chrono::Utc;
 use hulu_core::create_checkout::CreateCheckout;
 use hulu_core::gateway_response::CheckoutResponse;
 use hulu_core::hulu_error::HuluError;
@@ -18,17 +20,15 @@ use hulu_core::payment_request;
 use hulu_core::request_context::RequestContext;
 use payment_request::PaymentRequest;
 use rust_decimal::Decimal;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, DatabaseTransaction, EntityTrait, Set};
-use sea_orm::{ColumnTrait, TransactionTrait};
-use sea_orm::{IntoActiveModel, QueryFilter};
 use serde_json::json;
 use std::sync::Arc;
+use toasty::Db;
 use tracing::debug;
 use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct CreateCheckoutHandler {
-    db: DatabaseConnection,
+    db: Db,
     cache: Arc<dyn CacheService>,
     payment_engine: ProviderEngine,
     routing_engine: RoutingEngine,
@@ -36,7 +36,7 @@ pub struct CreateCheckoutHandler {
 
 impl CreateCheckoutHandler {
     pub fn new(
-        db: DatabaseConnection,
+        db: Db,
         cache: Arc<dyn CacheService>,
         payment_engine: ProviderEngine,
         routing_engine: RoutingEngine,
@@ -69,21 +69,26 @@ impl CreateCheckout for CreateCheckoutHandler {
             .map_err(|_| HuluError::ProviderNotFound)?;
 
         // Build (gateway, merchant_config) pairs for each resolved provider, preserving order.
-        // 1. Fetch all valid configs for these providers at once
-        let configs = MerchantConfigs::find()
-            .inner_join(PaymentProviders)
-            .filter(merchant_config::Column::MerchantId.eq(merchant.id))
-            .filter(payment_provider::Column::Id.is_in(provider_ids))
-            .filter(merchant_config::Column::IsActive.eq(true))
-            .all(&self.db)
+        // Fetch all valid configs for these providers (replaces inner_join).
+        let mut all_configs = Vec::new();
+        for pid in &provider_ids {
+            let cfgs = MerchantConfig::filter(
+                MerchantConfig::fields()
+                    .merchant_id()
+                    .eq(merchant.id)
+                    .and(MerchantConfig::fields().provider_id().eq(*pid))
+                    .and(MerchantConfig::fields().is_active().eq(true)),
+            )
+            .exec(&mut self.db.clone())
             .await
             .map_err(|_| HuluError::InternalServerError)?;
+            all_configs.extend(cfgs);
+        }
 
         // 2. Map them to your gateways
         let mut candidates = Vec::new();
-        for cfg in configs {
-            // Assuming you can get the ID from the model
-            if let Some(gateway) = self.payment_engine.get_provider_by_id(cfg.id).await {
+        for cfg in all_configs {
+            if let Some(gateway) = self.payment_engine.get_provider_by_id(cfg.provider_id).await {
                 candidates.push((gateway, cfg));
             }
         }
@@ -103,51 +108,43 @@ impl CreateCheckout for CreateCheckoutHandler {
             .checkout(context, &payload, apikey_header, merchant_config.config)
             .await;
 
-        let txn = self
-            .db
-            .begin()
+        // Begin a Toasty transaction for the multi-row insert.
+        let mut db_clone = self.db.clone();
+        let mut txn = db_clone
+            .transaction()
             .await
             .map_err(|_| HuluError::InternalServerError)?;
-        let order = payment_order::ActiveModel {
-            merchant_id: Set(merchant.id),
-            customer_id: Set(Uuid::now_v7()),
-            request_provider: Set(context.provider.into()),
-            order_ref: Set(payload.payment.reference.clone()),
-            amount: Set(payload.payment.amount),
-            currency: Set(payload.payment.currency.clone()),
-            status: Set(PaymentStatus::Pending),
-            provider: Set(Provider::ArifPay),
-            idempotency_key: Set(payload.payment.reference.clone()),
-            retry_count: Set(0),
-            ..Default::default()
-        }
-        .insert(&txn)
+
+        let now = crate::util::now_jiff();
+        let order = toasty::create!(PaymentOrder {
+            merchant_id: merchant.id,
+            customer_id: Uuid::now_v7(),
+            request_provider: crate::domain::provider::Provider::from(context.provider),
+            order_ref: payload.payment.reference.clone(),
+            amount: payload.payment.amount,
+            currency: payload.payment.currency.clone(),
+            status: PaymentStatus::Pending,
+            provider: Provider::ArifPay,
+            idempotency_key: payload.payment.reference.clone(),
+            retry_count: 0,
+            created_at: now,
+            updated_at: now,
+        })
+        .exec(&mut txn)
         .await
         .map_err(|_| HuluError::InternalServerError)?;
 
-        // Provider already has the money — transition order to Complete,
-        // create an immutable success tx row, no new charge attempt
+        // Build the success/failed tx row.
         let success_tx_id = Uuid::now_v7();
-        let now = Utc::now();
+        let now = crate::util::now_jiff();
 
-        let mut transaction = payment_transaction::Model {
-            id: success_tx_id,
-            payment_order_id: order.id,
-            provider: order.provider.clone(),
-            provider_tx_id: None,
-            direction: TxDirection::Charge,
-            amount: order.amount,
-            currency: order.currency.clone(),
-            status: TxStatus::Pending,
-            provider_response: None,
-            created_at: now,
-            updated_at: now,
-        };
+        let mut provider_tx_id: Option<String> = None;
+        let mut provider_response: Option<serde_json::Value> = None;
 
         let gateway_response = match &result {
             Ok(data) => {
-                transaction.provider_tx_id = Some(data.reference.clone());
-                transaction.provider_response = data.row_response.clone();
+                provider_tx_id = Some(data.reference.clone());
+                provider_response = data.row_response.clone();
 
                 Some(CheckoutResponse {
                     checkout_url: data.checkout_url.clone(),
@@ -161,7 +158,7 @@ impl CreateCheckout for CreateCheckoutHandler {
                 message,
                 errors,
             }) => {
-                transaction.provider_response = Some(json!({
+                provider_response = Some(json!({
                     "status_code": status_code,
                     "message": message,
                     "errors": errors,
@@ -173,12 +170,24 @@ impl CreateCheckout for CreateCheckoutHandler {
             Err(_) => None,
         };
 
-        transaction
-            .into_active_model()
-            .insert(&txn)
-            .await
-            .map_err(|_| HuluError::InternalServerError)?;
-        self.save_info(&txn, order.id, &payload).await?;
+        toasty::create!(PaymentTransaction {
+            id: success_tx_id,
+            payment_order_id: order.id,
+            provider: order.provider.clone(),
+            provider_tx_id,
+            direction: TxDirection::Charge,
+            amount: order.amount,
+            currency: order.currency.clone(),
+            status: TxStatus::Pending,
+            provider_response,
+            created_at: now,
+            updated_at: now,
+        })
+        .exec(&mut txn)
+        .await
+        .map_err(|_| HuluError::InternalServerError)?;
+
+        save_info(&mut txn, order.id, &payload).await?;
 
         txn.commit()
             .await
@@ -190,57 +199,46 @@ impl CreateCheckout for CreateCheckoutHandler {
         }
     }
 }
-impl CreateCheckoutHandler {
-    async fn save_info(
-        &self,
-        txn: &DatabaseTransaction,
-        order_id: Uuid,
-        info: &PaymentRequest,
-    ) -> Result<(), HuluError> {
-        domain::payments::payment_customer::ActiveModel {
-            name: Set(info.customer.name.clone()),
-            email: Set(info.customer.email.clone()),
-            phone: Set(info.customer.phone.clone()),
-            account_number: Set(None),
-            payment_order_id: Set(order_id),
-            ..Default::default()
-        }
-        .insert(txn)
+async fn save_info(
+    txn: &mut toasty::db::Transaction<'_>,
+    order_id: Uuid,
+    info: &PaymentRequest,
+) -> Result<(), HuluError> {
+    toasty::create!(PaymentCustomer {
+        name: info.customer.name.clone(),
+        email: info.customer.email.clone(),
+        phone: info.customer.phone.clone(),
+        account_number: None,
+        payment_order_id: order_id,
+    })
+    .exec(txn)
+    .await
+    .map_err(|_| HuluError::InternalServerError)?;
+
+    toasty::create!(PaymentCallback {
+        cancel_url: info.callbacks.cancel_url.clone(),
+        success_url: info.callbacks.success_url.clone(),
+        notify_url: info.callbacks.notify_url.clone(),
+        error_url: info.callbacks.error_url.clone(),
+        payment_order_id: order_id,
+    })
+    .exec(txn)
+    .await
+    .map_err(|_| HuluError::InternalServerError)?;
+
+    for item in info.items.clone().iter() {
+        toasty::create!(PaymentItem {
+            name: item.name.clone(),
+            payment_order_id: order_id,
+            description: item.description.clone(),
+            image: item.image.clone(),
+            quantity: item.quantity,
+            unit_price: item.price,
+            total_price: item.price * Decimal::from(item.quantity),
+        })
+        .exec(txn)
         .await
         .map_err(|_| HuluError::InternalServerError)?;
-
-        domain::payments::payment_callback::ActiveModel {
-            cancel_url: Set(info.callbacks.cancel_url.clone()),
-            success_url: Set(info.callbacks.success_url.clone()),
-            notify_url: Set(info.callbacks.notify_url.clone()),
-            error_url: Set(info.callbacks.error_url.clone()),
-            payment_order_id: Set(order_id),
-            ..Default::default()
-        }
-        .insert(txn)
-        .await
-        .map_err(|_| HuluError::InternalServerError)?;
-
-        let items = info
-            .items
-            .clone()
-            .iter()
-            .map(|item| domain::payments::payment_item::ActiveModel {
-                name: Set(item.name.clone()),
-                payment_order_id: Set(order_id),
-                description: Set(item.description.clone()),
-                image: Set(item.image.clone()),
-                quantity: Set(item.quantity),
-                unit_price: Set(item.price),
-                total_price: Set(item.price * Decimal::from(item.quantity)),
-                ..Default::default()
-            })
-            .collect::<Vec<_>>();
-
-        domain::payments::payment_item::Entity::insert_many(items)
-            .exec(txn)
-            .await
-            .map_err(|_| HuluError::InternalServerError)?;
-        Ok(())
     }
+    Ok(())
 }

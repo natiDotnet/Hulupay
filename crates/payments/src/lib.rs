@@ -8,6 +8,7 @@ pub mod domain;
 pub mod hulu;
 pub mod hulupay;
 pub mod infrastructure;
+pub mod util;
 
 pub use api::{PaymentsState, router};
 pub use application::{

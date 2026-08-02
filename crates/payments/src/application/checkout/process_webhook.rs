@@ -1,98 +1,77 @@
-use crate::domain::payments::payment_webhook;
-use chrono::{Duration, Utc};
+use crate::domain::payments::payment_webhook::PaymentWebhook;
 use hulu_core::payment_gateway::{PaymentGateway, WebhookInfo, WebhookStatus};
-use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, IntoActiveModel, QueryFilter,
-    Set,
-};
 use std::sync::Arc;
-use uuid::Uuid;
+use toasty::Db;
 
 const MAX_RETRIES: u32 = 5;
 
 pub async fn process_webhook(
-    db: DatabaseConnection,
+    db: Db,
     provider: Arc<dyn PaymentGateway>,
-    order_id: Uuid,
+    order_id: uuid::Uuid,
     payload: WebhookInfo,
 ) {
-    let webhook = match payment_webhook::Entity::find()
-        .filter(payment_webhook::Column::PaymentOrderId.eq(order_id))
-        .one(&db)
-        .await
+    let mut db_mut = db.clone();
+    let mut webhook = match PaymentWebhook::filter(
+        PaymentWebhook::fields().payment_order_id().eq(order_id),
+    )
+    .first()
+    .exec(&mut db_mut)
+    .await
     {
-        Ok(Some(webhook)) => webhook,
+        Ok(Some(w)) => w,
         Ok(None) => {
-            tracing::warn!(
-                %order_id,
-                "webhook record not found"
-            );
+            tracing::warn!(%order_id, "webhook record not found");
             return;
         }
         Err(err) => {
-            tracing::error!(
-                ?err,
-                %order_id,
-                "failed to load webhook"
-            );
+            tracing::error!(?err, %order_id, "failed to load webhook");
             return;
         }
     };
+
     let retries = webhook.retry_count;
 
-    let mut webhook_am = webhook.into_active_model();
-
-    webhook_am.status = Set(WebhookStatus::Processing.to_string());
-
-    // if let Err(err) = webhook_am.save(&db).await {
-    //     tracing::error!(?err, "failed to update webhook status");
-    //     return;
-    // }
+    // Set processing status
+    let _ = toasty::update!(webhook {
+        status: WebhookStatus::Processing.to_string(),
+    })
+    .exec(&mut db_mut)
+    .await;
 
     match provider.webhook(&payload).await {
         Ok(_) => {
-            webhook_am.status = Set(WebhookStatus::Forwarded.to_string());
-
-            webhook_am.last_error = Set(None);
-
-            // if let Err(err) = webhook_am.save(&db).await {
-            //     tracing::error!(?err, "failed to save forwarded webhook");
-            // }
+            let _ = toasty::update!(webhook {
+                status: WebhookStatus::Forwarded.to_string(),
+                last_error: None,
+            })
+            .exec(&mut db_mut)
+            .await;
         }
-
         Err(err) => {
-            webhook_am.retry_count = Set(retries + 1);
-
-            webhook_am.last_error = Set(Some(err.to_string()));
-
+            let new_retries = retries + 1;
             if retries >= MAX_RETRIES {
-                webhook_am.status = Set(WebhookStatus::Failed.to_string());
-
-                tracing::error!(
-                    retries,
-                    error = %err,
-                    "webhook permanently failed"
-                );
+                let _ = toasty::update!(webhook {
+                    status: WebhookStatus::Failed.to_string(),
+                    retry_count: new_retries,
+                    last_error: Some(err.to_string()),
+                })
+                .exec(&mut db_mut)
+                .await;
+                tracing::error!(retries, error = %err, "webhook permanently failed");
             } else {
-                webhook_am.status = Set(WebhookStatus::Pending.to_string());
-
                 let delay_minutes = 2_i64.pow(retries);
-
-                webhook_am.next_retry_at = Set(Some(Utc::now() + Duration::minutes(delay_minutes)));
-
-                tracing::warn!(
-                    retries,
-                    error = %err,
-                    "webhook scheduled for retry"
-                );
+                let next_retry = chrono::Utc::now() + chrono::Duration::minutes(delay_minutes);
+                let _ = toasty::update!(webhook {
+                    status: WebhookStatus::Pending.to_string(),
+                    retry_count: new_retries,
+                    last_error: Some(err.to_string()),
+                    next_retry_at: Some(crate::util::to_jiff(next_retry)),
+                })
+                .exec(&mut db_mut)
+                .await;
+                tracing::warn!(retries, error = %err, "webhook scheduled for retry");
             }
-
-            // if let Err(save_err) = webhook_am.save(&db).await {
-            //     tracing::error!(?save_err, "failed to save retry state");
-            // }
         }
-    }
-    if let Err(err) = webhook_am.save(&db).await {
-        tracing::error!(?err, "failed to update webhook status");
     }
 }

@@ -1,4 +1,5 @@
 use crate::application::ListMerchantWebhooks;
+use crate::domain::payments::merchant_webhook::MerchantWebhook;
 use axum::{
     Json,
     extract::{Path, Query, State},
@@ -48,8 +49,8 @@ pub struct MerchantWebhookResponse {
     pub created_at: DateTime<Utc>,
 }
 
-impl From<crate::domain::payments::merchant_webhook::Model> for MerchantWebhookResponse {
-    fn from(webhook: crate::domain::payments::merchant_webhook::Model) -> Self {
+impl From<MerchantWebhook> for MerchantWebhookResponse {
+    fn from(webhook: MerchantWebhook) -> Self {
         Self {
             id: webhook.id,
             payment_order_id: webhook.payment_order_id,
@@ -61,7 +62,7 @@ impl From<crate::domain::payments::merchant_webhook::Model> for MerchantWebhookR
             charge: webhook.charge,
             client_reference: webhook.client_reference,
             txn_reference: webhook.txn_reference,
-            created_at: webhook.created_at,
+            created_at: crate::util::to_chrono(webhook.created_at),
         }
     }
 }

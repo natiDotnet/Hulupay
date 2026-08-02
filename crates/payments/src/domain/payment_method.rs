@@ -1,29 +1,10 @@
-use sea_orm::sea_query::StringLen;
-use sea_orm::{DeriveActiveEnum, EnumIter};
 use serde::{Deserialize, Serialize};
-use sqlx::Type;
 use strum_macros::{Display, EnumString};
 
 #[derive(
-    Debug,
-    Clone,
-    Display,
-    EnumString,
-    Default,
-    Deserialize,
-    Serialize,
-    Type,
-    EnumIter,
-    DeriveActiveEnum,
-    Eq,
-    PartialEq,
+    Debug, Clone, Display, EnumString, Default, Deserialize, Serialize, Eq, PartialEq, toasty::Embed,
 )]
-#[sea_orm(
-    rs_type = "String",
-    db_type = "String(StringLen::None)",
-    rename_all = "UPPERCASE"
-)]
-// #[strum(serialize_all = "snake_case")]
+#[column(rename_all = "UPPERCASE")]
 pub enum PaymentMethod {
     #[default]
     None,

@@ -1,17 +1,14 @@
 use crate::domain;
 use crate::domain::Provider;
-use anyhow::anyhow;
-use domain::payment_provider;
-use merchant::application::ApplicationError;
-use sea_orm::{DatabaseConnection, EntityTrait, Order, PaginatorTrait};
+use toasty::Db;
 
 #[derive(Clone)]
 pub struct ListPaymentProviders {
-    db: DatabaseConnection,
+    db: Db,
 }
 
 impl ListPaymentProviders {
-    pub fn new(db: DatabaseConnection) -> Self {
+    pub fn new(db: Db) -> Self {
         Self { db }
     }
 
@@ -20,18 +17,20 @@ impl ListPaymentProviders {
         page: u64,
         page_size: u64,
     ) -> anyhow::Result<PaginatedResponse<Provider>> {
-        let paginator = payment_provider::Entity::find()
-            .order_by_id(Order::Desc)
-            .paginate(&self.db, page_size);
+        let mut db = self.db.clone();
 
-        let total = paginator
-            .num_items()
-            .await
-            .map_err(|e| ApplicationError::Internal(anyhow!(e)))?;
-        let items = paginator
-            .fetch_page(page - 1)
+        let all = domain::payment_provider::PaymentProvider::all()
+            .exec(&mut db)
+            .await?;
+        let total = all.len() as u64;
+
+        let offset = if page > 1 { (page - 1) * page_size } else { 0 };
+        let items = domain::payment_provider::PaymentProvider::all()
+            .order_by(domain::payment_provider::PaymentProvider::fields().id().desc())
+            .limit(page_size as usize)
+            .offset(offset as usize)
+            .exec(&mut db)
             .await?
-            // .map_err(|e| ApplicationError::Internal(anyhow!(e)))?
             .into_iter()
             .map(|p| Provider {
                 id: p.id,
@@ -39,10 +38,9 @@ impl ListPaymentProviders {
                 name: p.name,
                 logo: p.logo,
                 is_active: p.is_active,
-                created_at: p.created_at,
+                created_at: crate::util::to_chrono(p.created_at),
             })
             .collect();
-        // let (providers, total) = self.repository.list(offset, page_size).await?;
 
         Ok(PaginatedResponse {
             items,

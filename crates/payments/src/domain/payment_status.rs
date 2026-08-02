@@ -1,18 +1,8 @@
-// domain/src/state_machine.rs
-
-use sea_orm::sea_query::StringLen;
-use sea_orm::{DeriveActiveEnum, EnumIter};
 use strum_macros::{Display, EnumString};
 use thiserror::Error;
 
-// #[derive(Debug, Clone, PartialEq, Eq, sqlx::Type, serde::Serialize, serde::Deserialize)]
-// #[sqlx(type_name = "payment_status", rename_all = "snake_case")]
-#[derive(EnumIter, DeriveActiveEnum, Clone, Eq, PartialEq, Debug, Display, EnumString)]
-#[sea_orm(
-    rs_type = "String",
-    db_type = "String(StringLen::None)",
-    rename_all = "UPPERCASE"
-)]
+#[derive(Clone, Eq, PartialEq, Debug, Display, EnumString, toasty::Embed)]
+#[column(rename_all = "UPPERCASE")]
 #[strum(serialize_all = "UPPERCASE")]
 pub enum PaymentStatus {
     Initiated,
@@ -38,6 +28,7 @@ impl From<hulu_core::payment_gateway::PaymentStatus> for PaymentStatus {
         }
     }
 }
+
 #[derive(Debug, Error)]
 pub enum TransitionError {
     #[error("illegal transition from {from:?} to {to:?}")]
@@ -83,12 +74,8 @@ impl PaymentStatus {
     }
 }
 
-#[derive(EnumIter, DeriveActiveEnum, Clone, Eq, PartialEq, Debug, Display, EnumString)]
-#[sea_orm(
-    rs_type = "String",
-    db_type = "String(StringLen::None)",
-    rename_all = "UPPERCASE"
-)]
+#[derive(Clone, Eq, PartialEq, Debug, Display, EnumString, toasty::Embed)]
+#[column(rename_all = "UPPERCASE")]
 #[strum(serialize_all = "UPPERCASE")]
 pub enum TxStatus {
     Pending,
@@ -96,12 +83,8 @@ pub enum TxStatus {
     Failed,
 }
 
-#[derive(EnumIter, DeriveActiveEnum, Clone, Eq, PartialEq, Debug)]
-#[sea_orm(
-    rs_type = "String",
-    db_type = "String(StringLen::None)",
-    rename_all = "UPPERCASE"
-)]
+#[derive(Clone, Eq, PartialEq, Debug, toasty::Embed)]
+#[column(rename_all = "UPPERCASE")]
 pub enum TxDirection {
     Charge,
     Refund,

@@ -1,8 +1,9 @@
 use crate::api::AuthUser;
 use crate::application::{AuthenticationType, TokenService, UserContext};
-use crate::domain::apikey;
+use crate::domain::apikey::ApiKey;
 use crate::domain::permission::Permission;
-use crate::domain::revoked_token;
+use crate::domain::revoked_token::RevokedToken;
+use crate::util;
 use crate::Role;
 use axum::body::Body;
 use axum::extract::{Request, State};
@@ -11,7 +12,6 @@ use axum::http::StatusCode;
 use axum::middleware;
 use axum::middleware::Next;
 use axum::response::Response;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use std::sync::Arc;
 use utoipa_axum::router::OpenApiRouter;
 
@@ -63,12 +63,14 @@ async fn authenticate_jwt(req: &mut Request<Body>, token: &str) -> Result<(), St
     // Check if the token has been revoked (server-side logout).
     let db = req
         .extensions()
-        .get::<DatabaseConnection>()
+        .get::<toasty::Db>()
         .cloned()
         .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+    let mut db = db;
 
-    let is_revoked = revoked_token::Entity::find_by_id(claims.jti)
-        .one(&db)
+    let is_revoked = RevokedToken::filter_by_id(claims.jti)
+        .first()
+        .exec(&mut db)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .is_some();
@@ -91,7 +93,7 @@ async fn authenticate_jwt(req: &mut Request<Body>, token: &str) -> Result<(), St
 async fn authenticate_api_key(req: &mut Request<Body>, raw_key: &str) -> Result<(), StatusCode> {
     let db = req
         .extensions()
-        .get::<DatabaseConnection>()
+        .get::<toasty::Db>()
         .cloned()
         .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
 
@@ -101,10 +103,11 @@ async fn authenticate_api_key(req: &mut Request<Body>, raw_key: &str) -> Result<
         .ok_or(StatusCode::UNAUTHORIZED)?
         .to_string();
 
-    let row = apikey::Entity::find()
-        .filter(apikey::Column::Prefix.eq(&prefix))
-        .filter(apikey::Column::IsActive.eq(true))
-        .one(&db)
+    let mut query_db = db.clone();
+    let mut row = ApiKey::filter(ApiKey::fields().prefix().eq(&prefix))
+        .filter(ApiKey::fields().is_active().eq(true))
+        .first()
+        .exec(&mut query_db)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::UNAUTHORIZED)?;
@@ -116,7 +119,7 @@ async fn authenticate_api_key(req: &mut Request<Body>, raw_key: &str) -> Result<
     }
 
     // Check expiry
-    let now = sqlx::types::chrono::Utc::now();
+    let now = util::now_jiff();
     if row.expires_at <= now {
         return Err(StatusCode::UNAUTHORIZED);
     }
@@ -141,9 +144,10 @@ async fn authenticate_api_key(req: &mut Request<Body>, raw_key: &str) -> Result<
 
     // Fire-and-forget: update last_used_at
     tokio::spawn(async move {
-        let mut am: apikey::ActiveModel = row.into();
-        am.last_used_at = sea_orm::Set(Some(sqlx::types::chrono::Utc::now()));
-        let _ = am.update(&db).await;
+        let mut db = db.clone();
+        let _ = toasty::update!(row { last_used_at: util::now_jiff() })
+            .exec(&mut db)
+            .await;
     });
 
     Ok(())

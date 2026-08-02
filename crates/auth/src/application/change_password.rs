@@ -1,24 +1,26 @@
 use crate::application::login_request::ChangePasswordRequest;
 use crate::application::password::{hash_password, verify_password};
-use crate::domain::user;
+use crate::domain::user::User;
+use crate::util;
 use crate::DomainAuthError;
-use chrono::Utc;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
 use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct ChangePassword {
-    db: DatabaseConnection,
+    db: toasty::Db,
 }
 
 impl ChangePassword {
-    pub fn new(db: DatabaseConnection) -> Self {
+    pub fn new(db: toasty::Db) -> Self {
         Self { db }
     }
 
     pub async fn execute(&self, user_id: Uuid, request: ChangePasswordRequest) -> anyhow::Result<()> {
-        let user = user::Entity::find_by_id(user_id)
-            .one(&self.db)
+        let mut db = self.db.clone();
+
+        let mut user = User::filter_by_id(user_id)
+            .first()
+            .exec(&mut db)
             .await?
             .ok_or(DomainAuthError::UserNotFound)?;
 
@@ -33,12 +35,15 @@ impl ChangePassword {
         }
 
         let new_hash = hash_password(&request.new_password)?;
+        let now = util::now_jiff();
 
-        let mut am: user::ActiveModel = user.into();
-        am.password_hash = Set(new_hash);
-        am.password_changed_at = Set(Some(Utc::now()));
-        am.updated_at = Set(Some(Utc::now()));
-        am.update(&self.db).await?;
+        toasty::update!(user {
+            password_hash: new_hash,
+            password_changed_at: now,
+            updated_at: now,
+        })
+        .exec(&mut db)
+        .await?;
 
         Ok(())
     }

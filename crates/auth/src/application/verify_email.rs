@@ -1,52 +1,57 @@
 use crate::application::login_request::{VerifyEmailRequest, VerifyEmailResponse};
-use crate::domain::email_verification;
-use crate::domain::user;
+use crate::domain::email_verification::EmailVerification;
+use crate::domain::user::User;
+use crate::util;
 use crate::DomainAuthError;
-use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
 
 #[derive(Clone)]
 pub struct VerifyEmail {
-    db: DatabaseConnection,
+    db: toasty::Db,
 }
 
 impl VerifyEmail {
-    pub fn new(db: DatabaseConnection) -> Self {
+    pub fn new(db: toasty::Db) -> Self {
         Self { db }
     }
 
     pub async fn execute(&self, request: VerifyEmailRequest) -> anyhow::Result<VerifyEmailResponse> {
+        let mut db = self.db.clone();
+
         let token_hash = crate::infrastructure::hash_token(&request.token);
 
         // Find the unexpired, unused verification row.
-        let row = email_verification::Entity::find()
-            .filter(email_verification::Column::TokenHash.eq(&token_hash))
-            .filter(email_verification::Column::VerifiedAt.is_null())
-            .one(&self.db)
+        let mut row = EmailVerification::filter(EmailVerification::fields().token_hash().eq(&token_hash))
+            .filter(EmailVerification::fields().verified_at().is_none())
+            .first()
+            .exec(&mut db)
             .await?
             .ok_or(DomainAuthError::InvalidVerificationToken)?;
 
-        if row.expires_at < Utc::now() {
+        if row.expires_at < util::now_jiff() {
             return Err(anyhow::anyhow!(DomainAuthError::VerificationTokenExpired));
         }
 
         let user_id = row.user_id;
+        let now = util::now_jiff();
 
         // Mark verification record as used.
-        let mut am: email_verification::ActiveModel = row.into();
-        am.verified_at = Set(Some(Utc::now()));
-        am.update(&self.db).await?;
+        toasty::update!(row { verified_at: now })
+            .exec(&mut db)
+            .await?;
 
         // Mark user's email_verified_at.
-        let user = user::Entity::find_by_id(user_id)
-            .one(&self.db)
+        let mut user = User::filter_by_id(user_id)
+            .first()
+            .exec(&mut db)
             .await?
             .ok_or(DomainAuthError::UserNotFound)?;
 
-        let mut user_am: user::ActiveModel = user.into();
-        user_am.email_verified_at = Set(Some(Utc::now()));
-        user_am.updated_at = Set(Some(Utc::now()));
-        user_am.update(&self.db).await?;
+        toasty::update!(user {
+            email_verified_at: now,
+            updated_at: now,
+        })
+        .exec(&mut db)
+        .await?;
 
         Ok(VerifyEmailResponse { verified: true })
     }

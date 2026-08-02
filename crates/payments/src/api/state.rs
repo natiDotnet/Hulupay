@@ -12,14 +12,12 @@ use crate::application::{
     ListPaymentProviderConfigs, ListPaymentProviders, ProviderEngine, RoutingEngine,
     UpdatePaymentProvider, UpdatePaymentProviderConfig,
 };
-// use crate::application::initiate_payment::InitiatePayment;
 use hulu_core::create_checkout::{CreateCheckout, VerifyPayment};
-use sea_orm::DatabaseConnection;
 use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct PaymentsState {
-    pub db: DatabaseConnection,
+    pub db: toasty::Db,
     pub provider_engine: ProviderEngine,
     pub routing_engine: RoutingEngine,
     pub create_payment_provider: CreatePaymentProvider,
@@ -45,5 +43,4 @@ pub struct PaymentsState {
     pub handle_create_checkout: Arc<dyn CreateCheckout>,
     pub handle_verify_payment: Arc<dyn VerifyPayment>,
     pub handle_payment_webhook: PaymentWebhookHandler,
-    // pub handle_initiate_payment: InitiatePayment,
 }

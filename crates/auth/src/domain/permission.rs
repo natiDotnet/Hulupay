@@ -1,5 +1,3 @@
-use sea_orm::sea_query::StringLen;
-use sea_orm::{DeriveActiveEnum, EnumIter};
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::str::FromStr;
@@ -9,64 +7,77 @@ use std::str::FromStr;
 /// Roles are just collections of permissions. Built-in roles map to
 /// predefined sets; custom roles (future) will also resolve to these
 /// same permissions.
-#[derive(
-    EnumIter,
-    DeriveActiveEnum,
-    Clone,
-    Debug,
-    PartialEq,
-    Eq,
-    Hash,
-    Serialize,
-    Deserialize,
-)]
-#[sea_orm(
-    rs_type = "String",
-    db_type = "String(StringLen::None)",
-    rename_all = "snake_case"
-)]
+///
+/// Stored as a native PostgreSQL enum type. Each variant uses `#[column(variant = "...")]`
+/// to preserve the dot-notation discriminant values (e.g. `"payment.create"`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, toasty::Embed)]
 pub enum Permission {
     // ── Merchant ──────────────────────────────────────────────
+    #[column(variant = "merchant.read")]
     MerchantRead,
+    #[column(variant = "merchant.update")]
     MerchantUpdate,
+    #[column(variant = "merchant.delete")]
     MerchantDelete,
 
     // ── Payments ───────────────────────────────────────────────
+    #[column(variant = "payment.create")]
     PaymentCreate,
+    #[column(variant = "payment.read")]
     PaymentRead,
+    #[column(variant = "payment.refund")]
     PaymentRefund,
+    #[column(variant = "payment.export")]
     PaymentExport,
 
     // ── Providers ───────────────────────────────────────────────
+    #[column(variant = "provider.read")]
     ProviderRead,
+    #[column(variant = "provider.update")]
     ProviderUpdate,
+    #[column(variant = "provider.delete")]
     ProviderDelete,
 
     // ── Routing ─────────────────────────────────────────────────
+    #[column(variant = "routing.read")]
     RoutingRead,
+    #[column(variant = "routing.update")]
     RoutingUpdate,
 
     // ── API Keys ────────────────────────────────────────────────
+    #[column(variant = "apikey.create")]
     ApikeyCreate,
+    #[column(variant = "apikey.rotate")]
     ApikeyRotate,
+    #[column(variant = "apikey.delete")]
     ApikeyDelete,
+    #[column(variant = "apikey.read")]
     ApikeyRead,
 
     // ── Webhooks ────────────────────────────────────────────────
+    #[column(variant = "webhook.read")]
     WebhookRead,
+    #[column(variant = "webhook.update")]
     WebhookUpdate,
 
     // ── Users ───────────────────────────────────────────────────
+    #[column(variant = "users.read")]
     UsersRead,
+    #[column(variant = "users.invite")]
     UsersInvite,
+    #[column(variant = "users.delete")]
     UsersDelete,
 
     // ── Audit ───────────────────────────────────────────────────
+    #[column(variant = "audit.read")]
     AuditRead,
 
     // ── Platform (admin only) ─────────────────────────────────
+    #[column(variant = "platform.manage")]
     PlatformManage,
+    #[column(variant = "platform.suspend")]
     PlatformSuspend,
+    #[column(variant = "platform.analytics")]
     PlatformAnalytics,
 }
 
@@ -110,10 +121,6 @@ impl Display for Permission {
 }
 
 /// Parse a dot-notation permission string back into the enum.
-///
-/// ```
-/// Permission::from_str("payment.create") // => Ok(Permission::PaymentCreate)
-/// ```
 impl FromStr for Permission {
     type Err = String;
 

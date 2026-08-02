@@ -1,22 +1,17 @@
-use crate::{PaymentMethod, domain};
-use sea_orm::entity::prelude::*;
-use sea_orm::{ActiveModelBehavior, DeriveEntityModel};
+use crate::domain::payment_method::PaymentMethod;
 use uuid::Uuid;
-#[sea_orm::model]
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
-#[sea_orm(table_name = "provider_payment_methods")]
-pub struct Model {
-    #[sea_orm(primary_key)]
+
+#[derive(Debug, Clone, PartialEq, Eq, toasty::Model)]
+pub struct ProviderPaymentMethod {
+    #[key]
+    #[auto]
     pub id: Uuid,
     pub provider_id: Uuid,
-    #[sea_orm(indexed)]
+    #[index]
     pub payment_method_code: PaymentMethod,
-    #[sea_orm(indexed)]
+    #[index]
     pub provider_method_code: String,
     // providers url segment
     pub provider_path_segment: Option<String>,
     pub is_active: bool,
-    #[sea_orm(belongs_to, from = "provider_id", to = "id")]
-    pub provider: HasOne<domain::payment_provider::Entity>,
 }
-impl ActiveModelBehavior for ActiveModel {}

@@ -3,6 +3,7 @@ pub mod application;
 pub mod domain;
 pub mod infrastructure;
 pub mod response;
+pub mod util;
 
 pub use api::{router, AuthState};
 pub use application::{

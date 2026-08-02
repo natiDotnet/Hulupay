@@ -1,17 +1,16 @@
 use crate::domain::permission::Permission;
 use crate::Role;
-use crate::domain::role_permission;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
+use crate::domain::role_permission::RolePermission;
 
 /// Service responsible for resolving permissions from roles and
 /// seeding the built-in role→permission mappings at startup.
 #[derive(Clone)]
 pub struct PermissionService {
-    db: DatabaseConnection,
+    db: toasty::Db,
 }
 
 impl PermissionService {
-    pub fn new(db: DatabaseConnection) -> Self {
+    pub fn new(db: toasty::Db) -> Self {
         Self { db }
     }
 
@@ -33,9 +32,9 @@ impl PermissionService {
         &self,
         role_name: &str,
     ) -> Vec<String> {
-        let rows = role_permission::Entity::find()
-            .filter(role_permission::Column::RoleName.eq(role_name))
-            .all(&self.db)
+        let mut db = self.db.clone();
+        let rows = RolePermission::filter(RolePermission::fields().role_name().eq(role_name))
+            .exec(&mut db)
             .await
             .unwrap_or_default();
 
@@ -60,12 +59,15 @@ impl PermissionService {
 
         for (role, permissions) in &roles {
             let role_name = role_to_name(role);
+            let mut db = self.db.clone();
 
             // Delete existing mappings for this role
-            if let Err(e) = role_permission::Entity::delete_many()
-                .filter(role_permission::Column::RoleName.eq(&role_name))
-                .exec(&self.db)
-                .await
+            if let Err(e) = RolePermission::filter(
+                RolePermission::fields().role_name().eq(&role_name),
+            )
+            .delete()
+            .exec(&mut db)
+            .await
             {
                 tracing::warn!(
                     role = %role_name,
@@ -77,13 +79,14 @@ impl PermissionService {
 
             // Insert fresh mappings
             for perm in permissions {
-                let model = role_permission::ActiveModel {
-                    role_name: Set(role_name.clone()),
-                    permission: Set(perm.clone()),
-                    ..Default::default()
-                };
-
-                if let Err(e) = model.insert(&self.db).await {
+                let mut db = self.db.clone();
+                if let Err(e) = toasty::create!(RolePermission {
+                    role_name: role_name.clone(),
+                    permission: perm.clone(),
+                })
+                .exec(&mut db)
+                .await
+                {
                     tracing::warn!(
                         role = %role_name,
                         permission = %perm,

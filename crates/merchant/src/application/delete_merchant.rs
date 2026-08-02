@@ -1,25 +1,28 @@
-use crate::domain::merchant;
-use anyhow::anyhow;
-use sea_orm::{DatabaseConnection, EntityTrait};
+use crate::domain::merchant::Merchant;
+use toasty::Db;
 use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct DeleteMerchant {
-    db: DatabaseConnection,
+    db: Db,
 }
 
 impl DeleteMerchant {
-    pub fn new(db: DatabaseConnection) -> Self {
+    pub fn new(db: Db) -> Self {
         Self { db }
     }
 
     pub async fn execute(&self, id: Uuid) -> anyhow::Result<()> {
-        let result = merchant::Entity::delete_by_id(id).exec(&self.db).await?;
+        let mut db = self.db.clone();
 
-        if result.rows_affected == 0 {
-            return Err(anyhow!("Merchant not found"));
-        }
-        
+        // Verify existence first — delete_by_id in Toasty may error on not-found
+        match Merchant::filter_by_id(id).first().exec(&mut db).await? {
+            Some(_) => {}
+            None => return Err(anyhow::anyhow!("Merchant not found")),
+        };
+
+        Merchant::filter_by_id(id).delete().exec(&mut db).await?;
+
         Ok(())
     }
 }

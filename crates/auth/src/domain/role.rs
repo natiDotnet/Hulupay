@@ -1,15 +1,13 @@
-use sea_orm::sea_query::StringLen;
-use sea_orm::{DeriveActiveEnum, EnumIter};
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::str::FromStr;
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, EnumIter, DeriveActiveEnum)]
-#[sea_orm(
-    rs_type = "String",
-    db_type = "String(StringLen::None)",
-    rename_all = "snake_case"
-)]
+/// User roles within a merchant or across the platform.
+///
+/// Stored as a native PostgreSQL enum type. The discriminant uses
+/// snake_case (`master_admin`, `merchant_admin`, etc.) which matches
+/// the previous SeaORM `rename_all = "snake_case"` convention.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, toasty::Embed)]
 pub enum Role {
     MasterAdmin,
     MerchantAdmin,
@@ -30,14 +28,15 @@ impl FromStr for Role {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_uppercase().as_str() {
-            "MASTER_ADMIN" => Ok(Role::MasterAdmin),
-            "MERCHANT_ADMIN" => Ok(Role::MerchantAdmin),
-            "OWNER" => Ok(Role::Owner),
-            "ADMIN" => Ok(Role::Admin),
-            "DEVELOPER" => Ok(Role::Developer),
-            "FINANCE" => Ok(Role::Finance),
-            "VIEWER" => Ok(Role::Viewer),
+        // Accept both snake_case (Toasty DB value) and UPPERCASE (legacy)
+        match s {
+            "master_admin" | "MASTER_ADMIN" => Ok(Role::MasterAdmin),
+            "merchant_admin" | "MERCHANT_ADMIN" => Ok(Role::MerchantAdmin),
+            "owner" | "OWNER" => Ok(Role::Owner),
+            "admin" | "ADMIN" => Ok(Role::Admin),
+            "developer" | "DEVELOPER" => Ok(Role::Developer),
+            "finance" | "FINANCE" => Ok(Role::Finance),
+            "viewer" | "VIEWER" => Ok(Role::Viewer),
             _ => Err(()),
         }
     }
@@ -45,13 +44,13 @@ impl FromStr for Role {
 impl Display for Role {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let str = match self {
-            Role::MasterAdmin => "MASTER_ADMIN".to_string(),
-            Role::MerchantAdmin => "MERCHANT_ADMIN".to_string(),
-            Role::Owner => "OWNER".to_string(),
-            Role::Admin => "ADMIN".to_string(),
-            Role::Developer => "DEVELOPER".to_string(),
-            Role::Finance => "FINANCE".to_string(),
-            Role::Viewer => "VIEWER".to_string(),
+            Role::MasterAdmin => "MASTER_ADMIN",
+            Role::MerchantAdmin => "MERCHANT_ADMIN",
+            Role::Owner => "OWNER",
+            Role::Admin => "ADMIN",
+            Role::Developer => "DEVELOPER",
+            Role::Finance => "FINANCE",
+            Role::Viewer => "VIEWER",
         };
         write!(f, "{}", str)
     }

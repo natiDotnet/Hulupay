@@ -4,12 +4,11 @@ use crate::application::{
     ResetPassword, TokenService, VerifyEmail,
 };
 use crate::infrastructure::MailService;
-use sea_orm::DatabaseConnection;
 use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct AuthState {
-    pub db: DatabaseConnection,
+    pub db: toasty::Db,
     pub token_service: Arc<dyn TokenService>,
     pub register_use_case: RegisterUser,
     pub login_use_case: LoginUser,

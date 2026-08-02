@@ -1,18 +1,17 @@
 use crate::domain;
 use crate::domain::environment::Environment;
 use anyhow::anyhow;
-use chrono::Utc;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, IntoActiveModel, Set};
 use serde_json::Value;
+use toasty::Db;
 use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct UpdatePaymentProviderConfig {
-    db: DatabaseConnection,
+    db: Db,
 }
 
 impl UpdatePaymentProviderConfig {
-    pub fn new(db: DatabaseConnection) -> Self {
+    pub fn new(db: Db) -> Self {
         Self { db }
     }
 
@@ -23,19 +22,24 @@ impl UpdatePaymentProviderConfig {
         config: Value,
         is_active: bool,
     ) -> anyhow::Result<()> {
-        let config_entity = domain::merchant_config::Entity::find_by_id(id)
-            .one(&self.db)
+        let mut db = self.db.clone();
+
+        let mut config_entity = domain::merchant_config::MerchantConfig::filter_by_id(id)
+            .first()
+            .exec(&mut db)
             .await?
             .ok_or_else(|| anyhow!("merchant provider config not found"))?;
 
-        let mut config_entity = config_entity.into_active_model();
-        config_entity.environment = Set(environment.clone());
-        config_entity.is_test_mode = Set(environment == Environment::Sandbox);
-        config_entity.config = Set(config);
-        config_entity.is_active = Set(is_active);
-        config_entity.updated_at = Set(Utc::now());
-
-        config_entity.save(&self.db).await?;
+        let is_test_mode = environment == Environment::Sandbox;
+        toasty::update!(config_entity {
+            environment: environment.clone(),
+            is_test_mode,
+            config,
+            is_active,
+            updated_at: crate::util::now_jiff(),
+        })
+        .exec(&mut db)
+        .await?;
         Ok(())
     }
 }

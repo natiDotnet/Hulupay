@@ -1,8 +1,7 @@
 use crate::domain;
 use crate::domain::Provider;
-use chrono::Utc;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, NotSet, Set};
 use serde::Deserialize;
+use toasty::Db;
 use utoipa::ToSchema;
 
 #[derive(Deserialize, ToSchema)]
@@ -18,24 +17,25 @@ fn default_is_active() -> bool {
 }
 #[derive(Clone)]
 pub struct CreatePaymentProvider {
-    db: DatabaseConnection,
+    db: Db,
 }
 
 impl CreatePaymentProvider {
-    pub fn new(db: DatabaseConnection) -> Self {
+    pub fn new(db: Db) -> Self {
         Self { db }
     }
 
     pub async fn execute(&self, request: CreatePaymentProviderRequest) -> anyhow::Result<Provider> {
-        let provider = domain::payment_provider::ActiveModel {
-            id: NotSet,
-            code: Set(request.code),
-            name: Set(request.name),
-            logo: Set(request.logo),
-            is_active: Set(request.is_active),
-            created_at: Set(Utc::now()),
-        }
-        .insert(&self.db)
+        let mut db = self.db.clone();
+
+        let provider = toasty::create!(domain::payment_provider::PaymentProvider {
+            code: request.code,
+            name: request.name,
+            logo: request.logo,
+            is_active: request.is_active,
+            created_at: crate::util::now_jiff(),
+        })
+        .exec(&mut db)
         .await?;
 
         Ok(Provider {
@@ -44,7 +44,7 @@ impl CreatePaymentProvider {
             name: provider.name,
             logo: provider.logo,
             is_active: provider.is_active,
-            created_at: provider.created_at,
+            created_at: crate::util::to_chrono(provider.created_at),
         })
     }
 }

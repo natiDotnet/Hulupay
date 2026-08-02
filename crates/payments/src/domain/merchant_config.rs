@@ -1,37 +1,24 @@
-use crate::domain;
 use crate::domain::environment::Environment;
-use sea_orm::ActiveModelBehavior;
-use sea_orm::DeriveEntityModel;
-use sea_orm::entity::prelude::*;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[sea_orm::model]
-#[derive(Debug, Clone, DeriveEntityModel)]
-#[sea_orm(table_name = "merchant_configs")]
-pub struct Model {
-    #[sea_orm(primary_key)]
+/// A merchant's provider-specific configuration (API keys, settings).
+#[derive(Debug, Clone, toasty::Model)]
+pub struct MerchantConfig {
+    #[key]
+    #[auto]
     pub id: Uuid,
-    #[sea_orm(unique_key = "merchant_provider")]
-    #[sea_orm(indexed)]
+    #[index]
     pub merchant_id: Uuid,
-    #[sea_orm(unique_key = "merchant_provider")]
+    #[index]
     pub provider_id: Uuid,
     pub is_test_mode: bool,
     pub environment: Environment,
     pub priority: i32,
-    #[sea_orm(default_value = "false")]
     pub is_default: bool,
     pub is_active: bool,
-
+    #[column(type = "jsonb")]
     pub config: serde_json::Value,
-
-    pub created_at: DateTimeUtc,
-    pub updated_at: DateTimeUtc,
-
-    #[sea_orm(belongs_to, from = "provider_id", to = "id")]
-    pub payment: HasOne<domain::payment_provider::Entity>,
-    #[sea_orm(belongs_to, from = "merchant_id", to = "id")]
-    pub merchant: HasOne<merchant::domain::merchant::Entity>,
+    pub created_at: jiff::Timestamp,
+    pub updated_at: jiff::Timestamp,
 }
-
-impl ActiveModelBehavior for ActiveModel {}

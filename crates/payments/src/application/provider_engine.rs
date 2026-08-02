@@ -1,22 +1,23 @@
 use crate::domain;
-use crate::domain::{MerchantConfigs, PaymentProviders, merchant_config};
+use crate::domain::merchant_config::MerchantConfig;
+use crate::domain::payment_provider::PaymentProvider;
 use hulu_core::payment_gateway::PaymentGateway;
-use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use std::collections::HashMap;
 use std::sync::Arc;
+use toasty::Db;
 use uuid::Uuid;
 
 /// A routing engine that selects the appropriate payment provider based on provider name
 #[derive(Clone)]
 pub struct ProviderEngine {
     providers: HashMap<String, Arc<dyn PaymentGateway>>,
-    db: DatabaseConnection,
+    db: Db,
 }
 
 impl ProviderEngine {
     pub fn new(
         providers: HashMap<String, Arc<dyn PaymentGateway>>,
-        db: DatabaseConnection,
+        db: Db,
     ) -> Self {
         Self { providers, db }
     }
@@ -27,21 +28,34 @@ impl ProviderEngine {
         merchant_id: Option<Uuid>,
         name: Option<&domain::provider::Provider>,
     ) -> Option<&Arc<dyn PaymentGateway>> {
+        let mut db = self.db.clone();
         let provider = match name {
             None => {
                 let merchant_id = merchant_id?;
-                let (_, provider) = MerchantConfigs::find()
-                    .filter(merchant_config::Column::MerchantId.eq(merchant_id))
-                    .filter(merchant_config::Column::IsActive.eq(true))
-                    .filter(merchant_config::Column::IsDefault.eq(true))
-                    .filter(domain::payment_provider::Column::IsActive.eq(true))
-                    .find_also_related(PaymentProviders)
-                    // .select_only()
-                    // .column(domain::payment_provider::Column::Name)
-                    .one(&self.db)
+                // Find the merchant's default active config, then resolve the provider's name.
+                let config = MerchantConfig::filter(
+                    MerchantConfig::fields()
+                        .merchant_id()
+                        .eq(merchant_id)
+                        .and(MerchantConfig::fields().is_active().eq(true))
+                        .and(MerchantConfig::fields().is_default().eq(true)),
+                )
+                .first()
+                .exec(&mut db)
+                .await
+                .ok()??;
+
+                let provider = PaymentProvider::filter_by_id(config.provider_id)
+                    .first()
+                    .exec(&mut db)
                     .await
                     .ok()??;
-                provider.map(|m| m.name).unwrap_or_default()
+
+                if provider.is_active {
+                    provider.name
+                } else {
+                    String::new()
+                }
             }
             Some(provider) => provider.to_string(),
         };
@@ -55,8 +69,10 @@ impl ProviderEngine {
         &self,
         provider_id: Uuid,
     ) -> Option<Arc<dyn PaymentGateway>> {
-        let row = PaymentProviders::find_by_id(provider_id)
-            .one(&self.db)
+        let mut db = self.db.clone();
+        let row = PaymentProvider::filter_by_id(provider_id)
+            .first()
+            .exec(&mut db)
             .await
             .ok()
             .flatten()?;

@@ -1,11 +1,7 @@
+use crate::domain::merchant_routing_strategy::MerchantRoutingStrategy;
 use crate::domain::routing_strategy::RoutingStrategy;
-use crate::domain::{MerchantRoutingStrategy, merchant_routing_strategy};
-use chrono::Utc;
-use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait,
-    QueryFilter, Set,
-};
 use serde::{Deserialize, Serialize};
+use toasty::Db;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -32,15 +28,15 @@ pub struct StrategyResponse {
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
-impl From<merchant_routing_strategy::Model> for StrategyResponse {
-    fn from(m: merchant_routing_strategy::Model) -> Self {
+impl From<MerchantRoutingStrategy> for StrategyResponse {
+    fn from(m: MerchantRoutingStrategy) -> Self {
         Self {
             id: m.id,
             merchant_id: m.merchant_id,
             strategy: m.strategy,
             enabled: m.enabled,
-            created_at: m.created_at,
-            updated_at: m.updated_at,
+            created_at: crate::util::to_chrono(m.created_at),
+            updated_at: crate::util::to_chrono(m.updated_at),
         }
     }
 }
@@ -49,30 +45,33 @@ impl From<merchant_routing_strategy::Model> for StrategyResponse {
 
 #[derive(Clone)]
 pub struct GetRoutingStrategy {
-    db: DatabaseConnection,
+    db: Db,
 }
 
 impl GetRoutingStrategy {
-    pub fn new(db: DatabaseConnection) -> Self {
+    pub fn new(db: Db) -> Self {
         Self { db }
     }
 
     pub async fn execute(&self, merchant_id: Uuid) -> anyhow::Result<Option<StrategyResponse>> {
-        let row = MerchantRoutingStrategy::find()
-            .filter(merchant_routing_strategy::Column::MerchantId.eq(merchant_id))
-            .one(&self.db)
-            .await?;
+        let mut db = self.db.clone();
+        let row = MerchantRoutingStrategy::filter(
+            MerchantRoutingStrategy::fields().merchant_id().eq(merchant_id),
+        )
+        .first()
+        .exec(&mut db)
+        .await?;
         Ok(row.map(StrategyResponse::from))
     }
 }
 
 #[derive(Clone)]
 pub struct UpsertRoutingStrategy {
-    db: DatabaseConnection,
+    db: Db,
 }
 
 impl UpsertRoutingStrategy {
-    pub fn new(db: DatabaseConnection) -> Self {
+    pub fn new(db: Db) -> Self {
         Self { db }
     }
 
@@ -81,30 +80,36 @@ impl UpsertRoutingStrategy {
         merchant_id: Uuid,
         req: UpsertStrategyRequest,
     ) -> anyhow::Result<StrategyResponse> {
-        let existing = MerchantRoutingStrategy::find()
-            .filter(merchant_routing_strategy::Column::MerchantId.eq(merchant_id))
-            .one(&self.db)
+        let mut db = self.db.clone();
+
+        let existing = MerchantRoutingStrategy::filter(
+            MerchantRoutingStrategy::fields().merchant_id().eq(merchant_id),
+        )
+        .first()
+        .exec(&mut db)
+        .await?;
+
+        if let Some(mut existing) = existing {
+            toasty::update!(existing {
+                strategy: req.strategy,
+                enabled: req.enabled,
+                updated_at: crate::util::now_jiff(),
+            })
+            .exec(&mut db)
             .await?;
-
-        let row = if let Some(existing) = existing {
-            let mut active: merchant_routing_strategy::ActiveModel = existing.into();
-            active.strategy = Set(req.strategy);
-            active.enabled = Set(req.enabled);
-            active.updated_at = Set(Utc::now());
-            active.update(&self.db).await?
+            Ok(StrategyResponse::from(existing))
         } else {
-            merchant_routing_strategy::ActiveModel {
-                id: Set(Uuid::now_v7()),
-                merchant_id: Set(merchant_id),
-                strategy: Set(req.strategy),
-                enabled: Set(req.enabled),
-                created_at: Set(Utc::now()),
-                updated_at: Set(Utc::now()),
-            }
-            .insert(&self.db)
-            .await?
-        };
-
-        Ok(StrategyResponse::from(row))
+            let now = crate::util::now_jiff();
+            let row = toasty::create!(MerchantRoutingStrategy {
+                merchant_id,
+                strategy: req.strategy,
+                enabled: req.enabled,
+                created_at: now,
+                updated_at: now,
+            })
+            .exec(&mut db)
+            .await?;
+            Ok(StrategyResponse::from(row))
+        }
     }
 }

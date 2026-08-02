@@ -1,21 +1,21 @@
 use crate::application::login_request::{RegisterUserRequest, RegisterUserResponse};
 use crate::application::password::hash_password;
-use crate::domain::email_verification;
-use crate::domain::user;
+use crate::domain::email_verification::EmailVerification;
+use crate::domain::user::User;
 use crate::infrastructure::MailService;
+use crate::util;
 use crate::Role;
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, SelectExt, Set};
 use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct RegisterUser {
-    db: DatabaseConnection,
+    db: toasty::Db,
     mail_service: Option<Arc<dyn MailService>>,
 }
 
 impl RegisterUser {
-    pub fn new(db: DatabaseConnection, mail_service: Option<Arc<dyn MailService>>) -> Self {
+    pub fn new(db: toasty::Db, mail_service: Option<Arc<dyn MailService>>) -> Self {
         Self { db, mail_service }
     }
 
@@ -23,9 +23,13 @@ impl RegisterUser {
         &self,
         request: RegisterUserRequest,
     ) -> anyhow::Result<RegisterUserResponse> {
-        let exists = user::Entity::find_by_email(&request.email)
-            .exists(&self.db)
-            .await?;
+        let mut db = self.db.clone();
+
+        let exists = User::filter_by_email(&request.email)
+            .first()
+            .exec(&mut db)
+            .await?
+            .is_some();
         if exists {
             return Err(anyhow::anyhow!("User already exists"));
         }
@@ -34,16 +38,17 @@ impl RegisterUser {
         let role =
             Role::from_string(&request.role).ok_or_else(|| anyhow::anyhow!("Invalid role"))?;
 
-        let user = user::ActiveModel {
-            email: Set(request.email.clone()),
-            password_hash: Set(password_hash),
-            role: Set(role),
-            merchant_id: Set(request.merchant_id),
-            email_verified_at: Set(None),
-            password_changed_at: Set(None),
-            ..ActiveModelTrait::default()
-        };
-        let user = user.insert(&self.db).await?;
+        let user = toasty::create!(User {
+            email: request.email.clone(),
+            password_hash,
+            role,
+            merchant_id: request.merchant_id,
+            status: crate::domain::status::AccountStatus::Pending,
+            name: String::new(),
+            created_at: util::now_jiff(),
+        })
+        .exec(&mut db)
+        .await?;
 
         // Create an email verification token and send it.
         let raw_token = uuid::Uuid::now_v7().to_string();
@@ -53,15 +58,14 @@ impl RegisterUser {
             .and_then(|v| v.parse().ok())
             .unwrap_or(24);
 
-        let verification_row = email_verification::ActiveModel {
-            id: Set(uuid::Uuid::now_v7()),
-            user_id: Set(user.id),
-            token_hash: Set(token_hash),
-            expires_at: Set(Utc::now() + chrono::Duration::hours(ttl_hours)),
-            verified_at: Set(None),
-            created_at: Set(Utc::now()),
-        };
-        verification_row.insert(&self.db).await?;
+        let expires_at = util::to_jiff(Utc::now() + chrono::Duration::hours(ttl_hours));
+        toasty::create!(EmailVerification {
+            user_id: user.id,
+            token_hash,
+            expires_at,
+        })
+        .exec(&mut db)
+        .await?;
 
         // Fire-and-forget email send.
         if let Some(mail) = &self.mail_service {

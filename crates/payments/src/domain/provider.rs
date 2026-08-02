@@ -2,31 +2,14 @@ use crate::domain::PaymentMethod;
 use crate::domain::error::DomainError;
 use async_trait::async_trait;
 use hulu_core::payment_method::GatewayProvider;
-use sea_orm::sea_query::StringLen;
-use sea_orm::{DeriveActiveEnum, EnumIter};
 use serde::{Deserialize, Serialize};
 use strum_macros::{AsRefStr, Display, EnumString};
 use utoipa::ToSchema;
 
 #[derive(
-    EnumIter,
-    DeriveActiveEnum,
-    Clone,
-    Debug,
-    PartialEq,
-    Eq,
-    Serialize,
-    Deserialize,
-    ToSchema,
-    Display,
-    AsRefStr,
-    EnumString,
+    Clone, Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema, Display, AsRefStr, EnumString, toasty::Embed,
 )]
-#[sea_orm(
-    rs_type = "String",
-    db_type = "String(StringLen::None)",
-    rename_all = "UPPERCASE"
-)]
+#[column(rename_all = "UPPERCASE")]
 #[strum(serialize_all = "UPPERCASE")]
 #[serde(rename_all = "UPPERCASE")]
 pub enum Provider {

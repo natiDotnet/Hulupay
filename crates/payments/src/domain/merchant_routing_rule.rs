@@ -1,21 +1,16 @@
 use crate::domain::routing_rule::{ConditionOperator, ConditionType};
-use sea_orm::entity::prelude::*;
-use sea_orm::prelude::DateTimeUtc;
-use sea_orm::{ActiveModelBehavior, DeriveEntityModel};
 use uuid::Uuid;
 
 /// A merchant's explicit, ordered routing rule. Lower `priority` runs first.
-#[sea_orm::model]
-#[derive(Debug, Clone, DeriveEntityModel)]
-#[sea_orm(table_name = "merchant_routing_rule")]
-pub struct Model {
-    #[sea_orm(primary_key)]
+#[derive(Debug, Clone, toasty::Model)]
+pub struct MerchantRoutingRule {
+    #[key]
+    #[auto]
     pub id: Uuid,
-    #[sea_orm(indexed)]
+    #[index]
     pub merchant_id: Uuid,
     /// Lower number = higher priority (runs first).
     pub priority: i32,
-    #[sea_orm(default_value = "true")]
     pub enabled: bool,
     pub condition_type: ConditionType,
     pub operator: ConditionOperator,
@@ -25,8 +20,6 @@ pub struct Model {
     pub target_provider_id: Uuid,
     /// Optional fallback provider if the target is unavailable.
     pub fallback_provider_id: Option<Uuid>,
-    pub created_at: DateTimeUtc,
-    pub updated_at: DateTimeUtc,
+    pub created_at: jiff::Timestamp,
+    pub updated_at: jiff::Timestamp,
 }
-
-impl ActiveModelBehavior for ActiveModel {}

@@ -1,19 +1,18 @@
-use crate::domain;
+use crate::domain::payment_provider::PaymentProvider;
 use auth::Role;
 use auth::domain::status::AccountStatus;
-use chrono::Utc;
-use domain::payment_provider;
 use hulu_core::create_slug;
 use merchant::domain::merchant_status::MerchantStatus;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
+use toasty::Db;
 use uuid::Uuid;
+use crate::util::now_jiff;
 
 pub struct DataSeeder {
-    db: DatabaseConnection,
+    db: Db,
 }
 
 impl DataSeeder {
-    pub fn new(db: DatabaseConnection) -> Self {
+    pub fn new(db: Db) -> Self {
         Self { db }
     }
 }
@@ -36,8 +35,10 @@ impl DataSeeder {
 
     /// Look up the master merchant by name, falling back to the provided id.
     async fn get_master_merchant_id(&self, fallback: Uuid) -> anyhow::Result<Uuid> {
-        if let Some(m) = merchant::domain::merchant::Entity::find_by_name("master")
-            .one(&self.db)
+        let mut db = self.db.clone();
+        if let Some(m) = merchant::domain::merchant::Merchant::filter_by_name("master")
+            .first()
+            .exec(&mut db)
             .await?
         {
             return Ok(m.id);
@@ -46,41 +47,37 @@ impl DataSeeder {
     }
 
     async fn seed_master_merchant(&self, merchant_id: Uuid) -> anyhow::Result<()> {
+        let mut db = self.db.clone();
         let name = "master";
-        let master = merchant::domain::merchant::Entity::find_by_name(name)
-            .one(&self.db)
-            .await?;
-        if master.is_some() {
+
+        if merchant::domain::merchant::Merchant::filter_by_name(name)
+            .first()
+            .exec(&mut db)
+            .await?
+            .is_some()
+        {
             return Ok(());
         }
-        let _ = merchant::domain::merchant::ActiveModel {
-            id: Set(merchant_id),
-            slug: Set(create_slug(name)),
-            name: Set(name.to_string()),
-            email: Set(format!("{}@gmail.com", name)),
-            phone: Set("+251994000000".to_string()),
-            website: Set("https://www.hulupay.com".to_string()),
-            is_active: Set(true),
-            status: Set(MerchantStatus::Active),
-            created_at: Set(Utc::now()),
-            updated_at: Set(Some(Utc::now())),
-        }
-        .insert(&self.db)
+
+        let _ = toasty::create!(merchant::domain::merchant::Merchant {
+            id: merchant_id,
+            slug: create_slug(name),
+            name: name.to_string(),
+            email: format!("{name}@gmail.com"),
+            phone: "+251994000000".to_string(),
+            website: "https://www.hulupay.com".to_string(),
+            is_active: true,
+            status: MerchantStatus::Active,
+            created_at: now_jiff(),
+        })
+        .exec(&mut db)
         .await?;
 
         Ok(())
     }
 
     /// Seed one user per `Role` variant, all linked to the master merchant.
-    ///
-    /// Credentials follow the pattern:
-    ///   - email:    `{role_slug}@gmail.com` (e.g. `developer@gmail.com`)
-    ///   - password: `{role_slug}`            (e.g. `developer`)
-    ///
-    /// Each user is created only if no user with that email exists yet.
     async fn seed_role_users(&self, merchant_id: Uuid) -> anyhow::Result<()> {
-        // (display name, role, email slug, password)
-        // MasterAdmin is seeded here too so everything lives in one loop.
         let seed_users: &[(&str, Role, &str, &str)] = &[
             ("Master Admin",   Role::MasterAdmin,   "master_admin",   "master_admin"),
             ("Merchant Admin", Role::MerchantAdmin, "merchant_admin", "merchant_admin"),
@@ -93,11 +90,11 @@ impl DataSeeder {
 
         for (name, role, slug, password) in seed_users {
             let email = format!("{slug}@gmail.com");
+            let mut db = self.db.clone();
 
-            // Skip if the user already exists (idempotent re-run).
-            if auth::domain::user::Entity::find()
-                .filter(auth::domain::user::Column::Email.eq(&email))
-                .one(&self.db)
+            if auth::domain::user::User::filter_by_email(&email)
+                .first()
+                .exec(&mut db)
                 .await?
                 .is_some()
             {
@@ -106,21 +103,18 @@ impl DataSeeder {
 
             let password_hash = auth::application::password::hash_password(password)?;
 
-            let _ = auth::domain::user::ActiveModel {
-                id: Set(Uuid::now_v7()),
-                name: Set((*name).to_string()),
-                email: Set(email),
-                password_hash: Set(password_hash),
-                merchant_id: Set(merchant_id),
-                role: Set(role.clone()),
-                is_active: Set(true),
-                status: Set(AccountStatus::Active),
-                email_verified_at: Set(None),
-                password_changed_at: Set(None),
-                created_at: Set(Utc::now()),
-                updated_at: Set(Some(Utc::now())),
-            }
-            .insert(&self.db)
+            let _ = toasty::create!(auth::domain::user::User {
+                id: Uuid::now_v7(),
+                name: (*name).to_string(),
+                email,
+                password_hash,
+                merchant_id,
+                role: role.clone(),
+                is_active: true,
+                status: AccountStatus::Active,
+                created_at: now_jiff(),
+            })
+            .exec(&mut db)
             .await?;
         }
 
@@ -128,23 +122,28 @@ impl DataSeeder {
     }
 
     async fn seed_providers(&self) -> anyhow::Result<()> {
-        let arifpay = payment_provider::ActiveModel {
-            name: Set(domain::provider::Provider::ArifPay.to_string()),
-            code: Set(domain::provider::Provider::ArifPay.to_string()),
-            logo: Set("https://dashboard.arifpay.net/logo.png".to_string()),
-            ..Default::default()
-        };
+        let mut db = self.db.clone();
+        let now = crate::util::now_jiff();
 
-        let chapa = payment_provider::ActiveModel {
-            name: Set(domain::provider::Provider::Chapa.to_string()),
-            code: Set(domain::provider::Provider::Chapa.to_string()),
-            logo: Set("https://ethiopianlogos.com/logos/chapa/chapa.png".to_string()),
-            ..Default::default()
-        };
+        let _ = toasty::create!(PaymentProvider {
+            name: crate::domain::provider::Provider::ArifPay.to_string(),
+            code: crate::domain::provider::Provider::ArifPay.to_string(),
+            logo: "https://dashboard.arifpay.net/logo.png".to_string(),
+            is_active: true,
+            created_at: now,
+        })
+        .exec(&mut db)
+        .await?;
 
-        payment_provider::Entity::insert_many([arifpay, chapa])
-            .exec(&self.db)
-            .await?;
+        let _ = toasty::create!(PaymentProvider {
+            name: crate::domain::provider::Provider::Chapa.to_string(),
+            code: crate::domain::provider::Provider::Chapa.to_string(),
+            logo: "https://ethiopianlogos.com/logos/chapa/chapa.png".to_string(),
+            is_active: true,
+            created_at: now,
+        })
+        .exec(&mut db)
+        .await?;
 
         Ok(())
     }

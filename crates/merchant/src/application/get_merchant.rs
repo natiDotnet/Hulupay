@@ -1,29 +1,31 @@
 use crate::application::dto::MerchantResponse;
 use crate::application::error::ApplicationError;
-use crate::domain::merchant;
+use crate::domain::merchant::Merchant;
 use anyhow::anyhow;
-use sea_orm::{DatabaseConnection, EntityTrait};
+use toasty::Db;
 use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct GetMerchant {
-    db: DatabaseConnection,
+    db: Db,
 }
 
 impl GetMerchant {
-    pub fn new(db: DatabaseConnection) -> Self {
+    pub fn new(db: Db) -> Self {
         Self { db }
     }
 
     pub async fn execute(&self, id: Uuid) -> Result<MerchantResponse, ApplicationError> {
-        // let merchant = self.repository.get_by_id(id).await?;
-        let merchant = merchant::Entity::find_by_id(id)
-            .one(&self.db)
-            .await
-            .map_err(|e| ApplicationError::Internal(anyhow!(e)))?
-            .ok_or_else(|| {
-                ApplicationError::NotFound("Merchant not found with given id".to_string())
-            })?;
+        let mut db = self.db.clone();
+        let merchant = match Merchant::filter_by_id(id).first().exec(&mut db).await {
+            Ok(Some(m)) => m,
+            Ok(None) => {
+                return Err(ApplicationError::NotFound(
+                    "Merchant not found with given id".to_string(),
+                ))
+            }
+            Err(e) => return Err(ApplicationError::Internal(anyhow!(e))),
+        };
 
         Ok(MerchantResponse {
             id: merchant.id,

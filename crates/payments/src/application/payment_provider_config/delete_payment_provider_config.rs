@@ -1,20 +1,22 @@
 use crate::domain;
-use sea_orm::{DatabaseConnection, EntityTrait};
+use toasty::Db;
 use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct DeletePaymentProviderConfig {
-    db: DatabaseConnection,
+    db: Db,
 }
 
 impl DeletePaymentProviderConfig {
-    pub fn new(db: DatabaseConnection) -> Self {
+    pub fn new(db: Db) -> Self {
         Self { db }
     }
 
     pub async fn execute(&self, id: Uuid) -> anyhow::Result<()> {
-        domain::merchant_config::Entity::delete_by_id(id)
-            .exec(&self.db)
+        let mut db = self.db.clone();
+        domain::merchant_config::MerchantConfig::filter_by_id(id)
+            .delete()
+            .exec(&mut db)
             .await?;
         Ok(())
     }

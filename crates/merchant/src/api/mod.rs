@@ -19,7 +19,6 @@ use crate::application::{
 use auth::Role;
 use auth::api::middleware::AuthRouterExt;
 use axum::extract::FromRef;
-use sea_orm::DatabaseConnection;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
@@ -77,7 +76,7 @@ impl FromRef<MerchantState> for DeleteApiKey {
     }
 }
 
-pub fn router(db: &DatabaseConnection) -> OpenApiRouter {
+pub fn router(db: &toasty::Db) -> OpenApiRouter {
     let state = MerchantState {
         create_use_case: CreateMerchant::new(db.clone()),
         get_use_case: GetMerchant::new(db.clone()),

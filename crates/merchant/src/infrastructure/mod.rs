@@ -1,3 +1,2 @@
-mod merchant_repository_impl;
-
-// pub use merchant_repository_impl::MerchantRepositoryPostgres;
+// All repository infrastructure has been migrated to Toasty ORM.
+// The commented-out sqlx implementation is no longer needed.

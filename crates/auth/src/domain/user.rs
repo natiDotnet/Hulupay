@@ -1,18 +1,17 @@
 use super::Role;
 use crate::domain::status::AccountStatus;
-use sea_orm::entity::prelude::*;
-use sea_orm::{ActiveModelBehavior, DeriveEntityModel, Set};
-use sqlx::types::chrono;
-use sqlx::types::chrono::Utc;
 use uuid::Uuid;
 
-#[sea_orm::model]
-#[derive(Debug, DeriveEntityModel, Clone)]
-#[sea_orm(table_name = "users")]
-pub struct Model {
-    #[sea_orm(primary_key)]
+/// User account entity.
+///
+/// Primary key is UUID v7 (time-ordered, auto-generated).
+/// Email is unique, generating `User::get_by_email()` / `User::filter_by_email()`.
+#[derive(Debug, Clone, toasty::Model)]
+pub struct User {
+    #[key]
+    #[auto]
     pub id: Uuid,
-    #[sea_orm(unique)]
+    #[unique]
     pub email: String,
     pub name: String,
     pub password_hash: String,
@@ -22,33 +21,10 @@ pub struct Model {
     pub status: AccountStatus,
     /// `Some` once the user has clicked the verification link. `None`
     /// before that. Login is allowed but callers may surface a warning.
-    pub email_verified_at: Option<DateTimeUtc>,
+    pub email_verified_at: Option<jiff::Timestamp>,
     /// Updated whenever the password changes; can be used to invalidate
     /// older tokens / detect stale sessions.
-    pub password_changed_at: Option<DateTimeUtc>,
-    pub created_at: DateTimeUtc,
-    pub updated_at: Option<DateTimeUtc>,
-}
-
-impl ActiveModelBehavior for ActiveModel {
-    fn new() -> Self {
-        Self {
-            id: Set(Uuid::now_v7()),
-            is_active: Set(true),
-            ..ActiveModelTrait::default()
-        }
-    }
-}
-
-pub struct User {
-    pub id: Uuid,
-    pub email: String,
-    pub name: String,
-    pub password_hash: String,
-    pub merchant_id: Uuid,
-    pub role: Role,
-    pub is_active: bool,
-    pub status: AccountStatus,
-    pub created_at: chrono::DateTime<Utc>,
-    pub updated_at: Option<chrono::DateTime<Utc>>,
+    pub password_changed_at: Option<jiff::Timestamp>,
+    pub created_at: jiff::Timestamp,
+    pub updated_at: Option<jiff::Timestamp>,
 }

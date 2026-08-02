@@ -2,10 +2,8 @@ use crate::domain;
 use crate::domain::PaymentProviderConfig;
 use crate::domain::environment::Environment;
 use anyhow::anyhow;
-use chrono::Utc;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
 use serde::Deserialize;
-use serde_json::Value;
+use toasty::Db;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -27,11 +25,11 @@ fn default_is_active() -> bool {
 
 #[derive(Clone)]
 pub struct CreatePaymentProviderConfig {
-    db: DatabaseConnection,
+    db: Db,
 }
 
 impl CreatePaymentProviderConfig {
-    pub fn new(db: DatabaseConnection) -> Self {
+    pub fn new(db: Db) -> Self {
         Self { db }
     }
 
@@ -39,25 +37,29 @@ impl CreatePaymentProviderConfig {
         &self,
         request: CreatePaymentProviderConfigRequest,
     ) -> anyhow::Result<PaymentProviderConfig> {
-        domain::payment_provider::Entity::find_by_id(request.provider_id)
-            .one(&self.db)
+        let mut db = self.db.clone();
+
+        domain::payment_provider::PaymentProvider::filter_by_id(request.provider_id)
+            .first()
+            .exec(&mut db)
             .await?
             .ok_or_else(|| anyhow!("Payment provider does not exist"))?;
 
-        let config_entity = domain::merchant_config::ActiveModel {
-            id: Set(Uuid::now_v7()),
-            merchant_id: Set(request.merchant_id),
-            provider_id: Set(request.provider_id),
-            is_test_mode: Set(request.environment == Environment::Sandbox),
-            environment: Set(request.environment),
-            priority: Set(request.priority),
-            config: Set(request.config),
-            is_active: Set(request.is_active),
-            is_default: Set(request.is_default),
-            created_at: Set(Utc::now()),
-            updated_at: Set(Utc::now()),
-        }
-        .insert(&self.db)
+        let is_test_mode = request.environment == Environment::Sandbox;
+        let now = crate::util::now_jiff();
+        let config_entity = toasty::create!(domain::merchant_config::MerchantConfig {
+            merchant_id: request.merchant_id,
+            provider_id: request.provider_id,
+            is_test_mode,
+            environment: request.environment,
+            priority: request.priority,
+            config: request.config,
+            is_active: request.is_active,
+            is_default: request.is_default,
+            created_at: now,
+            updated_at: now,
+        })
+        .exec(&mut db)
         .await?;
 
         Ok(PaymentProviderConfig {
@@ -66,12 +68,11 @@ impl CreatePaymentProviderConfig {
             provider_id: config_entity.provider_id,
             priority: config_entity.priority,
             environment: config_entity.environment,
-            // is_test_mode: config_entity.is_test_mode,
             config: config_entity.config,
             is_active: config_entity.is_active,
             is_default: config_entity.is_default,
-            created_at: config_entity.created_at,
-            updated_at: config_entity.updated_at,
+            created_at: crate::util::to_chrono(config_entity.created_at),
+            updated_at: crate::util::to_chrono(config_entity.updated_at),
         })
     }
 }

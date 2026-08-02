@@ -7,7 +7,6 @@ mod error;
 mod get_merchant;
 mod list_apikeys;
 mod list_merchants;
-mod repository;
 mod update_apikey;
 mod update_merchant;
 
@@ -24,6 +23,5 @@ pub use get_merchant::GetMerchant;
 pub use list_apikeys::ListApiKeys;
 pub use list_merchants::ListMerchants;
 pub use list_merchants::PaginatedResponse;
-pub use repository::MerchantRepository;
 pub use update_apikey::UpdateApiKey;
 pub use update_merchant::UpdateMerchant;

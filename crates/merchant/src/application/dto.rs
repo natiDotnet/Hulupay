@@ -1,5 +1,7 @@
 use crate::domain::merchant_status::MerchantStatus;
-use sea_orm::prelude::DateTimeUtc;
+use crate::util;
+use auth::domain::apikey::ApiKey;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -39,7 +41,7 @@ pub struct CreateApiKeyRequest {
     /// e.g. `["payment.create", "payment.read"]`.
     pub scopes: Vec<String>,
     #[schema(value_type = String, format = DateTime)]
-    pub expires_at: DateTimeUtc,
+    pub expires_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -48,7 +50,7 @@ pub struct UpdateApiKeyRequest {
     pub scopes: Option<Vec<String>>,
     pub is_active: Option<bool>,
     #[schema(value_type = String, format = DateTime)]
-    pub expires_at: Option<DateTimeUtc>,
+    pub expires_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -60,13 +62,13 @@ pub struct ApiKeyResponse {
     pub scopes: Vec<String>,
     pub is_active: bool,
     #[schema(value_type = String, format = DateTime)]
-    pub expires_at: DateTimeUtc,
+    pub expires_at: DateTime<Utc>,
     #[schema(value_type = String, format = DateTime)]
-    pub last_used_at: Option<DateTimeUtc>,
+    pub last_used_at: Option<DateTime<Utc>>,
     #[schema(value_type = String, format = DateTime)]
-    pub created_at: DateTimeUtc,
+    pub created_at: DateTime<Utc>,
     #[schema(value_type = String, format = DateTime)]
-    pub updated_at: Option<DateTimeUtc>,
+    pub updated_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -76,8 +78,8 @@ pub struct CreateApiKeyResponse {
     pub key: String,
 }
 
-impl From<auth::domain::apikey::Model> for ApiKeyResponse {
-    fn from(value: auth::domain::apikey::Model) -> Self {
+impl From<ApiKey> for ApiKeyResponse {
+    fn from(value: ApiKey) -> Self {
         Self {
             id: value.id,
             merchant_id: value.merchant_id,
@@ -85,10 +87,10 @@ impl From<auth::domain::apikey::Model> for ApiKeyResponse {
             prefix: value.prefix,
             scopes: value.scopes,
             is_active: value.is_active,
-            expires_at: value.expires_at,
-            last_used_at: value.last_used_at,
-            created_at: value.created_at,
-            updated_at: value.updated_at,
+            expires_at: util::to_chrono(value.expires_at),
+            last_used_at: value.last_used_at.map(util::to_chrono),
+            created_at: util::to_chrono(value.created_at),
+            updated_at: value.updated_at.map(util::to_chrono),
         }
     }
 }

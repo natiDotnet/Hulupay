@@ -1,11 +1,11 @@
 use crate::api::state::AuthState;
 use crate::api::AuthUser;
 use crate::application::{LogoutRequest, UserContext};
-use crate::domain::refresh_token;
-use crate::domain::revoked_token;
+use crate::domain::refresh_token::RefreshToken;
+use crate::domain::revoked_token::RevokedToken;
+use crate::util;
 use axum::{extract::State, http::StatusCode, Json};
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 
 /// POST /auth/logout
 ///
@@ -24,43 +24,43 @@ pub async fn logout_handler(
     Json(payload): Json<LogoutRequest>,
 ) -> Result<StatusCode, StatusCode> {
     let UserContext { jti, sub, exp, .. } = user.0;
-    let db = &state.db;
-    let now = Utc::now();
+    let mut db = state.db.clone();
+    let now_chrono = Utc::now();
 
     // Revoke the access token (blocklist). `expires_at` mirrors the
     // original access token's expiry so the row can be cleaned up later.
-    let remaining = (exp as i64) - now.timestamp();
+    let remaining = (exp as i64) - now_chrono.timestamp();
     let expires_at = if remaining > 0 {
-        now + chrono::Duration::seconds(remaining)
+        util::to_jiff(now_chrono + chrono::Duration::seconds(remaining))
     } else {
-        now
+        util::to_jiff(now_chrono)
     };
+    let revoked_at = util::to_jiff(now_chrono);
 
-    let revoked = revoked_token::ActiveModel {
-        id: Set(jti),
-        user_id: Set(sub),
-        expires_at: Set(expires_at),
-        revoked_at: Set(now),
-    };
-    revoked
-        .insert(db)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    toasty::create!(RevokedToken {
+        id: jti,
+        user_id: sub,
+        expires_at,
+        revoked_at,
+    })
+    .exec(&mut db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     // Optionally revoke the refresh token family.
     if let Some(refresh_token_str) = payload.refresh_token {
         if let Ok(claims) = state.token_service.validate_refresh(&refresh_token_str) {
-            let rows = refresh_token::Entity::find()
-                .filter(refresh_token::Column::FamilyId.eq(claims.jti))
-                .filter(refresh_token::Column::RevokedAt.is_null())
-                .all(db)
+            let rows = RefreshToken::filter(RefreshToken::fields().family_id().eq(claims.jti))
+                .filter(RefreshToken::fields().revoked_at().is_none())
+                .exec(&mut db)
                 .await
                 .unwrap_or_default();
 
-            for row in rows {
-                let mut am: refresh_token::ActiveModel = row.into();
-                am.revoked_at = Set(Some(now));
-                let _ = am.update(db).await;
+            let now = util::now_jiff();
+            for mut row in rows {
+                let _ = toasty::update!(row { revoked_at: now })
+                    .exec(&mut db)
+                    .await;
             }
         }
     }

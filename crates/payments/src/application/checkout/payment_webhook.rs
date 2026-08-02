@@ -1,22 +1,23 @@
 use crate::ProviderEngine;
 use crate::application::checkout::process_webhook::process_webhook;
+use crate::domain::payment_order::PaymentOrder;
+use crate::domain::payments::merchant_webhook::MerchantWebhook;
+use crate::domain::payments::payment_webhook::PaymentWebhook;
 use crate::domain::provider::Provider;
-use crate::domain::{PaymentOrders, payments, provider};
 use hulu_core::hulu_error::HuluError;
 use hulu_core::payment_gateway::{WebhookInfo, WebhookStatus};
 use hulu_core::request_context::RequestContext;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, IntoActiveModel, Set};
 use tracing::debug;
-use uuid::Uuid;
+use toasty::Db;
 
 #[derive(Clone)]
 pub struct PaymentWebhookHandler {
-    db: DatabaseConnection,
+    db: Db,
     payment_engine: ProviderEngine,
 }
 
 impl PaymentWebhookHandler {
-    pub fn new(db: DatabaseConnection, payment_engine: ProviderEngine) -> Self {
+    pub fn new(db: Db, payment_engine: ProviderEngine) -> Self {
         Self { db, payment_engine }
     }
 }
@@ -24,10 +25,11 @@ impl PaymentWebhookHandler {
 impl PaymentWebhookHandler {
     pub async fn execute(
         &self,
-        provider_name: provider::Provider,
+        provider_name: Provider,
         context: &RequestContext,
         payload: serde_json::Value,
     ) -> Result<(), HuluError> {
+        let mut db = self.db.clone();
         let provider = self
             .payment_engine
             .get_provider(None, Some(&provider_name))
@@ -38,33 +40,52 @@ impl PaymentWebhookHandler {
             HuluError::ResponseParseError
         })?;
         debug!(?webhook_info, "webhook info");
-        let order = PaymentOrders::find_by_order_ref(&webhook_info.client_reference)
-            .one(&self.db)
-            .await
-            .map_err(|_e| HuluError::ConnectionError)?
-            .ok_or(HuluError::ResponseParseError)?;
 
-        payments::payment_webhook::ActiveModel {
-            provider: Set(provider.get_name().into()),
-            status: Set(WebhookStatus::Pending.to_string()),
-            payment_order_id: Set(order.id),
-            body: Set(payload.clone()),
-            headers: Set(serde_json::to_value(&context.headers).unwrap()),
-            ..Default::default()
-        }
-        .insert(&self.db)
+        let mut order = PaymentOrder::filter(
+            PaymentOrder::fields().order_ref().eq(webhook_info.client_reference.clone()),
+        )
+        .first()
+        .exec(&mut db)
+        .await
+        .map_err(|_e| HuluError::ConnectionError)?
+        .ok_or(HuluError::ResponseParseError)?;
+
+        // Record the incoming payment webhook
+        let now = crate::util::now_jiff();
+        toasty::create!(PaymentWebhook {
+            provider: crate::domain::provider::Provider::from(provider.get_name()),
+            status: WebhookStatus::Pending.to_string(),
+            payment_order_id: order.id,
+            body: payload.clone(),
+            headers: serde_json::to_value(&context.headers).unwrap(),
+            created_at: now,
+            updated_at: now,
+        })
+        .exec(&mut db)
         .await
         .map_err(|e| {
             debug!(?e, "database error");
             HuluError::ConnectionError
         })?;
 
-        payments::merchant_webhook::ActiveModel::from_webhook(
-            webhook_info.clone(),
-            order.merchant_id,
-            order.id,
-        )
-        .insert(&self.db)
+        // Record the merchant webhook
+        let merchant_status: crate::domain::payment_status::PaymentStatus =
+            webhook_info.status.clone().into();
+        let merchant_payment_method: crate::domain::payment_method::PaymentMethod =
+            webhook_info.payment_method.clone().into();
+        toasty::create!(MerchantWebhook {
+            status: merchant_status,
+            provider_reference: webhook_info.provider_reference.clone(),
+            payment_method: merchant_payment_method,
+            amount: webhook_info.amount,
+            charge: webhook_info.charge,
+            client_reference: webhook_info.client_reference.clone(),
+            txn_reference: webhook_info.txn_reference.clone(),
+            merchant_id: order.merchant_id,
+            payment_order_id: order.id,
+            created_at: now,
+        })
+        .exec(&mut db)
         .await
         .map_err(|e| {
             debug!(?e, "database error");
@@ -73,9 +94,15 @@ impl PaymentWebhookHandler {
 
         self.callback(order.id, &order.request_provider, &webhook_info)
             .await?;
-        let mut order = order.into_active_model();
-        order.status = Set(webhook_info.status.into());
-        order.save(&self.db).await.map_err(|e| {
+
+        let order_status: crate::domain::payment_status::PaymentStatus =
+            webhook_info.status.into();
+        toasty::update!(order {
+            status: order_status,
+        })
+        .exec(&mut db)
+        .await
+        .map_err(|e| {
             debug!(?e, "database error");
             HuluError::ConnectionError
         })?;
@@ -85,7 +112,7 @@ impl PaymentWebhookHandler {
 
     pub async fn callback(
         &self,
-        order_id: Uuid,
+        order_id: uuid::Uuid,
         callback_provider: &Provider,
         webhook: &WebhookInfo,
     ) -> Result<(), HuluError> {
@@ -105,51 +132,4 @@ impl PaymentWebhookHandler {
 
         Ok(())
     }
-
-    // async fn callback(
-    //     &self,
-    //     order_id: Uuid,
-    //     callback_provider: &Provider,
-    //     webhook: &WebhookInfo,
-    // ) -> Result<(), HuluError> {
-    //     let provider = self
-    //         .payment_engine
-    //         .get_provider(None, Some(callback_provider))
-    //         .await
-    //         .ok_or(HuluError::ProviderNotFound)?
-    //         .clone();
-    //     let db = self.db.clone();
-    //     let webhook = webhook.clone();
-    //     tokio::spawn(async move {
-    //         let webhook_result = provider.webhook(&webhook).await;
-    //         let result = domain::payments::payment_webhook::Entity::find()
-    //             .filter(payments::payment_webhook::Column::PaymentOrderId.eq(order_id))
-    //             .one(&db)
-    //             .await;
-    //         match result {
-    //             Ok(Some(webhook)) => {
-    //                 let mut webhook = webhook.into_active_model();
-    //                 match webhook_result {
-    //                     Ok(_) => {
-    //                         webhook.status = Set(WebhookStatus::Forwarded.to_string());
-    //                     }
-    //                     Err(e) => {
-    //                         webhook.status = Set(WebhookStatus::Failed.to_string());
-    //                         webhook.last_error = Set(Some(e.to_string()));
-    //                     }
-    //                 }
-    //                 if let Err(e) = webhook.save(&db).await {
-    //                     tracing::error!(?e, "failed to update webhook status");
-    //                 }
-    //             }
-    //             Err(e) => {
-    //                 debug!(?e, "webhook error");
-    //             }
-    //             _ => {
-    //                 debug!("webhook not found");
-    //             }
-    //         }
-    //     });
-    //     Ok(())
-    // }
 }

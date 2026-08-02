@@ -1,29 +1,27 @@
 use crate::application::cache_service::CacheService;
 use crate::application::merchants::get_merchant::get_merchant;
+use crate::domain::merchant_config::MerchantConfig;
+use crate::domain::payment_order::PaymentOrder;
+use crate::domain::payment_provider::PaymentProvider;
 use crate::domain::payment_status::{PaymentStatus, TxDirection, TxStatus};
-use crate::domain::{
-    MerchantConfigs, PaymentOrders, PaymentTransactions, merchant_config, payment_provider,
-};
-use crate::{ProviderEngine, domain};
+use crate::domain::payment_transaction::PaymentTransaction;
+use crate::ProviderEngine;
 use async_trait::async_trait;
-use chrono::Utc;
 use hulu_core::create_checkout::CancelPayment;
 use hulu_core::hulu_error::HuluError;
 use hulu_core::payment_gateway_error::PaymentGatewayError;
-use sea_orm::{ActiveModelTrait, QueryFilter};
-use sea_orm::{ColumnTrait, IntoActiveModel, Set};
-use sea_orm::{DatabaseConnection, EntityTrait};
 use std::sync::Arc;
+use toasty::Db;
 
 pub struct CancelPaymentHandler {
-    db: DatabaseConnection,
+    db: Db,
     cache: Arc<dyn CacheService>,
     payment_engine: ProviderEngine,
 }
 
 impl CancelPaymentHandler {
     pub fn new(
-        db: DatabaseConnection,
+        db: Db,
         cache: Arc<dyn CacheService>,
         payment_engine: ProviderEngine,
     ) -> Self {
@@ -37,6 +35,7 @@ impl CancelPaymentHandler {
 #[async_trait]
 impl CancelPayment for CancelPaymentHandler {
     async fn execute(&self, merchant: &str, reference: &str) -> Result<(), HuluError> {
+        let mut db = self.db.clone();
         let merchant = get_merchant(&self.db, self.cache.as_ref(), merchant)
             .await
             .ok_or(PaymentGatewayError::MerchantNotFound)?;
@@ -47,51 +46,75 @@ impl CancelPayment for CancelPaymentHandler {
             .await
             .ok_or(HuluError::ProviderNotFound)?;
 
-        let merchant_config = MerchantConfigs::find()
-            .inner_join(payment_provider::Entity)
-            .filter(merchant_config::Column::MerchantId.eq(merchant.id))
-            .filter(payment_provider::Column::Code.eq(provider.get_name().to_string()))
-            .filter(merchant_config::Column::IsActive.eq(true))
-            .one(&self.db)
-            .await
-            .map_err(|_| PaymentGatewayError::ProviderNotFound)?
-            .ok_or(PaymentGatewayError::ProviderNotFound)?;
+        // Resolve the provider row by code, then find the merchant's active config.
+        let provider_row = PaymentProvider::filter(
+            PaymentProvider::fields().code().eq(provider.get_name().to_string()),
+        )
+        .first()
+        .exec(&mut db)
+        .await
+        .map_err(|_| PaymentGatewayError::ProviderNotFound)?
+        .ok_or(PaymentGatewayError::ProviderNotFound)?;
 
-        let (transaction, order) = PaymentTransactions::find()
-            .filter(domain::payment_transaction::Column::ProviderTxId.eq(reference))
-            .find_also_related(PaymentOrders)
-            .one(&self.db)
+        let merchant_config = MerchantConfig::filter(
+            MerchantConfig::fields()
+                .merchant_id()
+                .eq(merchant.id)
+                .and(MerchantConfig::fields().provider_id().eq(provider_row.id))
+                .and(MerchantConfig::fields().is_active().eq(true)),
+        )
+        .first()
+        .exec(&mut db)
+        .await
+        .map_err(|_| PaymentGatewayError::ProviderNotFound)?
+        .ok_or(PaymentGatewayError::ProviderNotFound)?;
+
+        // Find the transaction by provider_tx_id, then load its order separately.
+        let transaction = PaymentTransaction::filter(
+            PaymentTransaction::fields().provider_tx_id().eq(reference.to_string()),
+        )
+        .first()
+        .exec(&mut db)
+        .await
+        .map_err(|_| PaymentGatewayError::InternalServerError)?
+        .ok_or(PaymentGatewayError::ProviderNotFound)?;
+
+        let mut order = PaymentOrder::filter_by_id(transaction.payment_order_id)
+            .first()
+            .exec(&mut db)
             .await
             .map_err(|_| PaymentGatewayError::InternalServerError)?
             .ok_or(PaymentGatewayError::ProviderNotFound)?;
-        let order = order.ok_or(PaymentGatewayError::ProviderNotFound)?;
+
         if transaction.status == TxStatus::Success || order.status == PaymentStatus::Completed {
             return Err(HuluError::PaymentAlreadyCompleted);
         }
         let result = provider.cancel(reference, merchant_config.config).await?;
 
-        let mut order = order.into_active_model();
-        order.status = Set(PaymentStatus::Cancelled);
-
-        domain::payment_transaction::ActiveModel {
-            status: Set(TxStatus::Failed),
-            amount: order.amount.clone(),
-            payment_order_id: order.id.clone(),
-            provider_tx_id: Set(None),
-            direction: Set(TxDirection::Charge),
-            currency: order.currency.clone(),
-            provider: Set(provider.get_name().into()),
-            updated_at: Set(Utc::now()),
-            provider_response: Set(None),
-            ..Default::default()
-        }
-        .insert(&self.db)
+        toasty::update!(order {
+            status: PaymentStatus::Cancelled,
+            updated_at: crate::util::now_jiff(),
+        })
+        .exec(&mut db)
         .await
         .map_err(|_| PaymentGatewayError::InternalServerError)?;
-        order
-            .save(&self.db)
-            .await
-            .map_err(|_| PaymentGatewayError::InternalServerError)?;
+
+        let now = crate::util::now_jiff();
+        toasty::create!(PaymentTransaction {
+            status: TxStatus::Failed,
+            amount: order.amount,
+            payment_order_id: order.id,
+            provider_tx_id: None,
+            direction: TxDirection::Charge,
+            currency: order.currency.clone(),
+            provider: crate::domain::provider::Provider::from(provider.get_name()),
+            updated_at: now,
+            provider_response: None,
+            created_at: now,
+        })
+        .exec(&mut db)
+        .await
+        .map_err(|_| PaymentGatewayError::InternalServerError)?;
         Ok(result)
     }
 }
