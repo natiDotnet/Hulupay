@@ -5,7 +5,7 @@ use chrono::Utc;
 use domain::payment_provider;
 use hulu_core::create_slug;
 use merchant::domain::merchant_status::MerchantStatus;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
 use uuid::Uuid;
 
 pub struct DataSeeder {
@@ -22,11 +22,29 @@ impl DataSeeder {
         let merchant_id = Uuid::now_v7();
 
         self.seed_master_merchant(merchant_id).await?;
-        self.seed_admin_user(merchant_id).await?;
+
+        // Resolve the real master merchant id so re-runs link users to the
+        // existing merchant rather than a freshly-generated UUID.
+        let master_merchant_id = self.get_master_merchant_id(merchant_id).await?;
+
+        // Seed one user per role for development/testing.
+        self.seed_role_users(master_merchant_id).await?;
         self.seed_providers().await?;
 
         Ok(())
     }
+
+    /// Look up the master merchant by name, falling back to the provided id.
+    async fn get_master_merchant_id(&self, fallback: Uuid) -> anyhow::Result<Uuid> {
+        if let Some(m) = merchant::domain::merchant::Entity::find_by_name("master")
+            .one(&self.db)
+            .await?
+        {
+            return Ok(m.id);
+        }
+        Ok(fallback)
+    }
+
     async fn seed_master_merchant(&self, merchant_id: Uuid) -> anyhow::Result<()> {
         let name = "master";
         let master = merchant::domain::merchant::Entity::find_by_name(name)
@@ -53,28 +71,58 @@ impl DataSeeder {
         Ok(())
     }
 
-    async fn seed_admin_user(&self, merchant_id: Uuid) -> anyhow::Result<()> {
-        let email = "admin@gmail.com";
-        let user = auth::domain::user::Entity::find_by_email(email)
-            .one(&self.db)
+    /// Seed one user per `Role` variant, all linked to the master merchant.
+    ///
+    /// Credentials follow the pattern:
+    ///   - email:    `{role_slug}@gmail.com` (e.g. `developer@gmail.com`)
+    ///   - password: `{role_slug}`            (e.g. `developer`)
+    ///
+    /// Each user is created only if no user with that email exists yet.
+    async fn seed_role_users(&self, merchant_id: Uuid) -> anyhow::Result<()> {
+        // (display name, role, email slug, password)
+        // MasterAdmin is seeded here too so everything lives in one loop.
+        let seed_users: &[(&str, Role, &str, &str)] = &[
+            ("Master Admin",   Role::MasterAdmin,   "master_admin",   "master_admin"),
+            ("Merchant Admin", Role::MerchantAdmin, "merchant_admin", "merchant_admin"),
+            ("Owner",          Role::Owner,         "owner",          "owner"),
+            ("Admin",          Role::Admin,         "admin",          "admin"),
+            ("Developer",      Role::Developer,     "developer",      "developer"),
+            ("Finance",        Role::Finance,       "finance",        "finance"),
+            ("Viewer",         Role::Viewer,        "viewer",         "viewer"),
+        ];
+
+        for (name, role, slug, password) in seed_users {
+            let email = format!("{slug}@gmail.com");
+
+            // Skip if the user already exists (idempotent re-run).
+            if auth::domain::user::Entity::find()
+                .filter(auth::domain::user::Column::Email.eq(&email))
+                .one(&self.db)
+                .await?
+                .is_some()
+            {
+                continue;
+            }
+
+            let password_hash = auth::application::password::hash_password(password)?;
+
+            let _ = auth::domain::user::ActiveModel {
+                id: Set(Uuid::now_v7()),
+                name: Set((*name).to_string()),
+                email: Set(email),
+                password_hash: Set(password_hash),
+                merchant_id: Set(merchant_id),
+                role: Set(role.clone()),
+                is_active: Set(true),
+                status: Set(AccountStatus::Active),
+                email_verified_at: Set(None),
+                password_changed_at: Set(None),
+                created_at: Set(Utc::now()),
+                updated_at: Set(Some(Utc::now())),
+            }
+            .insert(&self.db)
             .await?;
-        if user.is_some() {
-            return Ok(());
         }
-        let _ = auth::domain::user::ActiveModel {
-            id: Set(Uuid::now_v7()),
-            name: Set("admin".to_string()),
-            email: Set(email.into()),
-            password_hash: Set(auth::application::password::hash_password("admin")?),
-            merchant_id: Set(merchant_id),
-            role: Set(Role::MasterAdmin),
-            is_active: Set(true),
-            status: Set(AccountStatus::Active),
-            created_at: Set(Utc::now()),
-            updated_at: Set(Some(Utc::now())),
-        }
-        .insert(&self.db)
-        .await?;
 
         Ok(())
     }

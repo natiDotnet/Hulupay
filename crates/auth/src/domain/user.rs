@@ -20,6 +20,12 @@ pub struct Model {
     pub role: Role,
     pub is_active: bool,
     pub status: AccountStatus,
+    /// `Some` once the user has clicked the verification link. `None`
+    /// before that. Login is allowed but callers may surface a warning.
+    pub email_verified_at: Option<DateTimeUtc>,
+    /// Updated whenever the password changes; can be used to invalidate
+    /// older tokens / detect stale sessions.
+    pub password_changed_at: Option<DateTimeUtc>,
     pub created_at: DateTimeUtc,
     pub updated_at: Option<DateTimeUtc>,
 }

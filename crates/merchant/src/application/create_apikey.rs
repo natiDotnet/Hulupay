@@ -1,7 +1,8 @@
 use crate::application::dto::{ApiKeyResponse, CreateApiKeyRequest, CreateApiKeyResponse};
 use crate::application::error::ApplicationError;
-use crate::domain::{apikey, merchant};
+use crate::domain::merchant;
 use anyhow::anyhow;
+use auth::domain::apikey;
 use auth::application::password::hash_password;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
 use sqlx::types::chrono::Utc;

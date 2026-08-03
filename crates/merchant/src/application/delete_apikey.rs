@@ -1,6 +1,6 @@
 use crate::application::error::ApplicationError;
-use crate::domain::apikey;
 use anyhow::anyhow;
+use auth::domain::apikey;
 use sea_orm::{DatabaseConnection, EntityTrait};
 use uuid::Uuid;
 

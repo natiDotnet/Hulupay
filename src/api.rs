@@ -65,6 +65,7 @@ pub fn api_routes(db: &DatabaseConnection) -> Router {
         )
         .layer(axum::middleware::from_fn(auth::api::authentication))
         .layer(axum::Extension(token_service.clone()))
+        .layer(axum::Extension(db.clone()))
         .merge(payments::router(db))
         .split_for_parts();
 
