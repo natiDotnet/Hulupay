@@ -8,7 +8,7 @@ use crate::domain::routing_strategy::RoutingStrategy;
 use hulu_core::payment_request::PaymentRequest;
 use rust_decimal::Decimal;
 use toasty::Db;
-use tracing::debug;
+use tracing::{debug, info};
 use uuid::Uuid;
 
 /// The result of routing: an ordered list of provider IDs (first = preferred).
@@ -62,6 +62,7 @@ impl RoutingEngine {
 
         // 2) Fall back to the merchant's configured strategy
         let strategy = self.get_strategy(&mut db, merchant_id).await.unwrap_or_default();
+        info!(?strategy, "strategy matched");
 
         // Load configs, then load each provider separately (replaces find_also_related).
         let configs = MerchantConfig::filter(

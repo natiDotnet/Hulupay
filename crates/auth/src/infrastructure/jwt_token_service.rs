@@ -1,9 +1,9 @@
-use crate::application::{AuthenticationType, TokenType};
-use crate::application::{TokenService, UserContext};
+use crate::application::TokenService;
 use crate::domain::AuthError;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
+use hulu_core::claims::{AuthenticationType, TokenType, UserContext};
 
 #[derive(Clone)]
 pub struct JwtTokenService {
@@ -79,6 +79,7 @@ impl TokenService for JwtTokenService {
             permissions,
             exp,
             auth_type: AuthenticationType::Jwt,
+            auth_value: None,
             jti: Uuid::now_v7(),
             typ: TokenType::Access,
         };
@@ -102,6 +103,7 @@ impl TokenService for JwtTokenService {
             permissions: Vec::new(),
             exp,
             auth_type: AuthenticationType::Jwt,
+            auth_value: None,
             jti,
             typ: TokenType::Refresh,
         };

@@ -1,8 +1,8 @@
-use crate::application::UserContext;
 use axum::{
     extract::FromRequestParts,
     http::{StatusCode, request::Parts},
 };
+use hulu_core::claims::UserContext;
 
 #[derive(Clone)]
 pub struct AuthUser(pub UserContext);

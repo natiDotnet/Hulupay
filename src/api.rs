@@ -57,10 +57,10 @@ pub fn api_routes(toasty_db: &toasty::Db) -> Router {
                 // Payment routes (requires authentication)
                 .merge(OpenApiRouter::new().route("/test", get(|| async { "Hello, World!" }))),
         )
+        .merge(payments::router(toasty_db))
         .layer(axum::middleware::from_fn(auth::api::authentication))
         .layer(axum::Extension(token_service.clone()))
         .layer(axum::Extension(toasty_db.clone()))
-        .merge(payments::router(toasty_db))
         .split_for_parts();
 
     app

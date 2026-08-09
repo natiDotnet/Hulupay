@@ -19,8 +19,10 @@ impl DataSeeder {
 impl DataSeeder {
     pub async fn seed(&self) -> anyhow::Result<()> {
         let merchant_id = Uuid::now_v7();
+        let simulator_id = Uuid::now_v7();
 
         self.seed_master_merchant(merchant_id).await?;
+        self.seed_simulator_merchant(simulator_id).await?;
 
         // Resolve the real master merchant id so re-runs link users to the
         // existing merchant rather than a freshly-generated UUID.
@@ -50,7 +52,7 @@ impl DataSeeder {
         let mut db = self.db.clone();
         let name = "master";
 
-        if merchant::domain::merchant::Merchant::filter_by_name(name)
+        if merchant::Merchant::filter_by_name(name)
             .first()
             .exec(&mut db)
             .await?
@@ -59,7 +61,7 @@ impl DataSeeder {
             return Ok(());
         }
 
-        let _ = toasty::create!(merchant::domain::merchant::Merchant {
+        let _ = toasty::create!(merchant::Merchant {
             id: merchant_id,
             slug: create_slug(name),
             name: name.to_string(),
@@ -72,6 +74,54 @@ impl DataSeeder {
         })
         .exec(&mut db)
         .await?;
+
+        Ok(())
+    }
+
+    async fn seed_simulator_merchant(&self, merchant_id: Uuid) -> anyhow::Result<()> {
+        let mut db = self.db.clone();
+        let name = "simulator";
+
+        if merchant::Merchant::filter_by_name(name)
+            .first()
+            .exec(&mut db)
+            .await?
+            .is_some()
+        {
+            return Ok(());
+        }
+
+        let email = format!("{name}@gmail.com");
+
+        let _ = toasty::create!(merchant::Merchant {
+            id: merchant_id,
+            slug: create_slug(name),
+            name: name.to_string(),
+            email: &email,
+            phone: "+251994000000".to_string(),
+            website: "https://www.hulupay.com".to_string(),
+            is_active: true,
+            status: MerchantStatus::Active,
+            created_at: now_jiff(),
+        })
+            .exec(&mut db)
+            .await?;
+        let password_hash = auth::application::password::hash_password(name)?;
+
+        let _ = toasty::create!(auth::domain::user::User {
+                id: Uuid::now_v7(),
+                name: (*name).to_string(),
+                email,
+                password_hash,
+                merchant_id,
+                role: Role::Owner,
+                is_active: true,
+                status: AccountStatus::Active,
+                created_at: now_jiff(),
+            })
+            .exec(&mut db)
+            .await?;
+
 
         Ok(())
     }
@@ -124,6 +174,16 @@ impl DataSeeder {
     async fn seed_providers(&self) -> anyhow::Result<()> {
         let mut db = self.db.clone();
         let now = crate::util::now_jiff();
+
+        let _ = toasty::create!(PaymentProvider {
+            name: crate::domain::provider::Provider::Simulator.to_string(),
+            code: crate::domain::provider::Provider::Simulator.to_string(),
+            logo: "https://ethiopianlogos.com/logos/chapa/chapa.png".to_string(),
+            is_active: true,
+            created_at: now,
+        })
+            .exec(&mut db)
+            .await?;
 
         let _ = toasty::create!(PaymentProvider {
             name: crate::domain::provider::Provider::ArifPay.to_string(),

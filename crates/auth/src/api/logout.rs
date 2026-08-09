@@ -1,11 +1,12 @@
 use crate::api::state::AuthState;
 use crate::api::AuthUser;
-use crate::application::{LogoutRequest, UserContext};
+use crate::application::{LogoutRequest};
 use crate::domain::refresh_token::RefreshToken;
 use crate::domain::revoked_token::RevokedToken;
 use crate::util;
 use axum::{extract::State, http::StatusCode, Json};
 use chrono::Utc;
+use hulu_core::claims::UserContext;
 
 /// POST /auth/logout
 ///

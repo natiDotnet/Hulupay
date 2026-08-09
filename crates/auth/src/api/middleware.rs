@@ -1,9 +1,8 @@
 use crate::api::AuthUser;
-use crate::application::{AuthenticationType, TokenService, UserContext};
 use crate::domain::apikey::ApiKey;
 use crate::domain::permission::Permission;
 use crate::domain::revoked_token::RevokedToken;
-use crate::util;
+use crate::{util, TokenService};
 use crate::Role;
 use axum::body::Body;
 use axum::extract::{Request, State};
@@ -13,38 +12,89 @@ use axum::middleware;
 use axum::middleware::Next;
 use axum::response::Response;
 use std::sync::Arc;
+use tracing::debug;
 use utoipa_axum::router::OpenApiRouter;
+use hulu_core::claims::{AuthenticationType, UserContext};
 
-/// Authentication entry point.
+/// All header names that may carry a credential, in priority order.
 ///
-/// Resolves the caller's identity from the `Authorization` header:
-/// - `Bearer hp_...` → API key flow (lookup + hash verify)
-/// - `Bearer <jwt>`  → JWT flow (existing)
-/// - absent          → anonymous (allowed through; protected routes
-///                     will reject via the `authorization` layer)
+/// The standard `Authorization` header is checked first (JWT + `hp_` API
+/// keys). Then each provider's own API-key header is scanned — a request
+/// to `/v1/transaction/initialize` may arrive with `x-arifpay-key` or
+/// `x-simulation-key` instead of the Bearer scheme.
+const PROVIDER_APIKEY_HEADERS: &[&str] = &[
+    "x-arifpay-key",
+    "x-simulation-key",
+    "x-chapa-key",
+];
+
+/// Extract the first credential we can find from the request headers.
 ///
-/// On success, inserts `AuthUser(UserContext)` into request extensions.
-pub async fn authentication(mut req: Request<Body>, next: Next) -> Result<Response, StatusCode> {
-    // Clone the credential out of the header so we end the immutable
-    // borrow of `req` before the mutable borrows below.
-    let credential: Option<String> = req
+/// Checks, in order:
+/// 1. `Authorization: Bearer <token>` → JWT or `hp_` API key
+/// 2. Provider-specific headers (`x-arifpay-key`, `x-simulation-key`, etc.)
+///    → treated as raw API keys (may or may not have the `hp_` prefix)
+///
+/// Returns `None` when no credential is present (anonymous request).
+fn extract_credential(req: &Request<Body>) -> Option<String> {
+    // 1. Standard Authorization: Bearer <token>
+    if let Some(cred) = req
         .headers()
         .get(AUTHORIZATION)
         .and_then(|v| v.to_str().ok())
-        .and_then(|s| s.strip_prefix("Bearer ").map(|c| c.to_string()));
+        .and_then(|s| s.strip_prefix("Bearer ").map(|c| c.to_string()))
+    {
+        return Some(cred);
+    }
+
+    // 2. Provider-specific API-key headers
+    for header_name in PROVIDER_APIKEY_HEADERS {
+        if let Some(val) = req.headers().get(*header_name) {
+            if let Ok(s) = val.to_str() {
+                let trimmed = s
+                    .strip_prefix("Bearer ")
+                    .unwrap_or(s)
+                    .trim();
+                if !trimmed.is_empty() {
+                    return Some(trimmed.to_string());
+                }
+            }
+        }
+    }
+
+    None
+}
+
+/// Authentication entry point.
+///
+/// Resolves the caller's identity from any known credential header:
+/// - `Authorization: Bearer hp_...` or provider header → API key flow
+/// - `Authorization: Bearer <jwt>`                       → JWT flow
+/// - absent                                               → anonymous
+///
+/// On success, inserts `AuthUser(UserContext)` into request extensions.
+pub async fn authentication(mut req: Request<Body>, next: Next) -> Result<Response, StatusCode> {
+    let credential = extract_credential(&req);
 
     let Some(credential) = credential else {
         return Ok(next.run(req).await); // anonymous allowed
     };
 
     // ── Branch on credential type ───────────────────────────────
-    if credential.starts_with("hp_") {
+    if is_api_key(&credential) {
         authenticate_api_key(&mut req, &credential).await?;
     } else {
         authenticate_jwt(&mut req, &credential).await?;
     }
 
     Ok(next.run(req).await)
+}
+
+/// A credential is treated as an API key if it starts with `hp_` OR if it
+/// arrived via a provider-specific header (which we can detect by checking
+/// that it's not a valid JWT — JWTs contain dots, API keys don't).
+fn is_api_key(credential: &str) -> bool {
+    credential.starts_with("hp_") || !credential.contains('.')
 }
 
 /// Validate a JWT, check the revoked-token blocklist, and insert the
@@ -83,9 +133,9 @@ async fn authenticate_jwt(req: &mut Request<Body>, token: &str) -> Result<(), St
     Ok(())
 }
 
-/// Resolve an API key (`hp_...`) to an `AuthUser` and insert it.
+/// Resolve an API key to an `AuthUser` and insert it.
 ///
-/// 1. Extract the prefix (first 12 chars after `hp_`) and look up the row.
+/// 1. Extract the prefix (first 12 chars) and look up the row.
 /// 2. Verify the full key against the stored argon2 hash.
 /// 3. Check the key is active and not expired.
 /// 4. Build a `UserContext` from the key + its scopes.
@@ -97,11 +147,17 @@ async fn authenticate_api_key(req: &mut Request<Body>, raw_key: &str) -> Result<
         .cloned()
         .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    // Prefix is the first 12 chars after "hp_"
+    // Strip the `hp_` prefix if present — the stored prefix is always 12 chars
+    // of the key body (without the `hp_`).
+    // let key_body = raw_key.strip_prefix("hp_").unwrap_or(raw_key);
+
+    // Prefix is the first 12 chars of the key body.
     let prefix = raw_key
-        .get(3..15)
+        .get(..12)
         .ok_or(StatusCode::UNAUTHORIZED)?
         .to_string();
+    println!("{prefix}");
+    debug!(prefix = %prefix, "looking up API key");
 
     let mut query_db = db.clone();
     let mut row = ApiKey::filter(ApiKey::fields().prefix().eq(&prefix))
@@ -112,19 +168,19 @@ async fn authenticate_api_key(req: &mut Request<Body>, raw_key: &str) -> Result<
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::UNAUTHORIZED)?;
 
-    // Verify the full key against the stored hash
+    // Verify the full key against the stored hash.
     let valid = crate::application::password::verify_password(&row.hash, raw_key);
     if !valid {
         return Err(StatusCode::UNAUTHORIZED);
     }
 
-    // Check expiry
+    // Check expiry.
     let now = util::now_jiff();
     if row.expires_at <= now {
         return Err(StatusCode::UNAUTHORIZED);
     }
 
-    // Build the user context from the API key
+    // Build the user context from the API key.
     let permissions = row.scopes.clone();
     let key_id = row.id;
     let merchant_id = row.merchant_id;
@@ -137,12 +193,13 @@ async fn authenticate_api_key(req: &mut Request<Body>, raw_key: &str) -> Result<
         permissions,
         exp: 0,
         auth_type: AuthenticationType::ApiKey,
+        auth_value: Some(raw_key.to_string()),
         jti: uuid::Uuid::now_v7(),
         typ: Default::default(),
     };
     req.extensions_mut().insert(AuthUser(context));
 
-    // Fire-and-forget: update last_used_at
+    // Fire-and-forget: update last_used_at.
     tokio::spawn(async move {
         let mut db = db.clone();
         let _ = toasty::update!(row { last_used_at: util::now_jiff() })

@@ -38,6 +38,8 @@ pub struct UserContext {
     pub exp: usize,
     /// Whether this context came from a JWT or an API key.
     pub auth_type: AuthenticationType,
+    /// auth value token or API key
+    pub auth_value: Option<String>,
     /// JWT id — unique per token, used for logout revocation.
     #[serde(default)]
     pub jti: Uuid,

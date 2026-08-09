@@ -1,7 +1,7 @@
-use crate::api::request_context::RequestCtx;
 use crate::arifpay::arif_api_error::ArifpayApiErr;
 use crate::arifpay::payment_request::ArifpayPaymentRequest;
 use crate::arifpay::payment_response::{ArifInitializeData, ArifResponse};
+use auth::api::AuthUser;
 use axum::{Json, extract::State};
 use hulu_core::create_checkout::CreateCheckout;
 use hulu_core::payment_method::GatewayProvider;
@@ -17,13 +17,13 @@ use std::sync::Arc;
         (status = BAD_REQUEST, body = ArifResponse<serde_json::Value>))
 )]
 pub async fn arifpay_checkout_handler(
-    mut ctx: RequestCtx,
+    AuthUser(ctx): AuthUser,
     State(checkout): State<Arc<dyn CreateCheckout>>,
     Json(payload): Json<ArifpayPaymentRequest>,
 ) -> Result<Json<ArifResponse<ArifInitializeData>>, ArifpayApiErr> {
     let request: PaymentRequest = payload.try_into()?;
-    ctx.0.set_provider(GatewayProvider::Arifpay);
-    let provider = checkout.execute(&ctx.0, request).await?;
+    // ctx.0.set_provider(GatewayProvider::Arifpay);
+    let provider = checkout.execute(GatewayProvider::Arifpay, &ctx, request).await?;
 
     // let provider = ArifPayInitializeResponse {
     //     error: false,

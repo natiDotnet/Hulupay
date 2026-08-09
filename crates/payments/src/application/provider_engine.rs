@@ -6,6 +6,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use toasty::Db;
 use uuid::Uuid;
+use crate::application::gateways::simulator::{SimulationMode, SimulationProvider};
+use crate::domain::provider::Provider::Simulator;
 
 /// A routing engine that selects the appropriate payment provider based on provider name
 #[derive(Clone)]
@@ -27,7 +29,7 @@ impl ProviderEngine {
         &self,
         merchant_id: Option<Uuid>,
         name: Option<&domain::provider::Provider>,
-    ) -> Option<&Arc<dyn PaymentGateway>> {
+    ) -> Option<Arc<dyn PaymentGateway>> {
         let mut db = self.db.clone();
         let provider = match name {
             None => {
@@ -60,7 +62,9 @@ impl ProviderEngine {
             Some(provider) => provider.to_string(),
         };
 
-        self.providers.get(&provider)
+        self.providers.get(&provider).cloned().or_else(|| {
+            Some(Arc::new(SimulationProvider::new(SimulationMode::Success)))
+        })
     }
 
     /// Get a gateway implementation by the provider's UUID. Looks up the
@@ -76,7 +80,9 @@ impl ProviderEngine {
             .await
             .ok()
             .flatten()?;
-        self.providers.get(&row.name).cloned()
+        self.providers.get(&row.name).cloned().or_else(|| {
+            Some(Arc::new(SimulationProvider::new(SimulationMode::Success)))
+        })
     }
 
     /// Register (or replace) a gateway implementation under the given name.

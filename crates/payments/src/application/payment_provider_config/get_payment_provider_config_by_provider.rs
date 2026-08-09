@@ -4,10 +4,10 @@ use crate::domain::payment_provider::PaymentProvider;
 use crate::domain::{PaymentProviderConfig, provider};
 use crate::ProviderEngine;
 use anyhow::anyhow;
-use auth::UserContext;
 use chrono::Utc;
 use toasty::Db;
 use uuid::Uuid;
+use hulu_core::claims::UserContext;
 
 #[derive(Clone)]
 pub struct GetPaymentProviderConfigByProvider {

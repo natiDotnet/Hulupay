@@ -6,6 +6,7 @@ use hulu_core::request_context::RequestContext;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use hulu_core::claims::UserContext;
 
 /// Determines how the simulator responds to payment operations.
 ///
@@ -69,7 +70,7 @@ impl PaymentGateway for SimulationProvider {
 
     async fn checkout(
         &self,
-        _context: &RequestContext,
+        _context: &UserContext,
         request: &hulu_core::payment_request::PaymentRequest,
         _apikey_header: &str,
         _config: Value,

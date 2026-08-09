@@ -25,6 +25,8 @@ use std::sync::Arc;
 use toasty::Db;
 use tracing::debug;
 use uuid::Uuid;
+use hulu_core::claims::UserContext;
+use hulu_core::payment_method::GatewayProvider;
 
 #[derive(Clone)]
 pub struct CreateCheckoutHandler {
@@ -53,11 +55,12 @@ impl CreateCheckoutHandler {
 impl CreateCheckout for CreateCheckoutHandler {
     async fn execute(
         &self,
-        context: &RequestContext,
+        provider: GatewayProvider,
+        context: &UserContext,
         payload: PaymentRequest,
     ) -> Result<CheckoutResponse, HuluError> {
         debug!(?context, "Creating checkout");
-        let merchant = get_merchant(&self.db, self.cache.as_ref(), &context.merchant)
+        let merchant = get_merchant(&self.db, self.cache.as_ref(), context.merchant_id)
             .await
             .ok_or(PaymentGatewayError::MerchantNotFound)?;
 
@@ -67,7 +70,7 @@ impl CreateCheckout for CreateCheckoutHandler {
             .resolve(merchant.id, &payload)
             .await
             .map_err(|_| HuluError::ProviderNotFound)?;
-
+        println!("{provider_ids:?}");
         // Build (gateway, merchant_config) pairs for each resolved provider, preserving order.
         // Fetch all valid configs for these providers (replaces inner_join).
         let mut all_configs = Vec::new();
@@ -88,23 +91,26 @@ impl CreateCheckout for CreateCheckoutHandler {
         // 2. Map them to your gateways
         let mut candidates = Vec::new();
         for cfg in all_configs {
+            println!("{}", cfg.provider_id);
             if let Some(gateway) = self.payment_engine.get_provider_by_id(cfg.provider_id).await {
+                println!("{}", gateway.get_name());
+                
                 candidates.push((gateway, cfg));
             }
         }
-        let (provider, merchant_config) = candidates
+        let (gateway_provider, merchant_config) = candidates
             .into_iter()
             .next()
             .ok_or(HuluError::ProviderNotFound)?;
 
         let request_provider = self
             .payment_engine
-            .get_provider(None, Some(&context.provider.into()))
+            .get_provider(None, Some(&provider.into()))
             .await
             .ok_or(HuluError::ProviderNotFound)?;
 
         let apikey_header = request_provider.get_apikey_name();
-        let result = provider
+        let result = gateway_provider
             .checkout(context, &payload, apikey_header, merchant_config.config)
             .await;
 
@@ -119,7 +125,7 @@ impl CreateCheckout for CreateCheckoutHandler {
         let order = toasty::create!(PaymentOrder {
             merchant_id: merchant.id,
             customer_id: Uuid::now_v7(),
-            request_provider: crate::domain::provider::Provider::from(context.provider),
+            request_provider: Provider::from(provider),
             order_ref: payload.payment.reference.clone(),
             amount: payload.payment.amount,
             currency: payload.payment.currency.clone(),

@@ -12,7 +12,7 @@ pub struct PaymentOrder {
     pub customer_id: Uuid,
     #[unique]
     pub order_ref: String,
-    #[column(type = "text")]
+    // #[column(type = "text")]
     pub amount: Decimal,
     pub currency: String,
     pub status: PaymentStatus,

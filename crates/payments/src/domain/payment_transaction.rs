@@ -14,7 +14,7 @@ pub struct PaymentTransaction {
     /// None when the provider call never reached the provider (local timeout)
     pub provider_tx_id: Option<String>,
     pub direction: TxDirection,
-    #[column(type = "text")]
+    // #[column(type = "text")]
     pub amount: Decimal,
     pub currency: String,
     pub status: TxStatus,

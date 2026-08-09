@@ -2,7 +2,7 @@ use crate::application::CreatePaymentProvider;
 use crate::application::payment_provider::create_payment_provider::CreatePaymentProviderRequest;
 use axum::{Json, extract::State, http::StatusCode};
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use utoipa::ToSchema;
 
 #[utoipa::path(

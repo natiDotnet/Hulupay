@@ -46,6 +46,7 @@ impl CreateApiKey {
             prefix,
             hash,
             scopes: request.scopes,
+            is_active: true,
             expires_at: util::to_jiff(request.expires_at),
             created_at: util::now_jiff(),
         })

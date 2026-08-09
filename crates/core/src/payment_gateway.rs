@@ -1,7 +1,7 @@
+use crate::claims::UserContext;
 use crate::gateway_response::VerifyResponse;
 use crate::payment_gateway_error::PaymentGatewayError;
 use crate::payment_method::{GatewayProvider, PaymentMethod};
-use crate::request_context::RequestContext;
 use async_trait::async_trait;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
@@ -40,7 +40,7 @@ pub trait PaymentGateway: Send + Sync {
     fn get_apikey_name(&self) -> &'static str;
     async fn checkout(
         &self,
-        context: &RequestContext,
+        context: &UserContext,
         request: &crate::payment_request::PaymentRequest,
         apikey_header: &str,
         config: serde_json::Value,

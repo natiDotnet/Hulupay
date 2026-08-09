@@ -13,6 +13,7 @@ use hulu_core::hulu_error::HuluError;
 use hulu_core::payment_gateway_error::PaymentGatewayError;
 use std::sync::Arc;
 use toasty::Db;
+use uuid::Uuid;
 
 pub struct VerifyPaymentHandler {
     db: Db,
@@ -35,7 +36,7 @@ impl VerifyPaymentHandler {
 }
 #[async_trait]
 impl VerifyPayment for VerifyPaymentHandler {
-    async fn execute(&self, merchant: &str, reference: &str) -> Result<VerifyResponse, HuluError> {
+    async fn execute(&self, merchant: Uuid, reference: &str) -> Result<VerifyResponse, HuluError> {
         let mut db = self.db.clone();
         let merchant = get_merchant(&self.db, self.cache.as_ref(), merchant)
             .await

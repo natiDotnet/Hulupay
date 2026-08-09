@@ -277,12 +277,15 @@ pub fn router(db: &toasty::Db) -> OpenApiRouter {
                 .merge(master_admin_routes)
                 .merge(merchant_admin_routes)
                 .merge(authenticated_payment_routes)
+                .merge(crate::chapa::chapa_routes::chapa_routes())
+                .merge(crate::arifpay::arifpay_route::arifpay_routes())
                 .layer(axum::middleware::from_fn(auth::api::authentication))
                 .layer(axum::Extension(get_token_service().clone()))
+                .layer(axum::Extension(db.clone()))
                 .merge(public_routes),
         )
-        .merge(crate::chapa::chapa_routes::chapa_routes())
-        .merge(crate::arifpay::arifpay_route::arifpay_routes())
+        // .merge(crate::chapa::chapa_routes::chapa_routes())
+        // .merge(crate::arifpay::arifpay_route::arifpay_routes())
         .with_state(state)
 }
 

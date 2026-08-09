@@ -11,8 +11,8 @@ pub struct PaymentItem {
     pub description: String,
     pub quantity: u32,
     pub image: Option<String>,
-    #[column(type = "text")]
+    // #[column(type = "text")]
     pub unit_price: Decimal,
-    #[column(type = "text")]
+    // #[column(type = "text")]
     pub total_price: Decimal,
 }

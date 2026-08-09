@@ -13,9 +13,9 @@ pub struct MerchantWebhook {
     pub status: PaymentStatus,
     pub provider_reference: String,
     pub payment_method: PaymentMethod,
-    #[column(type = "text")]
+    // #[column(type = "text")]
     pub amount: Decimal,
-    #[column(type = "text")]
+    // #[column(type = "text")]
     pub charge: Decimal,
     pub client_reference: String,
     pub txn_reference: String,

@@ -1,7 +1,7 @@
-use crate::application::UserContext;
 use crate::domain::AuthError;
 use async_trait::async_trait;
 use uuid::Uuid;
+use hulu_core::claims::UserContext;
 
 #[async_trait]
 pub trait TokenService: Send + Sync {

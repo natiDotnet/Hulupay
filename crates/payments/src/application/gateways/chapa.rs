@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::sync::Arc;
 use toasty::Db;
+use hulu_core::claims::UserContext;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChapaConfig {
@@ -69,7 +70,7 @@ impl PaymentGateway for ChapaProvider {
 
     async fn checkout(
         &self,
-        _context: &RequestContext,
+        _context: &UserContext,
         _request: &PaymentRequest,
         _apikey_header: &str,
         _config: Value,

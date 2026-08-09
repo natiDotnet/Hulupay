@@ -15,7 +15,11 @@ use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::sync::Arc;
+use axum::http::StatusCode;
 use toasty::Db;
+use auth::domain::apikey;
+use auth::domain::apikey::ApiKey;
+use hulu_core::claims::UserContext;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ArifPayConfig {
@@ -76,7 +80,7 @@ impl PaymentGateway for ArifPayProvider {
 
     async fn checkout(
         &self,
-        context: &RequestContext,
+        context: &UserContext,
         request: &hulu_core::payment_request::PaymentRequest,
         apikey_header: &str,
         config: serde_json::Value,
@@ -87,8 +91,8 @@ impl PaymentGateway for ArifPayProvider {
             serde_json::from_value(config).map_err(|_| PaymentGatewayError::ProviderNotFound)?;
 
         let apikey = context
-            .headers
-            .get(apikey_header)
+            .auth_value
+            .as_ref()
             .and_then(|value| value.strip_prefix("Bearer "))
             .unwrap_or(&arif_config.api_key);
 

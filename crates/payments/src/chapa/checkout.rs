@@ -1,7 +1,7 @@
-use crate::api::request_context::RequestCtx;
 use crate::chapa::chapa_api_error::ChapaApiErr;
 use crate::chapa::checkout_request::ChapaInitializeRequest;
 use crate::chapa::checkout_response::{ChapaCheckoutResponse, ChapaResponse};
+use auth::api::AuthUser;
 use axum::Json;
 use axum::extract::State;
 use hulu_core::create_checkout::CreateCheckout;
@@ -19,13 +19,13 @@ use std::sync::Arc;
         (status = BAD_REQUEST, body = ChapaResponse<serde_json::Value>))
 )]
 pub async fn chapa_checkout_handler(
-    mut ctx: RequestCtx,
+    AuthUser(ctx): AuthUser,
     State(checkout): State<Arc<dyn CreateCheckout>>,
     Json(payload): Json<ChapaInitializeRequest>,
 ) -> Result<Json<ChapaResponse<ChapaCheckoutResponse>>, ChapaApiErr> {
-    ctx.0.set_provider(GatewayProvider::Chapa);
+    // ctx.0.set_provider(GatewayProvider::Chapa);
     let request: PaymentRequest = payload.into();
-    let response = checkout.execute(&ctx.0, request).await?;
+    let response = checkout.execute(GatewayProvider::Chapa, &ctx, request).await?;
 
     Ok(Json(response.into()))
 }

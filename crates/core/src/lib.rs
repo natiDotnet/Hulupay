@@ -9,6 +9,7 @@ pub mod payment_gateway_error;
 pub mod payment_method;
 pub mod payment_request;
 pub mod request_context;
+pub mod claims;
 
 // A simple, robust slugify function
 pub fn create_slug(name: &str) -> String {

@@ -11,6 +11,7 @@ use hulu_core::gateway_response::VerifyResponse;
 use hulu_core::hulu_error::HuluError;
 use std::sync::Arc;
 use toasty::Db;
+use auth::api::AuthUser;
 
 #[utoipa::path(
     get,
@@ -21,11 +22,12 @@ use toasty::Db;
 )]
 #[debug_handler(state = PaymentsState)]
 pub async fn chapa_verify_handler(
+    AuthUser(ctx): AuthUser,
     State(verify): State<Arc<dyn VerifyPayment>>,
     State(db): State<Db>,
     Path(tx_ref): Path<String>,
 ) -> Result<Json<ChapaResponse<ChapaVerifyResponse>>, ChapaApiErr> {
-    let provider = verify.execute("master", &tx_ref).await?;
+    let provider = verify.execute(ctx.merchant_id, &tx_ref).await?;
 
     let response = handle_chapa_verify(provider, &db).await?;
     Ok(Json(response))
