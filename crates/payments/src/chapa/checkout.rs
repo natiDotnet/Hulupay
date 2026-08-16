@@ -24,7 +24,9 @@ pub async fn chapa_checkout_handler(
     Json(payload): Json<ChapaInitializeRequest>,
 ) -> Result<Json<ChapaResponse<ChapaCheckoutResponse>>, ChapaApiErr> {
     // ctx.0.set_provider(GatewayProvider::Chapa);
-    let request: PaymentRequest = payload.into();
+    // Chapa-compatible validation: single-error responses that mirror the
+    // upstream API exactly (field-keyed or plain-string message shapes).
+    let request: PaymentRequest = payload.validate()?.into();
     let response = checkout.execute(GatewayProvider::Chapa, &ctx, request).await?;
 
     Ok(Json(response.into()))
