@@ -3,8 +3,8 @@ use crate::application::merchants::get_merchant::get_merchant;
 use crate::domain::merchant_config::MerchantConfig;
 use crate::domain::payment_order::PaymentOrder;
 use crate::domain::payment_provider::PaymentProvider;
-use crate::domain::payment_transaction::PaymentTransaction;
 use crate::domain::payment_status::{PaymentStatus, TxStatus};
+use crate::domain::payment_transaction::PaymentTransaction;
 use crate::{ProviderEngine, domain};
 use async_trait::async_trait;
 use hulu_core::create_checkout::VerifyPayment;
@@ -22,11 +22,7 @@ pub struct VerifyPaymentHandler {
 }
 
 impl VerifyPaymentHandler {
-    pub fn new(
-        db: Db,
-        cache: Arc<dyn CacheService>,
-        payment_engine: ProviderEngine,
-    ) -> Self {
+    pub fn new(db: Db, cache: Arc<dyn CacheService>, payment_engine: ProviderEngine) -> Self {
         Self {
             db,
             cache,
@@ -50,7 +46,9 @@ impl VerifyPayment for VerifyPaymentHandler {
 
         // Resolve provider row by code, then find merchant's active config.
         let provider_row = PaymentProvider::filter(
-            PaymentProvider::fields().code().eq(provider.get_name().to_string()),
+            PaymentProvider::fields()
+                .code()
+                .eq(provider.get_name().to_string()),
         )
         .first()
         .exec(&mut db)
@@ -75,7 +73,9 @@ impl VerifyPayment for VerifyPaymentHandler {
 
         // Find transaction by provider_tx_id, then load order separately.
         let mut transaction = PaymentTransaction::filter(
-            PaymentTransaction::fields().provider_tx_id().eq(reference.to_string()),
+            PaymentTransaction::fields()
+                .provider_tx_id()
+                .eq(reference.to_string()),
         )
         .first()
         .exec(&mut db)
@@ -100,12 +100,10 @@ impl VerifyPayment for VerifyPaymentHandler {
         .await
         .map_err(|_| PaymentGatewayError::InternalServerError)?;
 
-        toasty::update!(transaction {
-            status: tx_status,
-        })
-        .exec(&mut db)
-        .await
-        .map_err(|_| PaymentGatewayError::InternalServerError)?;
+        toasty::update!(transaction { status: tx_status })
+            .exec(&mut db)
+            .await
+            .map_err(|_| PaymentGatewayError::InternalServerError)?;
 
         Ok(result)
     }

@@ -1,8 +1,8 @@
 use crate::application::payment_gateway::WebhookHandler;
-use crate::domain::payment_status::{PaymentStatus, TxStatus};
-use crate::domain::{ArifPayment, ArifTransactionStatus};
 use crate::domain::payment_order::PaymentOrder;
+use crate::domain::payment_status::{PaymentStatus, TxStatus};
 use crate::domain::payment_transaction::PaymentTransaction;
+use crate::domain::{ArifPayment, ArifTransactionStatus};
 use async_trait::async_trait;
 use hulu_core::payment_gateway_error::PaymentGatewayError;
 use serde_json::Value;
@@ -55,7 +55,9 @@ impl WebhookHandler for ArifWebhook {
         let mut db = self.db.clone();
 
         let mut order = PaymentOrder::filter(
-            PaymentOrder::fields().idempotency_key().eq(webhook.nonce.clone()),
+            PaymentOrder::fields()
+                .idempotency_key()
+                .eq(webhook.nonce.clone()),
         )
         .first()
         .exec(&mut db)

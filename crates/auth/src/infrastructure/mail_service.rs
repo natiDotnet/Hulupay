@@ -1,7 +1,7 @@
 use anyhow::Context;
 use async_trait::async_trait;
-use lettre::message::header::ContentType;
 use lettre::message::Mailbox;
+use lettre::message::header::ContentType;
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
 use tracing;
@@ -32,16 +32,15 @@ pub struct SmtpMailService {
 
 impl SmtpMailService {
     pub fn from_env() -> anyhow::Result<Self> {
-        let host = std::env::var("SMTP_HOST")
-            .context("SMTP_HOST must be set to send email")?;
+        let host = std::env::var("SMTP_HOST").context("SMTP_HOST must be set to send email")?;
         let port: u16 = std::env::var("SMTP_PORT")
-            .ok() 
+            .ok()
             .and_then(|p| p.parse().ok())
             .unwrap_or(587);
-        let username = std::env::var("SMTP_USERNAME")
-            .context("SMTP_USERNAME must be set to send email")?;
-        let password = std::env::var("SMTP_PASSWORD")
-            .context("SMTP_PASSWORD must be set to send email")?;
+        let username =
+            std::env::var("SMTP_USERNAME").context("SMTP_USERNAME must be set to send email")?;
+        let password =
+            std::env::var("SMTP_PASSWORD").context("SMTP_PASSWORD must be set to send email")?;
 
         let from_str = std::env::var("SMTP_FROM")
             .unwrap_or_else(|_| "HuluPay <no-reply@hulupay.com>".to_string());
@@ -49,8 +48,8 @@ impl SmtpMailService {
             .parse()
             .context("SMTP_FROM is not a valid mailbox")?;
 
-        let base_url = std::env::var("APP_BASE_URL")
-            .unwrap_or_else(|_| "http://localhost:3000".to_string());
+        let base_url =
+            std::env::var("APP_BASE_URL").unwrap_or_else(|_| "http://localhost:3000".to_string());
 
         let transport = AsyncSmtpTransport::<Tokio1Executor>::relay("smtp.gmail.com")?
             // .port(port)

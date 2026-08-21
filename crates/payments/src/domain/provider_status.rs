@@ -4,7 +4,17 @@ use utoipa::ToSchema;
 
 /// The live health state of a provider. `Offline` providers are never routed to.
 #[derive(
-    Debug, Clone, Display, EnumString, Default, Deserialize, Serialize, Eq, PartialEq, ToSchema, toasty::Embed,
+    Debug,
+    Clone,
+    Display,
+    EnumString,
+    Default,
+    Deserialize,
+    Serialize,
+    Eq,
+    PartialEq,
+    ToSchema,
+    toasty::Embed,
 )]
 #[column(rename_all = "UPPERCASE")]
 #[strum(serialize_all = "UPPERCASE")]

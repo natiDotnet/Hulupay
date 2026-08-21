@@ -185,39 +185,60 @@ impl UpdateRoutingRule {
 
         // Apply conditional updates via a single toasty::update! per field.
         if let Some(v) = req.priority {
-            toasty::update!(existing { priority: v, updated_at: crate::util::now_jiff() })
-                .exec(&mut db)
-                .await?;
+            toasty::update!(existing {
+                priority: v,
+                updated_at: crate::util::now_jiff()
+            })
+            .exec(&mut db)
+            .await?;
         }
         if let Some(v) = req.enabled {
-            toasty::update!(existing { enabled: v, updated_at: crate::util::now_jiff() })
-                .exec(&mut db)
-                .await?;
+            toasty::update!(existing {
+                enabled: v,
+                updated_at: crate::util::now_jiff()
+            })
+            .exec(&mut db)
+            .await?;
         }
         if let Some(v) = req.condition_type {
-            toasty::update!(existing { condition_type: v, updated_at: crate::util::now_jiff() })
-                .exec(&mut db)
-                .await?;
+            toasty::update!(existing {
+                condition_type: v,
+                updated_at: crate::util::now_jiff()
+            })
+            .exec(&mut db)
+            .await?;
         }
         if let Some(v) = req.operator {
-            toasty::update!(existing { operator: v, updated_at: crate::util::now_jiff() })
-                .exec(&mut db)
-                .await?;
+            toasty::update!(existing {
+                operator: v,
+                updated_at: crate::util::now_jiff()
+            })
+            .exec(&mut db)
+            .await?;
         }
         if let Some(v) = req.condition_value {
-            toasty::update!(existing { condition_value: v, updated_at: crate::util::now_jiff() })
-                .exec(&mut db)
-                .await?;
+            toasty::update!(existing {
+                condition_value: v,
+                updated_at: crate::util::now_jiff()
+            })
+            .exec(&mut db)
+            .await?;
         }
         if let Some(v) = req.target_provider_id {
-            toasty::update!(existing { target_provider_id: v, updated_at: crate::util::now_jiff() })
-                .exec(&mut db)
-                .await?;
+            toasty::update!(existing {
+                target_provider_id: v,
+                updated_at: crate::util::now_jiff()
+            })
+            .exec(&mut db)
+            .await?;
         }
         if let Some(v) = req.fallback_provider_id {
-            toasty::update!(existing { fallback_provider_id: v, updated_at: crate::util::now_jiff() })
-                .exec(&mut db)
-                .await?;
+            toasty::update!(existing {
+                fallback_provider_id: v,
+                updated_at: crate::util::now_jiff()
+            })
+            .exec(&mut db)
+            .await?;
         }
 
         // Reload the updated row to return the latest state.

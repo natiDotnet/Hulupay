@@ -26,12 +26,16 @@ impl CreateApiKey {
         let mut db = self.db.clone();
 
         // Verify merchant exists
-        match Merchant::filter_by_id(merchant_id).first().exec(&mut db).await {
+        match Merchant::filter_by_id(merchant_id)
+            .first()
+            .exec(&mut db)
+            .await
+        {
             Ok(Some(_)) => {}
             Ok(None) => {
                 return Err(ApplicationError::NotFound(
                     "Merchant not found with given id".to_string(),
-                ))
+                ));
             }
             Err(e) => return Err(ApplicationError::Internal(anyhow!(e))),
         };

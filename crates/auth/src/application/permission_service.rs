@@ -1,5 +1,5 @@
-use crate::domain::permission::Permission;
 use crate::Role;
+use crate::domain::permission::Permission;
 use crate::domain::role_permission::RolePermission;
 
 /// Service responsible for resolving permissions from roles and
@@ -18,20 +18,14 @@ impl PermissionService {
     ///
     /// Queries the `role_permissions` table. Returns an empty set if
     /// the role has no mappings (e.g. a custom role not yet seeded).
-    pub async fn get_permissions_for_role(
-        &self,
-        role: &Role,
-    ) -> Vec<String> {
+    pub async fn get_permissions_for_role(&self, role: &Role) -> Vec<String> {
         let role_name = role_to_name(role);
         self.get_permissions_for_role_str(&role_name).await
     }
 
     /// Same as `get_permissions_for_role` but accepts a raw role name string
     /// (e.g. from a JWT claim).
-    pub async fn get_permissions_for_role_str(
-        &self,
-        role_name: &str,
-    ) -> Vec<String> {
+    pub async fn get_permissions_for_role_str(&self, role_name: &str) -> Vec<String> {
         let mut db = self.db.clone();
         let rows = RolePermission::filter(RolePermission::fields().role_name().eq(role_name))
             .exec(&mut db)
@@ -62,12 +56,11 @@ impl PermissionService {
             let mut db = self.db.clone();
 
             // Delete existing mappings for this role
-            if let Err(e) = RolePermission::filter(
-                RolePermission::fields().role_name().eq(&role_name),
-            )
-            .delete()
-            .exec(&mut db)
-            .await
+            if let Err(e) =
+                RolePermission::filter(RolePermission::fields().role_name().eq(&role_name))
+                    .delete()
+                    .exec(&mut db)
+                    .await
             {
                 tracing::warn!(
                     role = %role_name,

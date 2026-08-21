@@ -12,10 +12,12 @@ use crate::domain::payments::payment_item::PaymentItem;
 use crate::domain::provider::Provider;
 use crate::{ProviderEngine, domain};
 use async_trait::async_trait;
+use hulu_core::claims::UserContext;
 use hulu_core::create_checkout::CreateCheckout;
 use hulu_core::gateway_response::CheckoutResponse;
 use hulu_core::hulu_error::HuluError;
 use hulu_core::payment_gateway_error::PaymentGatewayError;
+use hulu_core::payment_method::GatewayProvider;
 use hulu_core::payment_request;
 use hulu_core::request_context::RequestContext;
 use payment_request::PaymentRequest;
@@ -25,8 +27,6 @@ use std::sync::Arc;
 use toasty::Db;
 use tracing::debug;
 use uuid::Uuid;
-use hulu_core::claims::UserContext;
-use hulu_core::payment_method::GatewayProvider;
 
 #[derive(Clone)]
 pub struct CreateCheckoutHandler {
@@ -92,9 +92,13 @@ impl CreateCheckout for CreateCheckoutHandler {
         let mut candidates = Vec::new();
         for cfg in all_configs {
             println!("{}", cfg.provider_id);
-            if let Some(gateway) = self.payment_engine.get_provider_by_id(cfg.provider_id).await {
+            if let Some(gateway) = self
+                .payment_engine
+                .get_provider_by_id(cfg.provider_id)
+                .await
+            {
                 println!("{}", gateway.get_name());
-                
+
                 candidates.push((gateway, cfg));
             }
         }

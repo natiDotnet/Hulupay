@@ -20,11 +20,7 @@ impl DeleteApiKey {
         // Verify existence first
         match ApiKey::filter_by_id(id).first().exec(&mut db).await {
             Ok(Some(_)) => {}
-            Ok(None) => {
-                return Err(ApplicationError::NotFound(
-                    "Api key not found".to_string(),
-                ))
-            }
+            Ok(None) => return Err(ApplicationError::NotFound("Api key not found".to_string())),
             Err(e) => return Err(ApplicationError::Internal(anyhow!(e))),
         };
 

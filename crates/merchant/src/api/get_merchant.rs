@@ -1,9 +1,9 @@
-use crate::application::{ApplicationError, GetMerchant};
 use crate::MerchantResponse;
+use crate::application::{ApplicationError, GetMerchant};
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
-    Json,
 };
 use uuid::Uuid;
 

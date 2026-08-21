@@ -12,8 +12,8 @@ pub mod payment_gateway;
 pub mod payment_provider;
 pub mod payment_provider_config;
 mod provider_engine;
-pub mod routing;
 mod repository;
+pub mod routing;
 mod transaction_repository;
 
 pub use arif_webhook::ArifWebhook;

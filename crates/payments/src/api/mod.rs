@@ -26,18 +26,16 @@ use crate::application::checkout::create_checkout::CreateCheckoutHandler;
 use crate::application::checkout::payment_webhook::PaymentWebhookHandler;
 use crate::application::checkout::verify_payment::VerifyPaymentHandler;
 use crate::application::gateways::chapa::ChapaProvider;
+use crate::application::routing::routing_rules::{
+    CreateRoutingRule, DeleteRoutingRule, ListRoutingRules, UpdateRoutingRule,
+};
+use crate::application::routing::routing_strategy::{GetRoutingStrategy, UpsertRoutingStrategy};
 use crate::application::{
     ArifWebhook, CreatePaymentProvider, CreatePaymentProviderConfig, DeletePaymentProvider,
     DeletePaymentProviderConfig, GetPaymentProvider, GetPaymentProviderConfig,
     GetPaymentProviderConfigByProvider, HandleProviderWebhook, ListMerchantWebhooks,
     ListPaymentProviderConfigs, ListPaymentProviders, ProviderEngine, RoutingEngine,
     UpdatePaymentProvider, UpdatePaymentProviderConfig, WebhookHandler,
-};
-use crate::application::routing::routing_rules::{
-    CreateRoutingRule, DeleteRoutingRule, ListRoutingRules, UpdateRoutingRule,
-};
-use crate::application::routing::routing_strategy::{
-    GetRoutingStrategy, UpsertRoutingStrategy,
 };
 use crate::arifpay::arifpay_service::ArifpayService;
 use crate::chapa::chapa_service::ChapaService;
@@ -226,7 +224,9 @@ pub fn router(db: &toasty::Db) -> OpenApiRouter {
             create_payment_provider_config::create_payment_provider_config_handler,
             list_payment_provider_configs::list_payment_provider_configs_handler,
         ))
-        .routes(routes!(list_merchant_webhooks::list_merchant_webhooks_handler,))
+        .routes(routes!(
+            list_merchant_webhooks::list_merchant_webhooks_handler,
+        ))
         .routes(routes!(
             get_payment_provider_config::get_payment_provider_config_handler,
             update_payment_provider_config::update_payment_provider_config_handler,

@@ -1,9 +1,9 @@
 use crate::application::TokenService;
 use crate::domain::AuthError;
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use hulu_core::claims::{AuthenticationType, TokenType, UserContext};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
-use hulu_core::claims::{AuthenticationType, TokenType, UserContext};
 
 #[derive(Clone)]
 pub struct JwtTokenService {

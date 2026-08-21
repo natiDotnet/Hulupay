@@ -27,7 +27,9 @@ pub async fn chapa_checkout_handler(
     // Chapa-compatible validation: single-error responses that mirror the
     // upstream API exactly (field-keyed or plain-string message shapes).
     let request: PaymentRequest = payload.validate()?.into();
-    let response = checkout.execute(GatewayProvider::Chapa, &ctx, request).await?;
+    let response = checkout
+        .execute(GatewayProvider::Chapa, &ctx, request)
+        .await?;
 
     Ok(Json(response.into()))
 }

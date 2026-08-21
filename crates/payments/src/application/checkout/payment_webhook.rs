@@ -7,8 +7,8 @@ use crate::domain::provider::Provider;
 use hulu_core::hulu_error::HuluError;
 use hulu_core::payment_gateway::{WebhookInfo, WebhookStatus};
 use hulu_core::request_context::RequestContext;
-use tracing::debug;
 use toasty::Db;
+use tracing::debug;
 
 #[derive(Clone)]
 pub struct PaymentWebhookHandler {
@@ -42,7 +42,9 @@ impl PaymentWebhookHandler {
         debug!(?webhook_info, "webhook info");
 
         let mut order = PaymentOrder::filter(
-            PaymentOrder::fields().order_ref().eq(webhook_info.client_reference.clone()),
+            PaymentOrder::fields()
+                .order_ref()
+                .eq(webhook_info.client_reference.clone()),
         )
         .first()
         .exec(&mut db)
@@ -95,8 +97,7 @@ impl PaymentWebhookHandler {
         self.callback(order.id, &order.request_provider, &webhook_info)
             .await?;
 
-        let order_status: crate::domain::payment_status::PaymentStatus =
-            webhook_info.status.into();
+        let order_status: crate::domain::payment_status::PaymentStatus = webhook_info.status.into();
         toasty::update!(order {
             status: order_status,
         })

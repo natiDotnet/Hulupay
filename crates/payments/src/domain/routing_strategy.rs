@@ -4,7 +4,17 @@ use utoipa::ToSchema;
 
 /// The high-level strategy a merchant uses to pick a provider.
 #[derive(
-    Debug, Clone, Display, EnumString, Default, Deserialize, Serialize, Eq, PartialEq, ToSchema, toasty::Embed,
+    Debug,
+    Clone,
+    Display,
+    EnumString,
+    Default,
+    Deserialize,
+    Serialize,
+    Eq,
+    PartialEq,
+    ToSchema,
+    toasty::Embed,
 )]
 #[column(rename_all = "UPPERCASE")]
 #[strum(serialize_all = "UPPERCASE")]

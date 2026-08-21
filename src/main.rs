@@ -10,8 +10,7 @@ use tracing_subscriber::{EnvFilter, fmt};
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     dotenv().ok();
-    let db_url = env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be set in the .env file");
+    let db_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set in the .env file");
 
     tracing_subscriber::registry()
         .with(EnvFilter::from_default_env())

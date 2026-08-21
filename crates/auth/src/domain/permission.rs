@@ -166,20 +166,36 @@ mod tests {
         // The full set of dot-notation strings — as_str() must match the
         // FromStr discriminants exactly or JWT/API-key permission checks break.
         let all = [
-            "merchant.read", "merchant.update", "merchant.delete",
-            "payment.create", "payment.read", "payment.refund", "payment.export",
-            "provider.read", "provider.update", "provider.delete",
-            "routing.read", "routing.update",
-            "apikey.create", "apikey.rotate", "apikey.delete", "apikey.read",
-            "webhook.read", "webhook.update",
-            "users.read", "users.invite", "users.delete",
+            "merchant.read",
+            "merchant.update",
+            "merchant.delete",
+            "payment.create",
+            "payment.read",
+            "payment.refund",
+            "payment.export",
+            "provider.read",
+            "provider.update",
+            "provider.delete",
+            "routing.read",
+            "routing.update",
+            "apikey.create",
+            "apikey.rotate",
+            "apikey.delete",
+            "apikey.read",
+            "webhook.read",
+            "webhook.update",
+            "users.read",
+            "users.invite",
+            "users.delete",
             "audit.read",
-            "platform.manage", "platform.suspend", "platform.analytics",
+            "platform.manage",
+            "platform.suspend",
+            "platform.analytics",
         ];
 
         for s in all {
-            let perm = Permission::from_str(s)
-                .unwrap_or_else(|e| panic!("failed to parse {s}: {e}"));
+            let perm =
+                Permission::from_str(s).unwrap_or_else(|e| panic!("failed to parse {s}: {e}"));
             assert_eq!(perm.as_str(), s, "as_str mismatch for {s}");
             assert_eq!(perm.to_string(), s, "Display mismatch for {s}");
         }

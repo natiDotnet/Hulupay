@@ -1,17 +1,17 @@
-use axum::routing::get;
 use axum::Router;
+use axum::routing::get;
 use std::env;
 use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
-use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
 use utoipa::OpenApi;
+use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_scalar::{Scalar, Servable};
 
 // Feature crate routers
 use auth;
-use auth::{JwtTokenService, TokenService};
 use auth::api::get_token_service;
+use auth::{JwtTokenService, TokenService};
 use merchant;
 use payments;
 
@@ -19,9 +19,7 @@ use payments;
 #[openapi(info(title = "My API", version = "1.0", description = "An example API"))]
 pub struct ApiDoc;
 
-
 pub fn api_routes(toasty_db: &toasty::Db) -> Router {
-
     let token_service = get_token_service();
     let mut open_api = ApiDoc::openapi();
     open_api
@@ -63,8 +61,7 @@ pub fn api_routes(toasty_db: &toasty::Db) -> Router {
         .layer(axum::Extension(toasty_db.clone()))
         .split_for_parts();
 
-    app
-        .merge(Scalar::with_url("/scalar", doc.clone()))
+    app.merge(Scalar::with_url("/scalar", doc.clone()))
         .layer(cors)
 }
 

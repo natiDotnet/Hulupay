@@ -1,10 +1,10 @@
-use crate::api::state::AuthState;
 use crate::api::AuthUser;
-use crate::application::{LogoutRequest};
+use crate::api::state::AuthState;
+use crate::application::LogoutRequest;
 use crate::domain::refresh_token::RefreshToken;
 use crate::domain::revoked_token::RevokedToken;
 use crate::util;
-use axum::{extract::State, http::StatusCode, Json};
+use axum::{Json, extract::State, http::StatusCode};
 use chrono::Utc;
 use hulu_core::claims::UserContext;
 
@@ -59,9 +59,7 @@ pub async fn logout_handler(
 
             let now = util::now_jiff();
             for mut row in rows {
-                let _ = toasty::update!(row { revoked_at: now })
-                    .exec(&mut db)
-                    .await;
+                let _ = toasty::update!(row { revoked_at: now }).exec(&mut db).await;
             }
         }
     }

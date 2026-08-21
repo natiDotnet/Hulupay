@@ -1,11 +1,11 @@
 use crate::domain::payment_provider::PaymentProvider;
+use crate::util::now_jiff;
 use auth::Role;
 use auth::domain::status::AccountStatus;
 use hulu_core::create_slug;
 use merchant::domain::merchant_status::MerchantStatus;
 use toasty::Db;
 use uuid::Uuid;
-use crate::util::now_jiff;
 
 pub struct DataSeeder {
     db: Db,
@@ -104,24 +104,23 @@ impl DataSeeder {
             status: MerchantStatus::Active,
             created_at: now_jiff(),
         })
-            .exec(&mut db)
-            .await?;
+        .exec(&mut db)
+        .await?;
         let password_hash = auth::application::password::hash_password(name)?;
 
         let _ = toasty::create!(auth::domain::user::User {
-                id: Uuid::now_v7(),
-                name: (*name).to_string(),
-                email,
-                password_hash,
-                merchant_id,
-                role: Role::Owner,
-                is_active: true,
-                status: AccountStatus::Active,
-                created_at: now_jiff(),
-            })
-            .exec(&mut db)
-            .await?;
-
+            id: Uuid::now_v7(),
+            name: (*name).to_string(),
+            email,
+            password_hash,
+            merchant_id,
+            role: Role::Owner,
+            is_active: true,
+            status: AccountStatus::Active,
+            created_at: now_jiff(),
+        })
+        .exec(&mut db)
+        .await?;
 
         Ok(())
     }
@@ -129,13 +128,23 @@ impl DataSeeder {
     /// Seed one user per `Role` variant, all linked to the master merchant.
     async fn seed_role_users(&self, merchant_id: Uuid) -> anyhow::Result<()> {
         let seed_users: &[(&str, Role, &str, &str)] = &[
-            ("Master Admin",   Role::MasterAdmin,   "master_admin",   "master_admin"),
-            ("Merchant Admin", Role::MerchantAdmin, "merchant_admin", "merchant_admin"),
-            ("Owner",          Role::Owner,         "owner",          "owner"),
-            ("Admin",          Role::Admin,         "admin",          "admin"),
-            ("Developer",      Role::Developer,     "developer",      "developer"),
-            ("Finance",        Role::Finance,       "finance",        "finance"),
-            ("Viewer",         Role::Viewer,        "viewer",         "viewer"),
+            (
+                "Master Admin",
+                Role::MasterAdmin,
+                "master_admin",
+                "master_admin",
+            ),
+            (
+                "Merchant Admin",
+                Role::MerchantAdmin,
+                "merchant_admin",
+                "merchant_admin",
+            ),
+            ("Owner", Role::Owner, "owner", "owner"),
+            ("Admin", Role::Admin, "admin", "admin"),
+            ("Developer", Role::Developer, "developer", "developer"),
+            ("Finance", Role::Finance, "finance", "finance"),
+            ("Viewer", Role::Viewer, "viewer", "viewer"),
         ];
 
         for (name, role, slug, password) in seed_users {
@@ -182,8 +191,8 @@ impl DataSeeder {
             is_active: true,
             created_at: now,
         })
-            .exec(&mut db)
-            .await?;
+        .exec(&mut db)
+        .await?;
 
         let _ = toasty::create!(PaymentProvider {
             name: crate::domain::provider::Provider::ArifPay.to_string(),

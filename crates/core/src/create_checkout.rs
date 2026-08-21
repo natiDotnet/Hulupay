@@ -1,9 +1,9 @@
+use crate::claims::UserContext;
 use crate::gateway_response::{CheckoutResponse, VerifyResponse};
 use crate::hulu_error::HuluError;
+use crate::payment_method::GatewayProvider;
 use async_trait::async_trait;
 use uuid::Uuid;
-use crate::claims::UserContext;
-use crate::payment_method::GatewayProvider;
 
 #[async_trait]
 pub trait CreateCheckout: Send + Sync + 'static {

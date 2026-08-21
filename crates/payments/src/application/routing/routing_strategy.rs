@@ -56,7 +56,9 @@ impl GetRoutingStrategy {
     pub async fn execute(&self, merchant_id: Uuid) -> anyhow::Result<Option<StrategyResponse>> {
         let mut db = self.db.clone();
         let row = MerchantRoutingStrategy::filter(
-            MerchantRoutingStrategy::fields().merchant_id().eq(merchant_id),
+            MerchantRoutingStrategy::fields()
+                .merchant_id()
+                .eq(merchant_id),
         )
         .first()
         .exec(&mut db)
@@ -83,7 +85,9 @@ impl UpsertRoutingStrategy {
         let mut db = self.db.clone();
 
         let existing = MerchantRoutingStrategy::filter(
-            MerchantRoutingStrategy::fields().merchant_id().eq(merchant_id),
+            MerchantRoutingStrategy::fields()
+                .merchant_id()
+                .eq(merchant_id),
         )
         .first()
         .exec(&mut db)

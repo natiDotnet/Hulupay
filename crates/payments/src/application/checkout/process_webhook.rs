@@ -12,23 +12,22 @@ pub async fn process_webhook(
     payload: WebhookInfo,
 ) {
     let mut db_mut = db.clone();
-    let mut webhook = match PaymentWebhook::filter(
-        PaymentWebhook::fields().payment_order_id().eq(order_id),
-    )
-    .first()
-    .exec(&mut db_mut)
-    .await
-    {
-        Ok(Some(w)) => w,
-        Ok(None) => {
-            tracing::warn!(%order_id, "webhook record not found");
-            return;
-        }
-        Err(err) => {
-            tracing::error!(?err, %order_id, "failed to load webhook");
-            return;
-        }
-    };
+    let mut webhook =
+        match PaymentWebhook::filter(PaymentWebhook::fields().payment_order_id().eq(order_id))
+            .first()
+            .exec(&mut db_mut)
+            .await
+        {
+            Ok(Some(w)) => w,
+            Ok(None) => {
+                tracing::warn!(%order_id, "webhook record not found");
+                return;
+            }
+            Err(err) => {
+                tracing::error!(?err, %order_id, "failed to load webhook");
+                return;
+            }
+        };
 
     let retries = webhook.retry_count;
 

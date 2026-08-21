@@ -4,6 +4,7 @@ use crate::domain::payment_order::PaymentOrder;
 use crate::domain::payments::payment_callback::PaymentCallback;
 use crate::domain::payments::payment_customer::PaymentCustomer;
 use async_trait::async_trait;
+use hulu_core::claims::UserContext;
 use hulu_core::gateway_response::VerifyResponse;
 use hulu_core::payment_gateway::{GatewayResponse, PaymentGateway, WebhookInfo};
 use hulu_core::payment_gateway_error::PaymentGatewayError;
@@ -13,7 +14,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::sync::Arc;
 use toasty::Db;
-use hulu_core::claims::UserContext;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChapaConfig {
@@ -82,7 +82,9 @@ impl PaymentGateway for ChapaProvider {
         let mut db = self.db.clone();
 
         let order = PaymentOrder::filter(
-            PaymentOrder::fields().order_ref().eq(webhook.client_reference.clone()),
+            PaymentOrder::fields()
+                .order_ref()
+                .eq(webhook.client_reference.clone()),
         )
         .first()
         .exec(&mut db)
@@ -90,23 +92,21 @@ impl PaymentGateway for ChapaProvider {
         .map_err(|_| PaymentGatewayError::ProviderNotFound)?
         .ok_or(PaymentGatewayError::ProviderNotFound)?;
 
-        let customer = PaymentCustomer::filter(
-            PaymentCustomer::fields().payment_order_id().eq(order.id),
-        )
-        .first()
-        .exec(&mut db)
-        .await
-        .map_err(|_| PaymentGatewayError::ProviderNotFound)?
-        .ok_or(PaymentGatewayError::ProviderNotFound)?;
+        let customer =
+            PaymentCustomer::filter(PaymentCustomer::fields().payment_order_id().eq(order.id))
+                .first()
+                .exec(&mut db)
+                .await
+                .map_err(|_| PaymentGatewayError::ProviderNotFound)?
+                .ok_or(PaymentGatewayError::ProviderNotFound)?;
 
-        let callbacks = PaymentCallback::filter(
-            PaymentCallback::fields().payment_order_id().eq(order.id),
-        )
-        .first()
-        .exec(&mut db)
-        .await
-        .map_err(|_| PaymentGatewayError::ProviderNotFound)?
-        .ok_or(PaymentGatewayError::ProviderNotFound)?;
+        let callbacks =
+            PaymentCallback::filter(PaymentCallback::fields().payment_order_id().eq(order.id))
+                .first()
+                .exec(&mut db)
+                .await
+                .map_err(|_| PaymentGatewayError::ProviderNotFound)?
+                .ok_or(PaymentGatewayError::ProviderNotFound)?;
 
         let request = chapa_webhook::ChapaWebhook {
             event: format!(

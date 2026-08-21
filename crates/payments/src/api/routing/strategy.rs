@@ -1,7 +1,11 @@
 use crate::application::routing::routing_strategy::{
     GetRoutingStrategy, StrategyResponse, UpsertRoutingStrategy, UpsertStrategyRequest,
 };
-use axum::{Json, extract::{Path, State}, http::StatusCode};
+use axum::{
+    Json,
+    extract::{Path, State},
+    http::StatusCode,
+};
 use serde::Serialize;
 use utoipa::ToSchema;
 use uuid::Uuid;

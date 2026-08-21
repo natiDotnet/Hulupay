@@ -1,9 +1,9 @@
+use crate::DomainAuthError;
 use crate::application::login_request::{RefreshRequest, RefreshResponse};
 use crate::application::permission_service::PermissionService;
 use crate::application::token::TokenService;
 use crate::domain::refresh_token::RefreshToken;
 use crate::util;
-use crate::DomainAuthError;
 use chrono::Utc;
 use std::sync::Arc;
 
@@ -60,9 +60,11 @@ impl RefreshTokens {
 
         // Revoke the current row (rotation).
         let mut current = row.clone();
-        toasty::update!(current { revoked_at: util::now_jiff() })
-            .exec(&mut db)
-            .await?;
+        toasty::update!(current {
+            revoked_at: util::now_jiff()
+        })
+        .exec(&mut db)
+        .await?;
 
         // Mint new tokens.
         let permissions = self
@@ -92,8 +94,7 @@ impl RefreshTokens {
             new_id,
         )?;
 
-        let expires_at =
-            util::to_jiff(Utc::now() + chrono::Duration::seconds(refresh_ttl_secs));
+        let expires_at = util::to_jiff(Utc::now() + chrono::Duration::seconds(refresh_ttl_secs));
         toasty::create!(RefreshToken {
             id: new_id,
             user_id: claims.sub,
@@ -123,9 +124,7 @@ impl RefreshTokens {
         if let Ok(rows) = rows {
             let now = util::now_jiff();
             for mut row in rows {
-                let _ = toasty::update!(row { revoked_at: now })
-                    .exec(&mut db)
-                    .await;
+                let _ = toasty::update!(row { revoked_at: now }).exec(&mut db).await;
             }
         }
     }

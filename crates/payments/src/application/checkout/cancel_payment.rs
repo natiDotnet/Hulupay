@@ -1,3 +1,4 @@
+use crate::ProviderEngine;
 use crate::application::cache_service::CacheService;
 use crate::application::merchants::get_merchant::get_merchant;
 use crate::domain::merchant_config::MerchantConfig;
@@ -5,7 +6,6 @@ use crate::domain::payment_order::PaymentOrder;
 use crate::domain::payment_provider::PaymentProvider;
 use crate::domain::payment_status::{PaymentStatus, TxDirection, TxStatus};
 use crate::domain::payment_transaction::PaymentTransaction;
-use crate::ProviderEngine;
 use async_trait::async_trait;
 use hulu_core::create_checkout::CancelPayment;
 use hulu_core::hulu_error::HuluError;
@@ -21,11 +21,7 @@ pub struct CancelPaymentHandler {
 }
 
 impl CancelPaymentHandler {
-    pub fn new(
-        db: Db,
-        cache: Arc<dyn CacheService>,
-        payment_engine: ProviderEngine,
-    ) -> Self {
+    pub fn new(db: Db, cache: Arc<dyn CacheService>, payment_engine: ProviderEngine) -> Self {
         Self {
             db,
             cache,
@@ -49,7 +45,9 @@ impl CancelPayment for CancelPaymentHandler {
 
         // Resolve the provider row by code, then find the merchant's active config.
         let provider_row = PaymentProvider::filter(
-            PaymentProvider::fields().code().eq(provider.get_name().to_string()),
+            PaymentProvider::fields()
+                .code()
+                .eq(provider.get_name().to_string()),
         )
         .first()
         .exec(&mut db)
@@ -72,7 +70,9 @@ impl CancelPayment for CancelPaymentHandler {
 
         // Find the transaction by provider_tx_id, then load its order separately.
         let transaction = PaymentTransaction::filter(
-            PaymentTransaction::fields().provider_tx_id().eq(reference.to_string()),
+            PaymentTransaction::fields()
+                .provider_tx_id()
+                .eq(reference.to_string()),
         )
         .first()
         .exec(&mut db)

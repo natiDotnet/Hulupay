@@ -3,8 +3,8 @@ mod extractor;
 mod forgot_password;
 mod get_current_user;
 mod login;
-pub mod middleware;
 mod logout;
+pub mod middleware;
 mod refresh;
 mod register;
 mod reset_password;
@@ -14,7 +14,7 @@ mod verify_email;
 use crate::application::permission_service::PermissionService;
 use crate::infrastructure::SmtpMailService;
 pub use extractor::AuthUser;
-pub use middleware::{authentication, authorization, AuthorizationPolicy};
+pub use middleware::{AuthorizationPolicy, authentication, authorization};
 pub use state::AuthState;
 
 use std::sync::Arc;
@@ -65,7 +65,10 @@ pub fn router(db: &toasty::Db) -> OpenApiRouter {
             token_service.clone(),
             permission_service,
         ),
-        forgot_password_use_case: crate::application::ForgotPassword::new(db.clone(), mail_service.clone()),
+        forgot_password_use_case: crate::application::ForgotPassword::new(
+            db.clone(),
+            mail_service.clone(),
+        ),
         reset_password_use_case: crate::application::ResetPassword::new(db.clone()),
         change_password_use_case: crate::application::ChangePassword::new(db.clone()),
         get_current_user_use_case: crate::application::GetCurrentUser::new(db.clone()),

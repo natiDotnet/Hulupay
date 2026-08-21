@@ -28,7 +28,7 @@ impl UpdateMerchant {
             Ok(None) => {
                 return Err(ApplicationError::NotFound(
                     "Merchant not found with given id".to_string(),
-                ))
+                ));
             }
             Err(e) => return Err(ApplicationError::Internal(anyhow!(e))),
         };

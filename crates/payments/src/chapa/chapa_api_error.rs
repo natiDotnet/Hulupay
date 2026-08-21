@@ -120,9 +120,10 @@ mod tests {
     #[tokio::test]
     async fn field_error_matches_upstream_shape_exactly() {
         // verbatim upstream response from T001 (amount -10)
-        let (status, body) = body_of(ChapaApiErr::Validation(
-            ChapaRequestError::Field("amount", vec!["validation.min.numeric".into()]),
-        ))
+        let (status, body) = body_of(ChapaApiErr::Validation(ChapaRequestError::Field(
+            "amount",
+            vec!["validation.min.numeric".into()],
+        )))
         .await;
         assert_eq!(status, StatusCode::BAD_REQUEST);
         assert_eq!(
@@ -138,9 +139,9 @@ mod tests {
     #[tokio::test]
     async fn plain_error_matches_upstream_shape_exactly() {
         // verbatim upstream response from PH10 (invalid phone)
-        let (status, body) = body_of(ChapaApiErr::Validation(
-            ChapaRequestError::Plain(PHONE_INVALID_MSG),
-        ))
+        let (status, body) = body_of(ChapaApiErr::Validation(ChapaRequestError::Plain(
+            PHONE_INVALID_MSG,
+        )))
         .await;
         assert_eq!(status, StatusCode::BAD_REQUEST);
         assert_eq!(

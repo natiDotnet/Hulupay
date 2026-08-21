@@ -2,7 +2,11 @@ use crate::application::routing::routing_rules::{
     CreateRoutingRule, CreateRuleRequest, DeleteRoutingRule, ListRoutingRules, RuleResponse,
     UpdateRoutingRule, UpdateRuleRequest,
 };
-use axum::{Json, extract::{Path, Query, State}, http::StatusCode};
+use axum::{
+    Json,
+    extract::{Path, Query, State},
+    http::StatusCode,
+};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 use uuid::Uuid;
@@ -15,8 +19,12 @@ pub struct PaginationQuery {
     pub page_size: u64,
 }
 
-fn default_page() -> u64 { 1 }
-fn default_page_size() -> u64 { 20 }
+fn default_page() -> u64 {
+    1
+}
+fn default_page_size() -> u64 {
+    20
+}
 
 #[derive(Serialize, ToSchema)]
 pub struct PaginatedRulesResponse {
@@ -42,10 +50,13 @@ pub async fn list_rules_handler(
     Path(merchant_id): Path<Uuid>,
     Query(pagination): Query<PaginationQuery>,
 ) -> Result<Json<PaginatedRulesResponse>, StatusCode> {
-    let result = usecase.execute(merchant_id, pagination.page, pagination.page_size).await.map_err(|e| {
-        eprintln!("Error listing routing rules: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
+    let result = usecase
+        .execute(merchant_id, pagination.page, pagination.page_size)
+        .await
+        .map_err(|e| {
+            eprintln!("Error listing routing rules: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
     Ok(Json(PaginatedRulesResponse {
         items: result.items,
         total: result.total,

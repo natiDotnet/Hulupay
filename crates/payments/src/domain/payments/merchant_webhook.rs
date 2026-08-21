@@ -1,5 +1,5 @@
-use crate::domain::payment_status::PaymentStatus;
 use crate::domain::payment_method::PaymentMethod;
+use crate::domain::payment_status::PaymentStatus;
 use rust_decimal::Decimal;
 use uuid::Uuid;
 

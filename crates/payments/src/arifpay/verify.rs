@@ -1,10 +1,10 @@
 use crate::arifpay::payment_response::{ArifResponse, ArifVerifyResponse};
 use crate::chapa::chapa_api_error::ChapaApiErr;
+use auth::api::AuthUser;
 use axum::Json;
 use axum::extract::{Path, State};
 use hulu_core::create_checkout::VerifyPayment;
 use std::sync::Arc;
-use auth::api::AuthUser;
 
 #[utoipa::path(
     get,

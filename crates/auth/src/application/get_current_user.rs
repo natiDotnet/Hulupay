@@ -1,7 +1,7 @@
+use crate::DomainAuthError;
 use crate::application::login_request::CurrentUserResponse;
 use crate::domain::user::User;
 use crate::util;
-use crate::DomainAuthError;
 use uuid::Uuid;
 
 #[derive(Clone)]

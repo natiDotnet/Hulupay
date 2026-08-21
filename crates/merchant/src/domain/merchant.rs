@@ -35,7 +35,13 @@ pub struct MerchantView {
 }
 
 impl MerchantView {
-    pub fn new(id: Uuid, name: String, is_active: bool, created_at: jiff::Timestamp, updated_at: Option<jiff::Timestamp>) -> Self {
+    pub fn new(
+        id: Uuid,
+        name: String,
+        is_active: bool,
+        created_at: jiff::Timestamp,
+        updated_at: Option<jiff::Timestamp>,
+    ) -> Self {
         Self {
             id,
             name,
@@ -55,6 +61,12 @@ impl MerchantView {
 
 impl From<Merchant> for MerchantView {
     fn from(value: Merchant) -> Self {
-        Self::new(value.id, value.name, value.is_active, value.created_at, value.updated_at)
+        Self::new(
+            value.id,
+            value.name,
+            value.is_active,
+            value.created_at,
+            value.updated_at,
+        )
     }
 }

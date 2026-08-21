@@ -1,5 +1,5 @@
-use crate::domain::payment_provider::PaymentProvider;
 use crate::domain::Provider;
+use crate::domain::payment_provider::PaymentProvider;
 use toasty::Db;
 use uuid::Uuid;
 

@@ -61,7 +61,10 @@ impl RoutingEngine {
         }
 
         // 2) Fall back to the merchant's configured strategy
-        let strategy = self.get_strategy(&mut db, merchant_id).await.unwrap_or_default();
+        let strategy = self
+            .get_strategy(&mut db, merchant_id)
+            .await
+            .unwrap_or_default();
         info!(?strategy, "strategy matched");
 
         // Load configs, then load each provider separately (replaces find_also_related).
@@ -117,12 +120,8 @@ impl RoutingEngine {
                     .unwrap_or_default();
                 route_by_method(&healthy, &method)
             }
-            RoutingStrategy::Currency => {
-                route_by_currency(&healthy, &request.payment.currency)
-            }
-            RoutingStrategy::Amount => {
-                route_by_amount(&healthy, request.payment.amount)
-            }
+            RoutingStrategy::Currency => route_by_currency(&healthy, &request.payment.currency),
+            RoutingStrategy::Amount => route_by_amount(&healthy, request.payment.amount),
             RoutingStrategy::Country => {
                 let country = request.payment.lang.clone().unwrap_or_default();
                 route_by_country(&healthy, &country)
@@ -130,9 +129,19 @@ impl RoutingEngine {
             RoutingStrategy::LowestCost => {
                 let mut sorted = healthy;
                 sorted.sort_by(|(a, _), (b, _)| {
-                    let fee_a = a.config.get("fee").and_then(|v| v.as_f64()).unwrap_or(100.0);
-                    let fee_b = b.config.get("fee").and_then(|v| v.as_f64()).unwrap_or(100.0);
-                    fee_a.partial_cmp(&fee_b).unwrap_or(std::cmp::Ordering::Equal)
+                    let fee_a = a
+                        .config
+                        .get("fee")
+                        .and_then(|v| v.as_f64())
+                        .unwrap_or(100.0);
+                    let fee_b = b
+                        .config
+                        .get("fee")
+                        .and_then(|v| v.as_f64())
+                        .unwrap_or(100.0);
+                    fee_a
+                        .partial_cmp(&fee_b)
+                        .unwrap_or(std::cmp::Ordering::Equal)
                 });
                 sorted.into_iter().map(|(_, p)| p.id).collect()
             }
@@ -161,13 +170,11 @@ impl RoutingEngine {
     }
 
     /// Read the merchant's routing strategy, return Default if none set.
-    async fn get_strategy(
-        &self,
-        db: &mut Db,
-        merchant_id: Uuid,
-    ) -> Option<RoutingStrategy> {
+    async fn get_strategy(&self, db: &mut Db, merchant_id: Uuid) -> Option<RoutingStrategy> {
         let row = MerchantRoutingStrategy::filter(
-            MerchantRoutingStrategy::fields().merchant_id().eq(merchant_id),
+            MerchantRoutingStrategy::fields()
+                .merchant_id()
+                .eq(merchant_id),
         )
         .first()
         .exec(db)
@@ -181,10 +188,7 @@ impl RoutingEngine {
     }
 
     /// Get all provider IDs currently marked as Offline.
-    async fn get_offline_provider_ids(
-        &self,
-        db: &mut Db,
-    ) -> anyhow::Result<Vec<Uuid>> {
+    async fn get_offline_provider_ids(&self, db: &mut Db) -> anyhow::Result<Vec<Uuid>> {
         let rows = ProviderMetric::filter(
             ProviderMetric::fields()
                 .current_status()
@@ -214,12 +218,7 @@ fn matches_rule(rule: &MerchantRoutingRule, request: &PaymentRequest) -> bool {
             rule.condition_value.to_uppercase() == request.payment.currency.to_uppercase()
         }
         crate::domain::routing_rule::ConditionType::Country => {
-            let country = request
-                .payment
-                .lang
-                .as_deref()
-                .unwrap_or("")
-                .to_uppercase();
+            let country = request.payment.lang.as_deref().unwrap_or("").to_uppercase();
             rule.condition_value.to_uppercase() == country
         }
         crate::domain::routing_rule::ConditionType::AmountGreaterThan => {
@@ -235,10 +234,7 @@ fn matches_rule(rule: &MerchantRoutingRule, request: &PaymentRequest) -> bool {
     }
 }
 
-fn route_by_method(
-    providers: &[(MerchantConfig, PaymentProvider)],
-    method: &str,
-) -> Vec<Uuid> {
+fn route_by_method(providers: &[(MerchantConfig, PaymentProvider)], method: &str) -> Vec<Uuid> {
     // Try to find a provider whose config mentions this method
     let upper = method.to_uppercase();
     let mut matched: Vec<_> = providers
@@ -253,10 +249,7 @@ fn route_by_method(
     matched
 }
 
-fn route_by_currency(
-    providers: &[(MerchantConfig, PaymentProvider)],
-    currency: &str,
-) -> Vec<Uuid> {
+fn route_by_currency(providers: &[(MerchantConfig, PaymentProvider)], currency: &str) -> Vec<Uuid> {
     let upper = currency.to_uppercase();
     let mut matched: Vec<_> = providers
         .iter()
@@ -264,7 +257,10 @@ fn route_by_currency(
             c.config
                 .get("supported_currencies")
                 .and_then(|v| v.as_array())
-                .map(|arr| arr.iter().any(|s| s.as_str().unwrap_or("").to_uppercase() == upper))
+                .map(|arr| {
+                    arr.iter()
+                        .any(|s| s.as_str().unwrap_or("").to_uppercase() == upper)
+                })
                 .unwrap_or(true)
         })
         .map(|(_, p)| p.id)
@@ -275,19 +271,13 @@ fn route_by_currency(
     matched
 }
 
-fn route_by_amount(
-    providers: &[(MerchantConfig, PaymentProvider)],
-    _amount: Decimal,
-) -> Vec<Uuid> {
+fn route_by_amount(providers: &[(MerchantConfig, PaymentProvider)], _amount: Decimal) -> Vec<Uuid> {
     let mut sorted = providers.to_vec();
     sorted.sort_by_key(|(c, _)| c.priority);
     sorted.into_iter().map(|(_, p)| p.id).collect()
 }
 
-fn route_by_country(
-    providers: &[(MerchantConfig, PaymentProvider)],
-    country: &str,
-) -> Vec<Uuid> {
+fn route_by_country(providers: &[(MerchantConfig, PaymentProvider)], country: &str) -> Vec<Uuid> {
     let upper = country.to_uppercase();
     let mut matched: Vec<_> = providers
         .iter()
@@ -295,7 +285,10 @@ fn route_by_country(
             c.config
                 .get("supported_countries")
                 .and_then(|v| v.as_array())
-                .map(|arr| arr.iter().any(|s| s.as_str().unwrap_or("").to_uppercase() == upper))
+                .map(|arr| {
+                    arr.iter()
+                        .any(|s| s.as_str().unwrap_or("").to_uppercase() == upper)
+                })
                 .unwrap_or(true)
         })
         .map(|(_, p)| p.id)

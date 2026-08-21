@@ -1,10 +1,10 @@
+use crate::DomainAuthError;
 use crate::application::login_request::{LoginRequest, LoginResponse};
 use crate::application::password::verify_password;
 use crate::application::permission_service::PermissionService;
 use crate::application::token::TokenService;
 use crate::domain::refresh_token::RefreshToken;
 use crate::domain::user::User;
-use crate::DomainAuthError;
 use crate::util;
 use chrono::Utc;
 use std::sync::Arc;
@@ -72,8 +72,7 @@ impl LoginUser {
             refresh_id,
         )?;
 
-        let expires_at =
-            util::to_jiff(Utc::now() + chrono::Duration::seconds(refresh_ttl_secs));
+        let expires_at = util::to_jiff(Utc::now() + chrono::Duration::seconds(refresh_ttl_secs));
         toasty::create!(RefreshToken {
             id: refresh_id,
             user_id: user.id,

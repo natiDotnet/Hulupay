@@ -9,7 +9,6 @@ use strum_macros::Display;
 
 #[async_trait]
 pub trait PaymentGateway: Send + Sync {
-    
     fn get_config(&self) -> serde_json::Value;
     fn change_callback_urls(
         &self,

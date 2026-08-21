@@ -1,10 +1,10 @@
+use crate::Role;
 use crate::application::login_request::{RegisterUserRequest, RegisterUserResponse};
 use crate::application::password::hash_password;
 use crate::domain::email_verification::EmailVerification;
 use crate::domain::user::User;
 use crate::infrastructure::MailService;
 use crate::util;
-use crate::Role;
 use chrono::Utc;
 use std::sync::Arc;
 

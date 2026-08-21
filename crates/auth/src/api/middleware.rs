@@ -1,20 +1,20 @@
+use crate::Role;
 use crate::api::AuthUser;
 use crate::domain::apikey::ApiKey;
 use crate::domain::permission::Permission;
 use crate::domain::revoked_token::RevokedToken;
-use crate::{util, TokenService};
-use crate::Role;
+use crate::{TokenService, util};
 use axum::body::Body;
 use axum::extract::{Request, State};
-use axum::http::header::AUTHORIZATION;
 use axum::http::StatusCode;
+use axum::http::header::AUTHORIZATION;
 use axum::middleware;
 use axum::middleware::Next;
 use axum::response::Response;
+use hulu_core::claims::{AuthenticationType, UserContext};
 use std::sync::Arc;
 use tracing::debug;
 use utoipa_axum::router::OpenApiRouter;
-use hulu_core::claims::{AuthenticationType, UserContext};
 
 /// All header names that may carry a credential, in priority order.
 ///
@@ -22,11 +22,7 @@ use hulu_core::claims::{AuthenticationType, UserContext};
 /// keys). Then each provider's own API-key header is scanned — a request
 /// to `/v1/transaction/initialize` may arrive with `x-arifpay-key` or
 /// `x-simulation-key` instead of the Bearer scheme.
-const PROVIDER_APIKEY_HEADERS: &[&str] = &[
-    "x-arifpay-key",
-    "x-simulation-key",
-    "x-chapa-key",
-];
+const PROVIDER_APIKEY_HEADERS: &[&str] = &["x-arifpay-key", "x-simulation-key", "x-chapa-key"];
 
 /// Extract the first credential we can find from the request headers.
 ///
@@ -51,10 +47,7 @@ fn extract_credential(req: &Request<Body>) -> Option<String> {
     for header_name in PROVIDER_APIKEY_HEADERS {
         if let Some(val) = req.headers().get(*header_name) {
             if let Ok(s) = val.to_str() {
-                let trimmed = s
-                    .strip_prefix("Bearer ")
-                    .unwrap_or(s)
-                    .trim();
+                let trimmed = s.strip_prefix("Bearer ").unwrap_or(s).trim();
                 if !trimmed.is_empty() {
                     return Some(trimmed.to_string());
                 }
@@ -202,9 +195,11 @@ async fn authenticate_api_key(req: &mut Request<Body>, raw_key: &str) -> Result<
     // Fire-and-forget: update last_used_at.
     tokio::spawn(async move {
         let mut db = db.clone();
-        let _ = toasty::update!(row { last_used_at: util::now_jiff() })
-            .exec(&mut db)
-            .await;
+        let _ = toasty::update!(row {
+            last_used_at: util::now_jiff()
+        })
+        .exec(&mut db)
+        .await;
     });
 
     Ok(())

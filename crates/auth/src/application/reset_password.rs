@@ -1,9 +1,9 @@
+use crate::DomainAuthError;
 use crate::application::login_request::ResetPasswordRequest;
 use crate::application::password::{hash_password, verify_password};
 use crate::domain::password_reset::PasswordReset;
 use crate::domain::user::User;
 use crate::util;
-use crate::DomainAuthError;
 
 #[derive(Clone)]
 pub struct ResetPassword {
@@ -35,9 +35,7 @@ impl ResetPassword {
         let now = util::now_jiff();
 
         // Mark reset token as used (single-use).
-        toasty::update!(row { used_at: now })
-            .exec(&mut db)
-            .await?;
+        toasty::update!(row { used_at: now }).exec(&mut db).await?;
 
         // Load the user.
         let mut user = User::filter_by_id(user_id)

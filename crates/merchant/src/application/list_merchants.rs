@@ -32,7 +32,11 @@ impl ListMerchants {
         let mut db = self.db.clone();
 
         // Count total merchants
-        let total = Merchant::all().exec(&mut db).await.map_err(|e| ApplicationError::Internal(anyhow!(e)))?.len() as u64;
+        let total = Merchant::all()
+            .exec(&mut db)
+            .await
+            .map_err(|e| ApplicationError::Internal(anyhow!(e)))?
+            .len() as u64;
 
         // Fetch page with offset pagination (keeps ?page= API contract)
         let offset = if page > 1 { (page - 1) * page_size } else { 0 };

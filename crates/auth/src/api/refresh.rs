@@ -1,6 +1,6 @@
 use crate::api::state::AuthState;
 use crate::application::{RefreshRequest, RefreshResponse};
-use axum::{extract::State, http::StatusCode, Json};
+use axum::{Json, extract::State, http::StatusCode};
 
 #[utoipa::path(
     post,

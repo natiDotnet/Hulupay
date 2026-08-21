@@ -1,8 +1,8 @@
+use crate::DomainAuthError;
 use crate::application::login_request::ChangePasswordRequest;
 use crate::application::password::{hash_password, verify_password};
 use crate::domain::user::User;
 use crate::util;
-use crate::DomainAuthError;
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -15,7 +15,11 @@ impl ChangePassword {
         Self { db }
     }
 
-    pub async fn execute(&self, user_id: Uuid, request: ChangePasswordRequest) -> anyhow::Result<()> {
+    pub async fn execute(
+        &self,
+        user_id: Uuid,
+        request: ChangePasswordRequest,
+    ) -> anyhow::Result<()> {
         let mut db = self.db.clone();
 
         let mut user = User::filter_by_id(user_id)

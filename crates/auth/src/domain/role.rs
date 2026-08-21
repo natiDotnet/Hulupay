@@ -73,7 +73,10 @@ mod tests {
     #[test]
     fn parses_snake_case_discriminants() {
         assert_eq!(Role::from_string("master_admin"), Some(Role::MasterAdmin));
-        assert_eq!(Role::from_string("merchant_admin"), Some(Role::MerchantAdmin));
+        assert_eq!(
+            Role::from_string("merchant_admin"),
+            Some(Role::MerchantAdmin)
+        );
         assert_eq!(Role::from_string("owner"), Some(Role::Owner));
         assert_eq!(Role::from_string("admin"), Some(Role::Admin));
         assert_eq!(Role::from_string("developer"), Some(Role::Developer));

@@ -30,15 +30,15 @@ pub enum ChapaRequestError {
     Plain(&'static str),
 }
 
-pub(crate) const PHONE_INVALID_MSG: &str = "Invalid Phone number, please use a proper phone number or use business shortcode.";
+pub(crate) const PHONE_INVALID_MSG: &str =
+    "Invalid Phone number, please use a proper phone number or use business shortcode.";
 const AMOUNT_MAX_MSG: &str = "The amount must not exceed 1000000.";
 const FIRST_NAME_MAX_MSG: &str = "The first name must not exceed 35 characters.";
 const LAST_NAME_MAX_MSG: &str = "The last name must not exceed 35 characters.";
 const TX_REF_MAX_MSG: &str = "The tx ref must not exceed 50 characters.";
 const CALLBACK_URL_MSG: &str = "The callback url must be a valid URL.";
 const RETURN_URL_MSG: &str = "The return url must be a valid URL.";
-const CURRENCY_FORMAT_MSG: &str =
-    "The currency may only contain uppercase letters and numbers.";
+const CURRENCY_FORMAT_MSG: &str = "The currency may only contain uppercase letters and numbers.";
 const CURRENCY_UNSUPPORTED_MSG: &str = "Invalid currency or currency is not supported";
 
 /// Currencies observed as supported upstream (ETB and USD both returned 200;
@@ -167,11 +167,7 @@ impl ChapaInitializeRequest {
         let amount = validate_amount(self.amount.as_ref())?;
         let currency = validate_currency(self.currency.as_ref())?;
         let email = validate_email(self.email.as_ref())?;
-        let first_name = validate_name(
-            self.first_name.as_ref(),
-            "first_name",
-            FIRST_NAME_MAX_MSG,
-        )?;
+        let first_name = validate_name(self.first_name.as_ref(), "first_name", FIRST_NAME_MAX_MSG)?;
         let last_name = validate_name(self.last_name.as_ref(), "last_name", LAST_NAME_MAX_MSG)?;
         let tx_ref = validate_tx_ref(self.tx_ref.as_ref())?;
         let callback_url =
@@ -237,7 +233,10 @@ fn validate_amount(v: Option<&Value>) -> Result<Decimal, ChapaRequestError> {
         ));
     }
     if dec > Decimal::from(1_000_000u32) {
-        return Err(ChapaRequestError::Field("amount", vec![AMOUNT_MAX_MSG.into()]));
+        return Err(ChapaRequestError::Field(
+            "amount",
+            vec![AMOUNT_MAX_MSG.into()],
+        ));
     }
 
     Ok(dec)
@@ -265,7 +264,10 @@ fn validate_currency(v: Option<&Value>) -> Result<Option<String>, ChapaRequestEr
             if SUPPORTED_CURRENCIES.contains(&s.as_str()) {
                 return Ok(Some(s.clone()));
             }
-            if s.len() == 3 && s.chars().all(|c| c.is_ascii_uppercase() || c.is_ascii_digit()) {
+            if s.len() == 3
+                && s.chars()
+                    .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit())
+            {
                 Err(ChapaRequestError::Field(
                     "currency",
                     vec![CURRENCY_UNSUPPORTED_MSG.into()],
@@ -638,7 +640,9 @@ mod tests {
     }
 
     fn err_of(payload: Value) -> ChapaRequestError {
-        request(payload).validate().expect_err("expected validation failure")
+        request(payload)
+            .validate()
+            .expect_err("expected validation failure")
     }
 
     fn assert_field(err: ChapaRequestError, field: &str, messages: &[&str]) {
@@ -684,7 +688,13 @@ mod tests {
 
     #[test]
     fn amount_valid_range_accepted() {
-        for amount in [json!(1), json!(10), json!(999.99), json!(1000), json!(1000000)] {
+        for amount in [
+            json!(1),
+            json!(10),
+            json!(999.99),
+            json!(1000),
+            json!(1000000),
+        ] {
             request(json!({ "amount": amount }))
                 .validate()
                 .unwrap_or_else(|e| panic!("amount {amount} must be accepted: {e:?}"));
@@ -720,7 +730,11 @@ mod tests {
             &["validation.numeric"],
         );
         for bad in [json!({}), json!([]), json!(""), json!(null)] {
-            assert_field(err_of(json!({ "amount": bad })), "amount", &["validation.required"]);
+            assert_field(
+                err_of(json!({ "amount": bad })),
+                "amount",
+                &["validation.required"],
+            );
         }
         // entirely missing behaves identically to null (AM17 == AM18)
         assert_field(
@@ -741,7 +755,13 @@ mod tests {
 
     #[test]
     fn currency_valid_format_unsupported_single_message() {
-        for currency in [json!("EUR"), json!("GBP"), json!("KES"), json!("AED"), json!("XXX")] {
+        for currency in [
+            json!("EUR"),
+            json!("GBP"),
+            json!("KES"),
+            json!("AED"),
+            json!("XXX"),
+        ] {
             assert_field(
                 err_of(json!({ "currency": currency })),
                 "currency",
@@ -757,7 +777,11 @@ mod tests {
             "Invalid currency or currency is not supported",
         ];
         for currency in [json!("etb"), json!("Etb"), json!("ET"), json!("ETBB")] {
-            assert_field(err_of(json!({ "currency": currency })), "currency", expected);
+            assert_field(
+                err_of(json!({ "currency": currency })),
+                "currency",
+                expected,
+            );
         }
     }
 
@@ -787,11 +811,7 @@ mod tests {
 
     #[test]
     fn email_invalid_syntax_rejected() {
-        for email in [
-            json!("user@"),
-            json!("@example.com"),
-            json!("invalid"),
-        ] {
+        for email in [json!("user@"), json!("@example.com"), json!("invalid")] {
             assert_field(
                 err_of(json!({ "email": email })),
                 "email",
@@ -822,7 +842,9 @@ mod tests {
         // upstream rejects user@example.com on DNS/MX grounds (EM01);
         // user@nonexistent-domain-qwz123x.com (EM14) similarly.
         // We only validate RFC syntax, so both pass — documented divergence.
-        request(json!({ "email": "user@example.com" })).validate().unwrap();
+        request(json!({ "email": "user@example.com" }))
+            .validate()
+            .unwrap();
         request(json!({ "email": "user@nonexistent-domain-qwz123x.com" }))
             .validate()
             .unwrap();
@@ -849,7 +871,14 @@ mod tests {
 
     #[test]
     fn names_accept_digits_specials_unicode_empty() {
-        for value in [json!("A"), json!("John Doe"), json!("123"), json!("!@#"), json!("ብለን ግዛቸው"), json!("")] {
+        for value in [
+            json!("A"),
+            json!("John Doe"),
+            json!("123"),
+            json!("!@#"),
+            json!("ብለን ግዛቸው"),
+            json!(""),
+        ] {
             for field in ["first_name", "last_name"] {
                 request(json!({ field: value })).validate().unwrap();
             }
@@ -872,7 +901,9 @@ mod tests {
             json!(""),
             json!(null),
         ] {
-            request(json!({ "phone_number": phone })).validate().unwrap();
+            request(json!({ "phone_number": phone }))
+                .validate()
+                .unwrap();
         }
         request_without(&["phone_number"]).validate().unwrap();
     }
@@ -989,7 +1020,9 @@ mod tests {
         );
 
         // XB03: invalid email + invalid phone -> plain phone error wins
-        assert_plain(err_of(json!({ "email": "invalid", "phone_number": "abcdef" })));
+        assert_plain(err_of(
+            json!({ "email": "invalid", "phone_number": "abcdef" }),
+        ));
     }
 
     #[test]
@@ -1021,7 +1054,10 @@ mod tests {
             req.customization.get("title").and_then(Value::as_str),
             Some("Payment for my favourite merchant")
         );
-        assert_eq!(req.meta.get("hide_receipt").and_then(Value::as_str), Some("false"));
+        assert_eq!(
+            req.meta.get("hide_receipt").and_then(Value::as_str),
+            Some("false")
+        );
 
         let payload = json!({
             "amount": 100,

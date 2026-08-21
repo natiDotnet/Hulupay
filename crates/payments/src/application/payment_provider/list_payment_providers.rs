@@ -26,7 +26,11 @@ impl ListPaymentProviders {
 
         let offset = if page > 1 { (page - 1) * page_size } else { 0 };
         let items = domain::payment_provider::PaymentProvider::all()
-            .order_by(domain::payment_provider::PaymentProvider::fields().id().desc())
+            .order_by(
+                domain::payment_provider::PaymentProvider::fields()
+                    .id()
+                    .desc(),
+            )
             .limit(page_size as usize)
             .offset(offset as usize)
             .exec(&mut db)

@@ -20,17 +20,13 @@ pub async fn update_merchant_handler(
     Path(id): Path<Uuid>,
     Json(payload): Json<UpdateMerchantRequest>,
 ) -> Result<Json<&'static str>, StatusCode> {
-
-    usecase
-        .execute(id, payload)
-        .await
-        .map_err(|e| {
-            eprintln!("Error updating merchant: {:?}", e);
-            match e {
-                ApplicationError::NotFound(_) => StatusCode::NOT_FOUND,
-                _ => StatusCode::INTERNAL_SERVER_ERROR,
-            }
-        })?;
+    usecase.execute(id, payload).await.map_err(|e| {
+        eprintln!("Error updating merchant: {:?}", e);
+        match e {
+            ApplicationError::NotFound(_) => StatusCode::NOT_FOUND,
+            _ => StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    })?;
 
     Ok(Json("Merchant updated successfully"))
 }

@@ -7,7 +7,17 @@ use strum_macros::{AsRefStr, Display, EnumString};
 use utoipa::ToSchema;
 
 #[derive(
-    Clone, Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema, Display, AsRefStr, EnumString, toasty::Embed,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    ToSchema,
+    Display,
+    AsRefStr,
+    EnumString,
+    toasty::Embed,
 )]
 #[column(rename_all = "UPPERCASE")]
 #[strum(serialize_all = "UPPERCASE")]
@@ -40,11 +50,11 @@ impl Provider {
     // SLA window in seconds before the watchdog kicks in
     pub fn sla_timeout_secs(&self) -> i64 {
         match self {
-            Self::Stripe => 300,     //  5 min
-            Self::Chapa => 900,      // 15 min
-            Self::ArifPay => 1200,   // 20 min
-            Self::Hulu => 1800,      // 30 min
-            Self::Simulator => 300,  //  5 min (instant for testing)
+            Self::Stripe => 300,    //  5 min
+            Self::Chapa => 900,     // 15 min
+            Self::ArifPay => 1200,  // 20 min
+            Self::Hulu => 1800,     // 30 min
+            Self::Simulator => 300, //  5 min (instant for testing)
         }
     }
 }

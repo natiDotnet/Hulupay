@@ -41,9 +41,7 @@ impl ForgotPassword {
 
         let now = util::now_jiff();
         for mut row in old_rows {
-            let _ = toasty::update!(row { used_at: now })
-                .exec(&mut db)
-                .await;
+            let _ = toasty::update!(row { used_at: now }).exec(&mut db).await;
         }
 
         // Create a new reset token.

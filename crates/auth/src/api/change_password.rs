@@ -1,7 +1,7 @@
-use crate::api::state::AuthState;
 use crate::api::AuthUser;
+use crate::api::state::AuthState;
 use crate::application::ChangePasswordRequest;
-use axum::{extract::State, http::StatusCode, Json};
+use axum::{Json, extract::State, http::StatusCode};
 
 #[utoipa::path(
     post,

@@ -6,6 +6,10 @@ use crate::domain::payment_transaction::PaymentTransaction;
 use crate::domain::payments::payment_callback::PaymentCallback;
 use crate::domain::payments::payment_customer::PaymentCustomer;
 use async_trait::async_trait;
+use auth::domain::apikey;
+use auth::domain::apikey::ApiKey;
+use axum::http::StatusCode;
+use hulu_core::claims::UserContext;
 use hulu_core::gateway_response::VerifyResponse;
 use hulu_core::payment_gateway::{GatewayResponse, PaymentGateway, WebhookInfo};
 use hulu_core::payment_gateway_error::PaymentGatewayError;
@@ -15,11 +19,7 @@ use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::sync::Arc;
-use axum::http::StatusCode;
 use toasty::Db;
-use auth::domain::apikey;
-use auth::domain::apikey::ApiKey;
-use hulu_core::claims::UserContext;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ArifPayConfig {
@@ -110,7 +110,9 @@ impl PaymentGateway for ArifPayProvider {
         let mut db = self.db.clone();
 
         let order = PaymentOrder::filter(
-            PaymentOrder::fields().order_ref().eq(request.client_reference.clone()),
+            PaymentOrder::fields()
+                .order_ref()
+                .eq(request.client_reference.clone()),
         )
         .first()
         .exec(&mut db)
@@ -118,23 +120,21 @@ impl PaymentGateway for ArifPayProvider {
         .map_err(|_| PaymentGatewayError::ProviderNotFound)?
         .ok_or(PaymentGatewayError::ProviderNotFound)?;
 
-        let callback = PaymentCallback::filter(
-            PaymentCallback::fields().payment_order_id().eq(order.id),
-        )
-        .first()
-        .exec(&mut db)
-        .await
-        .map_err(|_| PaymentGatewayError::ProviderNotFound)?
-        .ok_or(PaymentGatewayError::ProviderNotFound)?;
+        let callback =
+            PaymentCallback::filter(PaymentCallback::fields().payment_order_id().eq(order.id))
+                .first()
+                .exec(&mut db)
+                .await
+                .map_err(|_| PaymentGatewayError::ProviderNotFound)?
+                .ok_or(PaymentGatewayError::ProviderNotFound)?;
 
-        let customer = PaymentCustomer::filter(
-            PaymentCustomer::fields().payment_order_id().eq(order.id),
-        )
-        .first()
-        .exec(&mut db)
-        .await
-        .map_err(|_| PaymentGatewayError::ProviderNotFound)?
-        .ok_or(PaymentGatewayError::ProviderNotFound)?;
+        let customer =
+            PaymentCustomer::filter(PaymentCustomer::fields().payment_order_id().eq(order.id))
+                .first()
+                .exec(&mut db)
+                .await
+                .map_err(|_| PaymentGatewayError::ProviderNotFound)?
+                .ok_or(PaymentGatewayError::ProviderNotFound)?;
 
         let webhook = ArifWebhook {
             uuid: request.provider_reference.clone(),
@@ -179,7 +179,9 @@ impl PaymentGateway for ArifPayProvider {
         let mut db = self.db.clone();
 
         let transaction = PaymentTransaction::filter(
-            PaymentTransaction::fields().provider_tx_id().eq(reference.to_string()),
+            PaymentTransaction::fields()
+                .provider_tx_id()
+                .eq(reference.to_string()),
         )
         .first()
         .exec(&mut db)

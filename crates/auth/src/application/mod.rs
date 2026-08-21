@@ -13,15 +13,15 @@ mod token;
 pub mod user_repository;
 pub mod verify_email;
 
+pub use change_password::ChangePassword;
 pub use error::ApplicationError;
 pub use forgot_password::ForgotPassword;
 pub use get_current_user::GetCurrentUser;
-pub use change_password::ChangePassword;
 pub use login::LoginUser;
 pub use login_request::{
-    ChangePasswordRequest, ForgotPasswordRequest, LoginRequest, LoginResponse, LogoutRequest,
-    RefreshRequest, RefreshResponse, ResetPasswordRequest, VerifyEmailRequest, VerifyEmailResponse,
-    CurrentUserResponse, RegisterUserRequest, RegisterUserResponse,
+    ChangePasswordRequest, CurrentUserResponse, ForgotPasswordRequest, LoginRequest, LoginResponse,
+    LogoutRequest, RefreshRequest, RefreshResponse, RegisterUserRequest, RegisterUserResponse,
+    ResetPasswordRequest, VerifyEmailRequest, VerifyEmailResponse,
 };
 pub use refresh_token::RefreshTokens;
 pub use register_user::RegisterUser;

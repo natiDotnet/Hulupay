@@ -2,9 +2,7 @@ use crate::application::checkout::payment_webhook::PaymentWebhookHandler;
 use crate::application::routing::routing_rules::{
     CreateRoutingRule, DeleteRoutingRule, ListRoutingRules, UpdateRoutingRule,
 };
-use crate::application::routing::routing_strategy::{
-    GetRoutingStrategy, UpsertRoutingStrategy,
-};
+use crate::application::routing::routing_strategy::{GetRoutingStrategy, UpsertRoutingStrategy};
 use crate::application::{
     CreatePaymentProvider, CreatePaymentProviderConfig, DeletePaymentProvider,
     DeletePaymentProviderConfig, GetPaymentProvider, GetPaymentProviderConfig,

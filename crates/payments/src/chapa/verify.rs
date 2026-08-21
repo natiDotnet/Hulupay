@@ -3,6 +3,7 @@ use crate::chapa::chapa_api_error::ChapaApiErr;
 use crate::chapa::checkout_response::{ChapaResponse, ChapaVerifyResponse, Customization};
 use crate::domain::payment_order::PaymentOrder;
 use crate::domain::payments::payment_customer::PaymentCustomer;
+use auth::api::AuthUser;
 use axum::Json;
 use axum::extract::{Path, State};
 use axum_macros::debug_handler;
@@ -11,7 +12,6 @@ use hulu_core::gateway_response::VerifyResponse;
 use hulu_core::hulu_error::HuluError;
 use std::sync::Arc;
 use toasty::Db;
-use auth::api::AuthUser;
 
 #[utoipa::path(
     get,
@@ -39,7 +39,9 @@ async fn handle_chapa_verify(
     let mut db_mut = db.clone();
 
     let order = PaymentOrder::filter(
-        PaymentOrder::fields().order_ref().eq(response.reference.clone()),
+        PaymentOrder::fields()
+            .order_ref()
+            .eq(response.reference.clone()),
     )
     .first()
     .exec(&mut db_mut)
@@ -47,14 +49,13 @@ async fn handle_chapa_verify(
     .map_err(|_| HuluError::ConnectionError)?
     .ok_or(HuluError::ProviderNotFound)?;
 
-    let customer = PaymentCustomer::filter(
-        PaymentCustomer::fields().payment_order_id().eq(order.id),
-    )
-    .first()
-    .exec(&mut db_mut)
-    .await
-    .map_err(|_| HuluError::ConnectionError)?
-    .ok_or(HuluError::ProviderNotFound)?;
+    let customer =
+        PaymentCustomer::filter(PaymentCustomer::fields().payment_order_id().eq(order.id))
+            .first()
+            .exec(&mut db_mut)
+            .await
+            .map_err(|_| HuluError::ConnectionError)?
+            .ok_or(HuluError::ProviderNotFound)?;
 
     let verify = ChapaVerifyResponse {
         email: customer.email,

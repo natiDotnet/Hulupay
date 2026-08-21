@@ -1,13 +1,13 @@
+use crate::ProviderEngine;
 use crate::domain::environment::Environment;
 use crate::domain::merchant_config::MerchantConfig;
 use crate::domain::payment_provider::PaymentProvider;
 use crate::domain::{PaymentProviderConfig, provider};
-use crate::ProviderEngine;
 use anyhow::anyhow;
 use chrono::Utc;
+use hulu_core::claims::UserContext;
 use toasty::Db;
 use uuid::Uuid;
-use hulu_core::claims::UserContext;
 
 #[derive(Clone)]
 pub struct GetPaymentProviderConfigByProvider {
@@ -32,7 +32,9 @@ impl GetPaymentProviderConfigByProvider {
         let merchant_id = user_context.merchant_id;
 
         let provider_row = PaymentProvider::filter(
-            PaymentProvider::fields().code().eq(provider_code.to_string()),
+            PaymentProvider::fields()
+                .code()
+                .eq(provider_code.to_string()),
         )
         .first()
         .exec(&mut db)

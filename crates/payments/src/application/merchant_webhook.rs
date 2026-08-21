@@ -29,13 +29,14 @@ impl ListMerchantWebhooks {
         let total = all.len() as u64;
 
         let offset = if page > 1 { (page - 1) * page_size } else { 0 };
-        let items = MerchantWebhook::filter(MerchantWebhook::fields().merchant_id().eq(merchant_id))
-            .order_by(MerchantWebhook::fields().created_at().desc())
-            .limit(page_size as usize)
-            .offset(offset as usize)
-            .exec(&mut db)
-            .await
-            .map_err(|e| ApplicationError::Internal(anyhow!(e)))?;
+        let items =
+            MerchantWebhook::filter(MerchantWebhook::fields().merchant_id().eq(merchant_id))
+                .order_by(MerchantWebhook::fields().created_at().desc())
+                .limit(page_size as usize)
+                .offset(offset as usize)
+                .exec(&mut db)
+                .await
+                .map_err(|e| ApplicationError::Internal(anyhow!(e)))?;
 
         Ok(PaginatedResponse {
             items,

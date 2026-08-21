@@ -1,8 +1,8 @@
+use crate::DomainAuthError;
 use crate::application::login_request::{VerifyEmailRequest, VerifyEmailResponse};
 use crate::domain::email_verification::EmailVerification;
 use crate::domain::user::User;
 use crate::util;
-use crate::DomainAuthError;
 
 #[derive(Clone)]
 pub struct VerifyEmail {
@@ -14,18 +14,22 @@ impl VerifyEmail {
         Self { db }
     }
 
-    pub async fn execute(&self, request: VerifyEmailRequest) -> anyhow::Result<VerifyEmailResponse> {
+    pub async fn execute(
+        &self,
+        request: VerifyEmailRequest,
+    ) -> anyhow::Result<VerifyEmailResponse> {
         let mut db = self.db.clone();
 
         let token_hash = crate::infrastructure::hash_token(&request.token);
 
         // Find the unexpired, unused verification row.
-        let mut row = EmailVerification::filter(EmailVerification::fields().token_hash().eq(&token_hash))
-            .filter(EmailVerification::fields().verified_at().is_none())
-            .first()
-            .exec(&mut db)
-            .await?
-            .ok_or(DomainAuthError::InvalidVerificationToken)?;
+        let mut row =
+            EmailVerification::filter(EmailVerification::fields().token_hash().eq(&token_hash))
+                .filter(EmailVerification::fields().verified_at().is_none())
+                .first()
+                .exec(&mut db)
+                .await?
+                .ok_or(DomainAuthError::InvalidVerificationToken)?;
 
         if row.expires_at < util::now_jiff() {
             return Err(anyhow::anyhow!(DomainAuthError::VerificationTokenExpired));

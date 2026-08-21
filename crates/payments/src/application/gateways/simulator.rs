@@ -1,3 +1,4 @@
+use hulu_core::claims::UserContext;
 use hulu_core::gateway_response::VerifyResponse;
 use hulu_core::payment_gateway::{GatewayResponse, PaymentGateway, PaymentStatus, WebhookInfo};
 use hulu_core::payment_gateway_error::PaymentGatewayError;
@@ -6,7 +7,6 @@ use hulu_core::request_context::RequestContext;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use hulu_core::claims::UserContext;
 
 /// Determines how the simulator responds to payment operations.
 ///
@@ -85,9 +85,7 @@ impl PaymentGateway for SimulationProvider {
                 let reference = request.payment.reference.clone();
                 let ref_clone = reference.clone();
                 Ok(GatewayResponse {
-                    checkout_url: format!(
-                        "https://simulation.example.com/checkout/{reference}"
-                    ),
+                    checkout_url: format!("https://simulation.example.com/checkout/{reference}"),
                     reference,
                     row_response: Some(serde_json::json!({
                         "simulation_mode": self.mode,
@@ -101,13 +99,11 @@ impl PaymentGateway for SimulationProvider {
     async fn webhook(&self, _webhook: &WebhookInfo) -> Result<(), PaymentGatewayError> {
         match self.mode {
             SimulationMode::Timeout => Err(PaymentGatewayError::RequestFailed),
-            SimulationMode::DuplicateWebhook => {
-                Err(PaymentGatewayError::ProviderError {
-                    status_code: 409,
-                    message: "duplicate webhook received".into(),
-                    errors: None,
-                })
-            }
+            SimulationMode::DuplicateWebhook => Err(PaymentGatewayError::ProviderError {
+                status_code: 409,
+                message: "duplicate webhook received".into(),
+                errors: None,
+            }),
             SimulationMode::Success
             | SimulationMode::InsufficientFunds
             | SimulationMode::InvalidCallback => Ok(()),
@@ -135,15 +131,15 @@ impl PaymentGateway for SimulationProvider {
                     payment_method: PaymentMethod::Telebirr,
                     amount: webhook
                         .get("amount")
-                        .and_then(|v| Decimal::from_str_exact(
-                            &v.to_string().trim_matches('"'),
-                        ).ok())
+                        .and_then(|v| {
+                            Decimal::from_str_exact(&v.to_string().trim_matches('"')).ok()
+                        })
                         .unwrap_or(Decimal::ZERO),
                     charge: webhook
                         .get("charge")
-                        .and_then(|v| Decimal::from_str_exact(
-                            &v.to_string().trim_matches('"'),
-                        ).ok())
+                        .and_then(|v| {
+                            Decimal::from_str_exact(&v.to_string().trim_matches('"')).ok()
+                        })
                         .unwrap_or(Decimal::ZERO),
                     client_reference: webhook
                         .get("client_reference")
@@ -171,15 +167,15 @@ impl PaymentGateway for SimulationProvider {
                     payment_method: PaymentMethod::Telebirr,
                     amount: webhook
                         .get("amount")
-                        .and_then(|v| Decimal::from_str_exact(
-                            &v.to_string().trim_matches('"'),
-                        ).ok())
+                        .and_then(|v| {
+                            Decimal::from_str_exact(&v.to_string().trim_matches('"')).ok()
+                        })
                         .unwrap_or(Decimal::ZERO),
                     charge: webhook
                         .get("charge")
-                        .and_then(|v| Decimal::from_str_exact(
-                            &v.to_string().trim_matches('"'),
-                        ).ok())
+                        .and_then(|v| {
+                            Decimal::from_str_exact(&v.to_string().trim_matches('"')).ok()
+                        })
                         .unwrap_or(Decimal::ZERO),
                     client_reference: webhook
                         .get("client_reference")
@@ -237,11 +233,7 @@ impl PaymentGateway for SimulationProvider {
         }
     }
 
-    async fn cancel(
-        &self,
-        _reference: &str,
-        _config: Value,
-    ) -> Result<(), PaymentGatewayError> {
+    async fn cancel(&self, _reference: &str, _config: Value) -> Result<(), PaymentGatewayError> {
         match self.mode {
             SimulationMode::Timeout => Err(PaymentGatewayError::RequestFailed),
             _ => Ok(()),

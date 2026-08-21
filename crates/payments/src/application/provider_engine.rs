@@ -1,13 +1,13 @@
+use crate::application::gateways::simulator::{SimulationMode, SimulationProvider};
 use crate::domain;
 use crate::domain::merchant_config::MerchantConfig;
 use crate::domain::payment_provider::PaymentProvider;
+use crate::domain::provider::Provider::Simulator;
 use hulu_core::payment_gateway::PaymentGateway;
 use std::collections::HashMap;
 use std::sync::Arc;
 use toasty::Db;
 use uuid::Uuid;
-use crate::application::gateways::simulator::{SimulationMode, SimulationProvider};
-use crate::domain::provider::Provider::Simulator;
 
 /// A routing engine that selects the appropriate payment provider based on provider name
 #[derive(Clone)]
@@ -17,10 +17,7 @@ pub struct ProviderEngine {
 }
 
 impl ProviderEngine {
-    pub fn new(
-        providers: HashMap<String, Arc<dyn PaymentGateway>>,
-        db: Db,
-    ) -> Self {
+    pub fn new(providers: HashMap<String, Arc<dyn PaymentGateway>>, db: Db) -> Self {
         Self { providers, db }
     }
 
@@ -62,17 +59,15 @@ impl ProviderEngine {
             Some(provider) => provider.to_string(),
         };
 
-        self.providers.get(&provider).cloned().or_else(|| {
-            Some(Arc::new(SimulationProvider::new(SimulationMode::Success)))
-        })
+        self.providers
+            .get(&provider)
+            .cloned()
+            .or_else(|| Some(Arc::new(SimulationProvider::new(SimulationMode::Success))))
     }
 
     /// Get a gateway implementation by the provider's UUID. Looks up the
     /// `payment_providers` row, then resolves the gateway by its name.
-    pub async fn get_provider_by_id(
-        &self,
-        provider_id: Uuid,
-    ) -> Option<Arc<dyn PaymentGateway>> {
+    pub async fn get_provider_by_id(&self, provider_id: Uuid) -> Option<Arc<dyn PaymentGateway>> {
         let mut db = self.db.clone();
         let row = PaymentProvider::filter_by_id(provider_id)
             .first()
@@ -80,9 +75,10 @@ impl ProviderEngine {
             .await
             .ok()
             .flatten()?;
-        self.providers.get(&row.name).cloned().or_else(|| {
-            Some(Arc::new(SimulationProvider::new(SimulationMode::Success)))
-        })
+        self.providers
+            .get(&row.name)
+            .cloned()
+            .or_else(|| Some(Arc::new(SimulationProvider::new(SimulationMode::Success))))
     }
 
     /// Register (or replace) a gateway implementation under the given name.

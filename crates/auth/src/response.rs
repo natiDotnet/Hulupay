@@ -1,6 +1,6 @@
+use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::Json;
 use hulu_core::hulu_error::HuluError;
 use hulu_core::hulu_response::HuluResponse;
 use serde_json;
