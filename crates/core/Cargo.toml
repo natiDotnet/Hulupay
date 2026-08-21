@@ -3,6 +3,12 @@ name = "core"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+# The crate is named `core`, which shadows the built-in `core` module when
+# rustdoc compiles the doctest harness — derive-generated `core::…` paths
+# then fail to resolve. There are no doc examples, so skip doctests.
+doctest = false
+
 [dependencies]
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
