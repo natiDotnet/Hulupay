@@ -6,7 +6,7 @@ WORKDIR /app
 # Cache dependencies first
 COPY Cargo.toml Cargo.lock ./
 COPY crates crates
-COPY migration migration
+# COPY migration migration
 COPY src src
 
 RUN cargo build --release --bin Rust
