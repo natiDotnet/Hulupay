@@ -33,3 +33,37 @@ impl PaymentGatewayError {
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn request_failed_is_retryable() {
+        assert!(PaymentGatewayError::RequestFailed.is_retryable());
+    }
+
+    #[test]
+    fn invalid_response_is_retryable() {
+        assert!(PaymentGatewayError::InvalidResponse.is_retryable());
+    }
+
+    #[test]
+    fn provider_errors_are_not_retryable() {
+        assert!(!PaymentGatewayError::MerchantNotFound.is_retryable());
+        assert!(!PaymentGatewayError::ProviderNotFound.is_retryable());
+        assert!(!PaymentGatewayError::TransactionNotFound.is_retryable());
+        assert!(!PaymentGatewayError::InternalServerError.is_retryable());
+        assert!(!PaymentGatewayError::UnsupportedPaymentMethod.is_retryable());
+    }
+
+    #[test]
+    fn provider_error_payload_is_not_retryable() {
+        let err = PaymentGatewayError::ProviderError {
+            status_code: 502,
+            message: "bad gateway".into(),
+            errors: None,
+        };
+        assert!(!err.is_retryable());
+    }
+}

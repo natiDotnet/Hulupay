@@ -55,3 +55,51 @@ impl Display for Role {
         write!(f, "{}", str)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const ALL_ROLES: [Role; 7] = [
+        Role::MasterAdmin,
+        Role::MerchantAdmin,
+        Role::Owner,
+        Role::Admin,
+        Role::Developer,
+        Role::Finance,
+        Role::Viewer,
+    ];
+
+    #[test]
+    fn parses_snake_case_discriminants() {
+        assert_eq!(Role::from_string("master_admin"), Some(Role::MasterAdmin));
+        assert_eq!(Role::from_string("merchant_admin"), Some(Role::MerchantAdmin));
+        assert_eq!(Role::from_string("owner"), Some(Role::Owner));
+        assert_eq!(Role::from_string("admin"), Some(Role::Admin));
+        assert_eq!(Role::from_string("developer"), Some(Role::Developer));
+        assert_eq!(Role::from_string("finance"), Some(Role::Finance));
+        assert_eq!(Role::from_string("viewer"), Some(Role::Viewer));
+    }
+
+    #[test]
+    fn parses_legacy_uppercase_forms() {
+        assert_eq!(Role::from_string("MASTER_ADMIN"), Some(Role::MasterAdmin));
+        assert_eq!(Role::from_string("OWNER"), Some(Role::Owner));
+        assert_eq!(Role::from_string("VIEWER"), Some(Role::Viewer));
+    }
+
+    #[test]
+    fn rejects_unknown_roles() {
+        assert_eq!(Role::from_string("superadmin"), None);
+        assert_eq!(Role::from_string(""), None);
+        assert_eq!(Role::from_string("Master Admin"), None);
+    }
+
+    #[test]
+    fn display_roundtrips_through_from_string() {
+        for role in ALL_ROLES {
+            let displayed = role.to_string();
+            assert_eq!(Role::from_string(&displayed), Some(role));
+        }
+    }
+}

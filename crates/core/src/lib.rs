@@ -27,3 +27,38 @@ pub fn create_slug(name: &str) -> String {
     let re_multi = Regex::new(r"-+").unwrap();
     re_multi.replace_all(&slug, "-").to_string()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn slug_lowercases_input() {
+        assert_eq!(create_slug("HuluPay"), "hulupay");
+        assert_eq!(create_slug("ABC Supermarket"), "abc-supermarket");
+    }
+
+    #[test]
+    fn slug_replaces_spaces_with_hyphens() {
+        assert_eq!(create_slug("master merchant"), "master-merchant");
+        assert_eq!(create_slug("a b c"), "a-b-c");
+    }
+
+    #[test]
+    fn slug_strips_special_characters() {
+        assert_eq!(create_slug("Hello, World!"), "hello-world");
+        assert_eq!(create_slug("foo@bar.com"), "foobarcom");
+    }
+
+    #[test]
+    fn slug_collapses_multiple_hyphens() {
+        assert_eq!(create_slug("a---b"), "a-b");
+        assert_eq!(create_slug("a - b - c"), "a-b-c");
+    }
+
+    #[test]
+    fn slug_empty_input_stays_empty() {
+        assert_eq!(create_slug(""), "");
+        assert_eq!(create_slug("!!!"), "");
+    }
+}

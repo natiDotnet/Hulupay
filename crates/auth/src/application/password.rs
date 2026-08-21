@@ -20,3 +20,44 @@ pub fn verify_password(hash: &str, password: &str) -> bool {
         .verify_password(password.as_bytes(), &parsed_hash)
         .is_ok()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hash_then_verify_roundtrip() {
+        let hash = hash_password("s3cret-pa$$word").unwrap();
+        assert!(verify_password(&hash, "s3cret-pa$$word"));
+    }
+
+    #[test]
+    fn wrong_password_fails_verification() {
+        let hash = hash_password("correct-horse").unwrap();
+        assert!(!verify_password(&hash, "battery-staple"));
+    }
+
+    #[test]
+    fn each_hash_is_uniquely_salted() {
+        // Same password hashed twice must produce different PHC strings
+        // (random salt) — but both must verify against the password.
+        let h1 = hash_password("same-password").unwrap();
+        let h2 = hash_password("same-password").unwrap();
+        assert_ne!(h1, h2);
+        assert!(verify_password(&h1, "same-password"));
+        assert!(verify_password(&h2, "same-password"));
+    }
+
+    #[test]
+    fn malformed_hash_never_verifies() {
+        assert!(!verify_password("not-a-hash", "anything"));
+        assert!(!verify_password("", "anything"));
+    }
+
+    #[test]
+    fn empty_password_roundtrips() {
+        let hash = hash_password("").unwrap();
+        assert!(verify_password(&hash, ""));
+        assert!(!verify_password(&hash, "x"));
+    }
+}

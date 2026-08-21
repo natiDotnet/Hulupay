@@ -49,3 +49,61 @@ impl From<PaymentGatewayError> for HuluError {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn request_failed_maps_to_connection_error() {
+        let err: HuluError = PaymentGatewayError::RequestFailed.into();
+        assert!(matches!(err, HuluError::ConnectionError));
+    }
+
+    #[test]
+    fn invalid_response_maps_to_response_parse_error() {
+        let err: HuluError = PaymentGatewayError::InvalidResponse.into();
+        assert!(matches!(err, HuluError::ResponseParseError));
+    }
+
+    #[test]
+    fn not_found_errors_map_to_provider_not_found() {
+        let err: HuluError = PaymentGatewayError::ProviderNotFound.into();
+        assert!(matches!(err, HuluError::ProviderNotFound));
+
+        let err: HuluError = PaymentGatewayError::MerchantNotFound.into();
+        assert!(matches!(err, HuluError::ProviderNotFound));
+
+        let err: HuluError = PaymentGatewayError::TransactionNotFound.into();
+        assert!(matches!(err, HuluError::ProviderNotFound));
+    }
+
+    #[test]
+    fn provider_error_payload_is_preserved() {
+        let err: HuluError = PaymentGatewayError::ProviderError {
+            message: "insufficient funds".into(),
+            status_code: 402,
+            errors: Some(serde_json::json!({"code": "E01"})),
+        }
+        .into();
+
+        match err {
+            HuluError::ProviderError {
+                message,
+                status_code,
+                errors,
+            } => {
+                assert_eq!(message, "insufficient funds");
+                assert_eq!(status_code, 402);
+                assert!(errors.is_some());
+            }
+            other => panic!("expected ProviderError, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn internal_error_passes_through() {
+        let err: HuluError = PaymentGatewayError::InternalServerError.into();
+        assert!(matches!(err, HuluError::InternalServerError));
+    }
+}
