@@ -31,8 +31,8 @@ jobs:
     runs-on: ubuntu-latest
     container: rust:1.86
     steps:
-      - name: Install git (container image lacks it for checkout)
-        run: apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
+      - name: Install build deps (git for checkout; cmake/perl/pkg-config for aws-lc-sys)
+        run: apt-get update && apt-get install -y --no-install-recommends git cmake perl pkg-config && rm -rf /var/lib/apt/lists/*
 
       - uses: actions/checkout@v4
 
@@ -75,8 +75,8 @@ jobs:
       REDIS_URL: redis://redis:6379
 
     steps:
-      - name: Install git (container image lacks it for checkout)
-        run: apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
+      - name: Install build deps (git for checkout; cmake/perl/pkg-config for aws-lc-sys)
+        run: apt-get update && apt-get install -y --no-install-recommends git cmake perl pkg-config && rm -rf /var/lib/apt/lists/*
 
       - uses: actions/checkout@v4
 

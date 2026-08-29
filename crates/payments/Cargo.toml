@@ -34,7 +34,7 @@ axum = { version = "0.8.8" }
 
 # Auth dependency
 auth = { path = "../auth" }
-hulu_core = { package = "core", path = "../core", }
+hulu_core = { package = "core", path = "../core" }
 arif = { package = "arifpay", path = "../arifpay" }
 clap = { version = "4.6.0", features = ["derive"] }
 
