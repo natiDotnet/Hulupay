@@ -185,6 +185,26 @@ impl DataSeeder {
         let now = crate::util::now_jiff();
 
         let _ = toasty::create!(PaymentProvider {
+            name: crate::domain::provider::Provider::StarPay.to_string(),
+            code: crate::domain::provider::Provider::StarPay.to_string(),
+            logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3VKlVcAl_zfvQCZxPiA_o0Jy2K2Q7uwvFVPOXGHxOeg&s=10".to_string(),
+            is_active: true,
+            created_at: now,
+        })
+            .exec(&mut db)
+            .await?;
+
+        let _ = toasty::create!(PaymentProvider {
+            name: crate::domain::provider::Provider::LakiPay.to_string(),
+            code: crate::domain::provider::Provider::LakiPay.to_string(),
+            logo: "https://knovuslab.com/lpay/images/lakipay_dyn.svg".to_string(),
+            is_active: true,
+            created_at: now,
+        })
+            .exec(&mut db)
+            .await?;
+        
+        let _ = toasty::create!(PaymentProvider {
             name: crate::domain::provider::Provider::Simulator.to_string(),
             code: crate::domain::provider::Provider::Simulator.to_string(),
             logo: "https://ethiopianlogos.com/logos/chapa/chapa.png".to_string(),
@@ -208,26 +228,6 @@ impl DataSeeder {
             name: crate::domain::provider::Provider::Chapa.to_string(),
             code: crate::domain::provider::Provider::Chapa.to_string(),
             logo: "https://ethiopianlogos.com/logos/chapa/chapa.png".to_string(),
-            is_active: true,
-            created_at: now,
-        })
-        .exec(&mut db)
-        .await?;
-
-        let _ = toasty::create!(PaymentProvider {
-            name: crate::domain::provider::Provider::StarPay.to_string(),
-            code: crate::domain::provider::Provider::StarPay.to_string(),
-            logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3VKlVcAl_zfvQCZxPiA_o0Jy2K2Q7uwvFVPOXGHxOeg&s=10".to_string(),
-            is_active: true,
-            created_at: now,
-        })
-        .exec(&mut db)
-        .await?;
-
-        let _ = toasty::create!(PaymentProvider {
-            name: crate::domain::provider::Provider::LakiPay.to_string(),
-            code: crate::domain::provider::Provider::LakiPay.to_string(),
-            logo: "https://knovuslab.com/lpay/images/lakipay_dyn.svg".to_string(),
             is_active: true,
             created_at: now,
         })
