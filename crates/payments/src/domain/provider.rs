@@ -27,6 +27,8 @@ pub enum Provider {
     Hulu,
     Chapa,
     ArifPay,
+    LakiPay,
+    StarPay,
     Simulator,
 }
 
@@ -38,6 +40,8 @@ impl Provider {
             Provider::Stripe => "STRIPE",
             Provider::Hulu => "HULU",
             Provider::Simulator => "SIMULATOR",
+            Provider::LakiPay => "LAKIPAY",
+            Provider::StarPay => "STARPAY"
         }
     }
 }
@@ -55,6 +59,8 @@ impl Provider {
             Self::ArifPay => 1200,  // 20 min
             Self::Hulu => 1800,     // 30 min
             Self::Simulator => 300, //  5 min (instant for testing)
+            Self::LakiPay => 300,
+            Self::StarPay => 300
         }
     }
 }
@@ -62,10 +68,12 @@ impl Provider {
 impl From<GatewayProvider> for Provider {
     fn from(value: GatewayProvider) -> Self {
         match value {
-            GatewayProvider::Arifpay => Provider::ArifPay,
+            GatewayProvider::ArifPay => Provider::ArifPay,
             GatewayProvider::Chapa => Provider::Chapa,
             GatewayProvider::Hulu => Provider::Hulu,
             GatewayProvider::Simulator => Provider::Simulator,
+            GatewayProvider::LakiPay => Provider::LakiPay,
+            GatewayProvider::StarPay => Provider::StarPay
         }
     }
 }

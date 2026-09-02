@@ -24,7 +24,7 @@ pub async fn arifpay_checkout_handler(
     let request: PaymentRequest = payload.try_into()?;
     // ctx.0.set_provider(GatewayProvider::Arifpay);
     let provider = checkout
-        .execute(GatewayProvider::Arifpay, &ctx, request)
+        .execute(GatewayProvider::ArifPay, &ctx, request)
         .await?;
 
     // let provider = ArifPayInitializeResponse {

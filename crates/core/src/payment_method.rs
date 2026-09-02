@@ -25,7 +25,9 @@ pub enum PaymentMethod {
 #[strum(serialize_all = "UPPERCASE")]
 pub enum GatewayProvider {
     Hulu,
-    Arifpay,
+    ArifPay,
     Chapa,
+    LakiPay,
+    StarPay,
     Simulator,
 }

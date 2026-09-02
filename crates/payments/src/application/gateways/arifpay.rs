@@ -71,7 +71,7 @@ impl PaymentGateway for ArifPayProvider {
     }
 
     fn get_name(&self) -> GatewayProvider {
-        GatewayProvider::Arifpay
+        GatewayProvider::ArifPay
     }
 
     fn get_apikey_name(&self) -> &'static str {
