@@ -58,7 +58,7 @@ impl UpdateApiKey {
         }
         if let Some(expires_at) = request.expires_at {
             toasty::update!(apikey {
-                expires_at: util::to_jiff(expires_at),
+                expires_at: expires_at,
                 updated_at: util::now_jiff()
             })
             .exec(&mut db)

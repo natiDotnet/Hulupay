@@ -27,9 +27,9 @@ pub enum Provider {
     Hulu,
     Chapa,
     ArifPay,
+    Simulator,
     LakiPay,
     StarPay,
-    Simulator,
 }
 
 impl Provider {

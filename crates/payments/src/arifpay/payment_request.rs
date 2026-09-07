@@ -1,10 +1,10 @@
-use chrono::{DateTime, Utc};
 use hulu_core::hulu_error::HuluError;
 use hulu_core::payment_request;
 use hulu_core::payment_request::{CallbackUrls, CustomerInfo, PaymentOptions, PaymentRequest};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use jiff::ToSpan;
 use utoipa::ToSchema;
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
@@ -18,7 +18,8 @@ pub struct ArifpayPaymentRequest {
     pub error_url: String,
     pub notify_url: String,
     pub payment_methods: Vec<String>,
-    pub expire_date: DateTime<Utc>,
+    #[schema(value_type = String)]
+    pub expire_date: jiff::Timestamp,
     pub items: Vec<Item>,
     pub beneficiaries: Vec<Beneficiary>,
     pub currency: Option<String>,
@@ -107,10 +108,7 @@ impl From<&PaymentRequest> for ArifpayPaymentRequest {
             cancel_url: value.callbacks.cancel_url.clone(),
             nonce: value.payment.reference.clone(),
             expire_date: value.payment.expire_date.unwrap_or_else(|| {
-                Utc::now()
-                    // .checked_add_days(Days::new(1))
-                    .checked_add_signed(chrono::Duration::days(1))
-                    .unwrap()
+                jiff::Timestamp::now().checked_add(1.days()).unwrap()
             }),
             payment_methods: value.payment.payment_methods.clone(),
             beneficiaries: value

@@ -1,4 +1,3 @@
-use chrono::{DateTime, Utc};
 use hulu_core::{payment_gateway::PaymentStatus, payment_method::PaymentMethod};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
@@ -51,8 +50,8 @@ pub struct ChapaWebhook {
     pub status: ChapaPaymentStatus,
     pub mode: String,
     pub reference: String,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    pub created_at: jiff::Timestamp,
+    pub updated_at: jiff::Timestamp,
     #[serde(rename = "type")]
     pub r#type: String,
     pub tx_ref: String,

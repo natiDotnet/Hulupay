@@ -1,7 +1,6 @@
 use crate::application::CreatePaymentProvider;
 use crate::application::payment_provider::create_payment_provider::CreatePaymentProviderRequest;
 use axum::{Json, extract::State, http::StatusCode};
-use chrono::{DateTime, Utc};
 use serde::Serialize;
 use utoipa::ToSchema;
 
@@ -40,5 +39,5 @@ pub struct ProviderResponse {
     pub is_active: bool,
     // #[serde(with = "time::serde::rfc3339")]
     #[schema(value_type = String, format = DateTime)]
-    pub created_at: DateTime<Utc>,
+    pub created_at: jiff::Timestamp,
 }

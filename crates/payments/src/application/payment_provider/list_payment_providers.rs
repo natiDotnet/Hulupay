@@ -42,7 +42,7 @@ impl ListPaymentProviders {
                 name: p.name,
                 logo: p.logo,
                 is_active: p.is_active,
-                created_at: crate::util::to_chrono(p.created_at),
+                created_at: p.created_at,
             })
             .collect();
 

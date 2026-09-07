@@ -26,7 +26,7 @@ impl GetPaymentProvider {
                 name: provider.name,
                 logo: provider.logo,
                 is_active: provider.is_active,
-                created_at: crate::util::to_chrono(provider.created_at),
+                created_at: provider.created_at,
             });
 
         Ok(provider)

@@ -24,8 +24,10 @@ pub struct StrategyResponse {
     pub merchant_id: Uuid,
     pub strategy: RoutingStrategy,
     pub enabled: bool,
-    pub created_at: chrono::DateTime<chrono::Utc>,
-    pub updated_at: chrono::DateTime<chrono::Utc>,
+    #[schema(value_type = String)]
+    pub created_at: jiff::Timestamp,
+    #[schema(value_type = String)]
+    pub updated_at: jiff::Timestamp,
 }
 
 impl From<MerchantRoutingStrategy> for StrategyResponse {
@@ -35,8 +37,8 @@ impl From<MerchantRoutingStrategy> for StrategyResponse {
             merchant_id: m.merchant_id,
             strategy: m.strategy,
             enabled: m.enabled,
-            created_at: crate::util::to_chrono(m.created_at),
-            updated_at: crate::util::to_chrono(m.updated_at),
+            created_at: m.created_at,
+            updated_at: m.updated_at,
         }
     }
 }

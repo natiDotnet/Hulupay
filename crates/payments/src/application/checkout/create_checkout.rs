@@ -3,14 +3,13 @@ use crate::application::merchants::get_merchant::get_merchant;
 use crate::application::routing::engine::RoutingEngine;
 use crate::domain::merchant_config::MerchantConfig;
 use crate::domain::payment_order::PaymentOrder;
-use crate::domain::payment_provider::PaymentProvider;
 use crate::domain::payment_status::{PaymentStatus, TxDirection, TxStatus};
 use crate::domain::payment_transaction::PaymentTransaction;
 use crate::domain::payments::payment_callback::PaymentCallback;
 use crate::domain::payments::payment_customer::PaymentCustomer;
 use crate::domain::payments::payment_item::PaymentItem;
 use crate::domain::provider::Provider;
-use crate::{ProviderEngine, domain};
+use crate::ProviderEngine;
 use async_trait::async_trait;
 use hulu_core::claims::UserContext;
 use hulu_core::create_checkout::CreateCheckout;
@@ -19,7 +18,6 @@ use hulu_core::hulu_error::HuluError;
 use hulu_core::payment_gateway_error::PaymentGatewayError;
 use hulu_core::payment_method::GatewayProvider;
 use hulu_core::payment_request;
-use hulu_core::request_context::RequestContext;
 use payment_request::PaymentRequest;
 use rust_decimal::Decimal;
 use serde_json::json;
@@ -126,6 +124,7 @@ impl CreateCheckout for CreateCheckoutHandler {
             .map_err(|_| HuluError::InternalServerError)?;
 
         let now = crate::util::now_jiff();
+
         let order = toasty::create!(PaymentOrder {
             merchant_id: merchant.id,
             customer_id: Uuid::now_v7(),
@@ -190,6 +189,7 @@ impl CreateCheckout for CreateCheckoutHandler {
             currency: order.currency.clone(),
             status: TxStatus::Pending,
             provider_response,
+            response: json!(gateway_response),
             created_at: now,
             updated_at: now,
         })

@@ -22,7 +22,7 @@ pub struct User {
     pub email: String,
     pub role: Role,
     pub status: UserStatus,
-    pub created_at: DateTime<Utc>,
+    pub created_at: jiff::Timestamp,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -45,7 +45,7 @@ pub struct Activity {
     pub actor: String,
     pub action: String,
     pub target: String,
-    pub at: DateTime<Utc>,
+    pub at: jiff::Timestamp,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]

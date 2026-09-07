@@ -1,20 +1,14 @@
 use crate::arifpay::arif_webhook::{ArifTransaction, ArifWebhook};
 use crate::arifpay::arifpay_service::ArifpayService;
 use crate::domain::payment_order::PaymentOrder;
-use crate::domain::payment_provider::PaymentProvider;
 use crate::domain::payment_transaction::PaymentTransaction;
 use crate::domain::payments::payment_callback::PaymentCallback;
 use crate::domain::payments::payment_customer::PaymentCustomer;
-use async_trait::async_trait;
-use auth::domain::apikey;
-use auth::domain::apikey::ApiKey;
-use axum::http::StatusCode;
 use hulu_core::claims::UserContext;
 use hulu_core::gateway_response::VerifyResponse;
 use hulu_core::payment_gateway::{GatewayResponse, PaymentGateway, WebhookInfo};
 use hulu_core::payment_gateway_error::PaymentGatewayError;
 use hulu_core::payment_method::{GatewayProvider, PaymentMethod};
-use hulu_core::request_context::RequestContext;
 use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -164,7 +158,7 @@ impl PaymentGateway for ArifPayProvider {
             client_reference: w.nonce,
             charge: w.total_amount * dec!(2.875) / dec!(100),
             payment_method: w.payment_method.into(),
-            received_at: chrono::Utc::now(),
+            received_at: jiff::Timestamp::now(),
         })
     }
 
@@ -206,8 +200,8 @@ impl PaymentGateway for ArifPayProvider {
                 payment_method: PaymentMethod::None,
                 charge: order.amount * dec!(2.875) / dec!(100),
                 amount: order.amount,
-                updated_at: crate::util::to_chrono(transaction.updated_at),
-                created_at: crate::util::to_chrono(transaction.created_at),
+                updated_at: transaction.updated_at,
+                created_at: transaction.created_at,
             })
     }
 

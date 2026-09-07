@@ -3,13 +3,11 @@ use crate::chapa::chapa_webhook::{self, ChapaPaymentStatus, Customization};
 use crate::domain::payment_order::PaymentOrder;
 use crate::domain::payments::payment_callback::PaymentCallback;
 use crate::domain::payments::payment_customer::PaymentCustomer;
-use async_trait::async_trait;
 use hulu_core::claims::UserContext;
 use hulu_core::gateway_response::VerifyResponse;
 use hulu_core::payment_gateway::{GatewayResponse, PaymentGateway, WebhookInfo};
 use hulu_core::payment_gateway_error::PaymentGatewayError;
 use hulu_core::payment_request::PaymentRequest;
-use hulu_core::request_context::RequestContext;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::sync::Arc;
@@ -123,8 +121,8 @@ impl PaymentGateway for ChapaProvider {
             status: webhook.status.clone().into(),
             mode: "live".into(),
             reference: webhook.txn_reference.clone(),
-            created_at: crate::util::to_chrono(order.created_at),
-            updated_at: crate::util::to_chrono(order.updated_at),
+            created_at: order.created_at,
+            updated_at: order.updated_at,
             r#type: "API".into(),
             tx_ref: webhook.client_reference.clone(),
             payment_method: webhook.payment_method.clone().into(),

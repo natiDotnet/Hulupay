@@ -5,7 +5,6 @@ use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
 };
-use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
@@ -46,7 +45,7 @@ pub struct MerchantWebhookResponse {
     pub client_reference: String,
     pub txn_reference: String,
     #[schema(value_type = String, format = DateTime)]
-    pub created_at: DateTime<Utc>,
+    pub created_at: jiff::Timestamp,
 }
 
 impl From<MerchantWebhook> for MerchantWebhookResponse {
@@ -62,7 +61,7 @@ impl From<MerchantWebhook> for MerchantWebhookResponse {
             charge: webhook.charge,
             client_reference: webhook.client_reference,
             txn_reference: webhook.txn_reference,
-            created_at: crate::util::to_chrono(webhook.created_at),
+            created_at: webhook.created_at,
         }
     }
 }

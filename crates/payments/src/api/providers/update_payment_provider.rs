@@ -5,9 +5,8 @@ use axum::{
     extract::{Path, State},
     http::StatusCode,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use utoipa::IntoParams;
-use utoipa::ToSchema;
 
 #[derive(Deserialize, IntoParams)]
 pub struct ProviderIdParams {

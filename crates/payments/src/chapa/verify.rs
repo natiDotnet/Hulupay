@@ -70,8 +70,8 @@ async fn handle_chapa_verify(
         method: response.payment_method.into(),
         r#type: "API".into(),
         tx_ref: response.reference,
-        created_at: crate::util::to_chrono(order.created_at),
-        updated_at: crate::util::to_chrono(order.updated_at),
+        created_at: order.created_at,
+        updated_at: order.updated_at,
         customization: Customization {
             title: "order".into(),
             description: "description".into(),

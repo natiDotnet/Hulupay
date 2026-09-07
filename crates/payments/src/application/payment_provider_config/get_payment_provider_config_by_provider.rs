@@ -4,7 +4,6 @@ use crate::domain::merchant_config::MerchantConfig;
 use crate::domain::payment_provider::PaymentProvider;
 use crate::domain::{PaymentProviderConfig, provider};
 use anyhow::anyhow;
-use chrono::Utc;
 use hulu_core::claims::UserContext;
 use toasty::Db;
 use uuid::Uuid;
@@ -60,8 +59,8 @@ impl GetPaymentProviderConfigByProvider {
             config: p.config,
             is_active: p.is_active,
             is_default: p.is_default,
-            created_at: crate::util::to_chrono(p.created_at),
-            updated_at: crate::util::to_chrono(p.updated_at),
+            created_at: p.created_at,
+            updated_at: p.updated_at,
         });
 
         let gateway = self
@@ -70,7 +69,7 @@ impl GetPaymentProviderConfigByProvider {
             .await
             .ok_or(anyhow!("provider not found"))?;
 
-        let now = Utc::now();
+        let now = jiff::Timestamp::now();
         match result {
             None => Ok(PaymentProviderConfig {
                 id: Uuid::nil(),

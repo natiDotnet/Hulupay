@@ -1,4 +1,3 @@
-use chrono::{DateTime, Utc};
 use hulu_core::gateway_response::CheckoutResponse;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
@@ -54,6 +53,8 @@ pub struct ChapaVerifyResponse {
     pub tx_ref: String,
     pub customization: Customization,
     pub meta: Option<serde_json::Value>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    #[schema(value_type = String)]
+    pub created_at: jiff::Timestamp,
+    #[schema(value_type = String)]
+    pub updated_at: jiff::Timestamp,
 }

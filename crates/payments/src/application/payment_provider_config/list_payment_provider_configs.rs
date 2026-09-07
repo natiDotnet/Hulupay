@@ -42,8 +42,8 @@ impl ListPaymentProviderConfigs {
                 is_active: p.is_active,
                 priority: p.priority,
                 environment: p.environment,
-                created_at: crate::util::to_chrono(p.created_at),
-                updated_at: crate::util::to_chrono(p.updated_at),
+                created_at: p.created_at,
+                updated_at: p.updated_at,
                 is_default: p.is_default,
             })
             .collect();

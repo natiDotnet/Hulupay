@@ -920,7 +920,7 @@ name = "core"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "chrono",
+ "jiff",
  "regex",
  "rust_decimal",
  "serde",

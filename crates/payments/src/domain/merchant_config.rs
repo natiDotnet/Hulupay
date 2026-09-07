@@ -1,5 +1,4 @@
 use crate::domain::environment::Environment;
-use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 /// A merchant's provider-specific configuration (API keys, settings).

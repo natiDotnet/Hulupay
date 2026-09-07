@@ -2,7 +2,6 @@ use crate::application::gateways::simulator::{SimulationMode, SimulationProvider
 use crate::domain;
 use crate::domain::merchant_config::MerchantConfig;
 use crate::domain::payment_provider::PaymentProvider;
-use crate::domain::provider::Provider::Simulator;
 use hulu_core::payment_gateway::PaymentGateway;
 use std::collections::HashMap;
 use std::sync::Arc;

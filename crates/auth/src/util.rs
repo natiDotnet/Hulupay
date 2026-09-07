@@ -1,4 +1,4 @@
-/// Conversion utilities between `jiff::Timestamp` and `chrono::DateTime<Utc>`.
+/// Conversion utilities between `jiff::Timestamp` and `chrono::jiff::Timestamp`.
 /// Used at domain/DTO boundaries where the DB layer stores jiff timestamps
 /// but the application layer (JWT, API responses) uses chrono.
 

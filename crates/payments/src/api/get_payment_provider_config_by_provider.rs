@@ -7,7 +7,6 @@ use axum::{
     extract::{Path, State},
     http::StatusCode,
 };
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
@@ -29,10 +28,10 @@ pub struct PaymentProviderConfigByProviderResponse {
     pub is_active: bool,
     // #[serde(with = "time::serde::rfc3339")]
     #[schema(value_type = String, format = DateTime)]
-    pub created_at: DateTime<Utc>,
+    pub created_at: jiff::Timestamp,
     // #[serde(with = "time::serde::rfc3339")]
     #[schema(value_type = String, format = DateTime)]
-    pub updated_at: DateTime<Utc>,
+    pub updated_at: jiff::Timestamp,
 }
 
 impl From<crate::domain::PaymentProviderConfig> for PaymentProviderConfigByProviderResponse {

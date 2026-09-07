@@ -71,8 +71,8 @@ impl CreatePaymentProviderConfig {
             config: config_entity.config,
             is_active: config_entity.is_active,
             is_default: config_entity.is_default,
-            created_at: crate::util::to_chrono(config_entity.created_at),
-            updated_at: crate::util::to_chrono(config_entity.updated_at),
+            created_at: config_entity.created_at,
+            updated_at: config_entity.updated_at,
         })
     }
 }

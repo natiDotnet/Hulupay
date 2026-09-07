@@ -21,6 +21,8 @@ pub struct PaymentTransaction {
     /// Full raw JSON response from the provider — never discard this.
     #[column(type = "jsonb")]
     pub provider_response: Option<serde_json::Value>,
+    #[column(type = "jsonb")]
+    pub response: Option<serde_json::Value>,
     pub created_at: jiff::Timestamp,
     pub updated_at: jiff::Timestamp,
 }

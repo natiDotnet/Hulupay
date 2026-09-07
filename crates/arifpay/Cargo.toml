@@ -6,8 +6,8 @@ edition = "2024"
 [dependencies]
 
 # API documentation
-utoipa = { version = "5.4.0", features = ["axum_extras", "uuid", "decimal", "chrono", "debug"] }
-utoipa-axum = { version = "0.2.0", features = ["debug"] }
+utoipa = { workspace = true }
+utoipa-axum = { workspace = true }
 axum-macros = "0.5.1"
 tracing = "0.1.44"
 

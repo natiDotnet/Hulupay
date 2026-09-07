@@ -45,8 +45,10 @@ pub struct RuleResponse {
     pub condition_value: String,
     pub target_provider_id: Uuid,
     pub fallback_provider_id: Option<Uuid>,
-    pub created_at: chrono::DateTime<chrono::Utc>,
-    pub updated_at: chrono::DateTime<chrono::Utc>,
+    #[schema(value_type = String)]
+    pub created_at: jiff::Timestamp,
+    #[schema(value_type = String)]
+    pub updated_at: jiff::Timestamp,
 }
 
 impl From<MerchantRoutingRule> for RuleResponse {
@@ -61,8 +63,8 @@ impl From<MerchantRoutingRule> for RuleResponse {
             condition_value: m.condition_value,
             target_provider_id: m.target_provider_id,
             fallback_provider_id: m.fallback_provider_id,
-            created_at: crate::util::to_chrono(m.created_at),
-            updated_at: crate::util::to_chrono(m.updated_at),
+            created_at: m.created_at,
+            updated_at: m.updated_at,
         }
     }
 }

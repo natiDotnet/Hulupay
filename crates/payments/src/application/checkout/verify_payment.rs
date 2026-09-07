@@ -5,7 +5,7 @@ use crate::domain::payment_order::PaymentOrder;
 use crate::domain::payment_provider::PaymentProvider;
 use crate::domain::payment_status::{PaymentStatus, TxStatus};
 use crate::domain::payment_transaction::PaymentTransaction;
-use crate::{ProviderEngine, domain};
+use crate::ProviderEngine;
 use async_trait::async_trait;
 use hulu_core::create_checkout::VerifyPayment;
 use hulu_core::gateway_response::VerifyResponse;

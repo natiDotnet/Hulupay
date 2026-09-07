@@ -9,6 +9,8 @@ pub mod hulu;
 pub mod hulupay;
 pub mod infrastructure;
 pub mod util;
+pub mod lakipay;
+pub mod starpay;
 
 pub use api::{PaymentsState, router};
 pub use application::{

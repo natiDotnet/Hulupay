@@ -1,5 +1,4 @@
 use crate::domain::environment::Environment;
-use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
 #[derive(Debug, Clone)]
@@ -9,7 +8,7 @@ pub struct PaymentProvider {
     pub name: String,
     pub logo: String,
     pub is_active: bool,
-    pub created_at: DateTime<Utc>,
+    pub created_at: jiff::Timestamp,
 }
 
 #[derive(Debug, Clone)]
@@ -22,6 +21,6 @@ pub struct PaymentProviderConfig {
     pub config: serde_json::Value,
     pub is_active: bool,
     pub is_default: bool,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    pub created_at: jiff::Timestamp,
+    pub updated_at: jiff::Timestamp,
 }

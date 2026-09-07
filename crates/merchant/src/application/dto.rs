@@ -1,7 +1,5 @@
 use crate::domain::merchant_status::MerchantStatus;
-use crate::util;
 use auth::domain::apikey::ApiKey;
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -41,7 +39,7 @@ pub struct CreateApiKeyRequest {
     /// e.g. `["payment.create", "payment.read"]`.
     pub scopes: Vec<String>,
     #[schema(value_type = String, format = DateTime)]
-    pub expires_at: DateTime<Utc>,
+    pub expires_at: jiff::Timestamp,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -50,7 +48,7 @@ pub struct UpdateApiKeyRequest {
     pub scopes: Option<Vec<String>>,
     pub is_active: Option<bool>,
     #[schema(value_type = String, format = DateTime)]
-    pub expires_at: Option<DateTime<Utc>>,
+    pub expires_at: Option<jiff::Timestamp>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -62,13 +60,13 @@ pub struct ApiKeyResponse {
     pub scopes: Vec<String>,
     pub is_active: bool,
     #[schema(value_type = String, format = DateTime)]
-    pub expires_at: DateTime<Utc>,
+    pub expires_at: jiff::Timestamp,
     #[schema(value_type = String, format = DateTime)]
-    pub last_used_at: Option<DateTime<Utc>>,
+    pub last_used_at: Option<jiff::Timestamp>,
     #[schema(value_type = String, format = DateTime)]
-    pub created_at: DateTime<Utc>,
+    pub created_at: jiff::Timestamp,
     #[schema(value_type = String, format = DateTime)]
-    pub updated_at: Option<DateTime<Utc>>,
+    pub updated_at: Option<jiff::Timestamp>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -87,10 +85,10 @@ impl From<ApiKey> for ApiKeyResponse {
             prefix: value.prefix,
             scopes: value.scopes,
             is_active: value.is_active,
-            expires_at: util::to_chrono(value.expires_at),
-            last_used_at: value.last_used_at.map(util::to_chrono),
-            created_at: util::to_chrono(value.created_at),
-            updated_at: value.updated_at.map(util::to_chrono),
+            expires_at: value.expires_at,
+            last_used_at: value.last_used_at,
+            created_at: value.created_at,
+            updated_at: value.updated_at,
         }
     }
 }

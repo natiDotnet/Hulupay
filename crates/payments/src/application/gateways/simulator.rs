@@ -3,7 +3,6 @@ use hulu_core::gateway_response::VerifyResponse;
 use hulu_core::payment_gateway::{GatewayResponse, PaymentGateway, PaymentStatus, WebhookInfo};
 use hulu_core::payment_gateway_error::PaymentGatewayError;
 use hulu_core::payment_method::{GatewayProvider, PaymentMethod};
-use hulu_core::request_context::RequestContext;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -151,7 +150,7 @@ impl PaymentGateway for SimulationProvider {
                         .and_then(|v| v.as_str())
                         .unwrap_or("sim_txn_ref")
                         .to_string(),
-                    received_at: chrono::Utc::now(),
+                    received_at: jiff::Timestamp::now(),
                 })
             }
 
@@ -187,7 +186,7 @@ impl PaymentGateway for SimulationProvider {
                         .and_then(|v| v.as_str())
                         .unwrap_or("sim_txn_ref")
                         .to_string(),
-                    received_at: chrono::Utc::now(),
+                    received_at: jiff::Timestamp::now(),
                 })
             }
         }
@@ -202,7 +201,7 @@ impl PaymentGateway for SimulationProvider {
             SimulationMode::Timeout => Err(PaymentGatewayError::RequestFailed),
 
             SimulationMode::InsufficientFunds => {
-                let now = chrono::Utc::now();
+                let now = jiff::Timestamp::now();
                 Ok(VerifyResponse {
                     id: Some(reference.to_string()),
                     reference: reference.to_string(),
@@ -218,7 +217,7 @@ impl PaymentGateway for SimulationProvider {
             SimulationMode::Success
             | SimulationMode::InvalidCallback
             | SimulationMode::DuplicateWebhook => {
-                let now = chrono::Utc::now();
+                let now = jiff::Timestamp::now();
                 Ok(VerifyResponse {
                     id: Some(reference.to_string()),
                     reference: reference.to_string(),

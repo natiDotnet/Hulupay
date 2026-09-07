@@ -51,7 +51,7 @@ impl CreateApiKey {
             hash,
             scopes: request.scopes,
             is_active: true,
-            expires_at: util::to_jiff(request.expires_at),
+            expires_at: request.expires_at,
             created_at: util::now_jiff(),
         })
         .exec(&mut db)

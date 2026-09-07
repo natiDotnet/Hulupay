@@ -6,8 +6,6 @@ use axum::{
     extract::{Path, State},
     http::StatusCode,
 };
-use serde::Serialize;
-use utoipa::ToSchema;
 use uuid::Uuid;
 
 #[utoipa::path(
@@ -35,8 +33,8 @@ pub async fn get_strategy_handler(
             merchant_id,
             strategy: crate::domain::routing_strategy::RoutingStrategy::Default,
             enabled: false,
-            created_at: chrono::Utc::now(),
-            updated_at: chrono::Utc::now(),
+            created_at: jiff::Timestamp::now(),
+            updated_at: jiff::Timestamp::now(),
         })),
     }
 }

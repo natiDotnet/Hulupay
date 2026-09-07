@@ -1,4 +1,3 @@
-use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use std::collections::HashMap;
 #[derive(Clone, Debug)]
@@ -13,7 +12,7 @@ pub struct HuluPayment {
     pub reference: String,
     pub currency: String,
     pub payment_methods: Vec<String>,
-    pub expire_date: Option<DateTime<Utc>>,
+    pub expire_date: Option<jiff::Timestamp>,
     pub lang: Option<String>,
 }
 #[derive(Clone, Debug)]

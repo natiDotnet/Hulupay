@@ -1,5 +1,4 @@
 use crate::PaymentMethod;
-use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -25,7 +24,7 @@ pub struct PaymentOptions {
     pub reference: String,
     pub currency: String,
     pub payment_methods: Vec<String>,
-    pub expire_date: DateTime<Utc>,
+    pub expire_date: jiff::Timestamp,
     pub lang: String,
 }
 
@@ -64,7 +63,7 @@ pub struct ArifPayInitializeRequest {
     pub error_url: String,
     pub notify_url: String,
     pub payment_methods: Vec<String>,
-    pub expire_date: DateTime<Utc>,
+    pub expire_date: jiff::Timestamp,
     pub items: Vec<ArifPayItem>,
     pub beneficiaries: Vec<ArifPayBeneficiary>,
     pub lang: String,
