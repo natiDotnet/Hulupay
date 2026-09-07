@@ -89,6 +89,10 @@ impl IntoResponse for ChapaApiErr {
                     StatusCode::BAD_REQUEST,
                     "payment already completed".to_string(),
                 ),
+                HuluError::PaymentOrderAlreadyExists => (
+                    StatusCode::BAD_REQUEST,
+                    "payment order already exists".to_string(),
+                    )
             },
         };
 

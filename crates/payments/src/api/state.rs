@@ -8,7 +8,7 @@ use crate::application::{
     DeletePaymentProviderConfig, GetPaymentProvider, GetPaymentProviderConfig,
     GetPaymentProviderConfigByProvider, HandleProviderWebhook, ListMerchantWebhooks,
     ListPaymentProviderConfigs, ListPaymentProviders, ProviderEngine, RoutingEngine,
-    UpdatePaymentProvider, UpdatePaymentProviderConfig,
+    UpdatePaymentProvider, UpdatePaymentProviderConfig, ListPayments,
 };
 use hulu_core::create_checkout::{CreateCheckout, VerifyPayment};
 use std::sync::Arc;
@@ -36,6 +36,7 @@ pub struct PaymentsState {
     pub create_routing_rule: CreateRoutingRule,
     pub update_routing_rule: UpdateRoutingRule,
     pub delete_routing_rule: DeleteRoutingRule,
+    pub list_payments: ListPayments,
 
     pub handle_provider_webhook: HandleProviderWebhook,
     pub handle_create_checkout: Arc<dyn CreateCheckout>,

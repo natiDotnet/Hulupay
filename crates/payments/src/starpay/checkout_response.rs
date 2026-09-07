@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct StarData {
     pub order_id: String,
     pub status: String,
@@ -20,7 +20,7 @@ pub struct StarError {
     pub message: String
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct StarCheckoutResponse {
     pub status: String,
     pub timestamp: String,

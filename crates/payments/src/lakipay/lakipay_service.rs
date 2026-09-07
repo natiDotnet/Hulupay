@@ -1,8 +1,11 @@
 use std::collections::HashMap;
 use tracing::debug;
 use hulu_core::payment_gateway_error::PaymentGatewayError;
+use crate::arifpay::arif_webhook::ArifWebhook;
 use crate::lakipay::checkout_request::LakiCheckoutRequest;
 use crate::lakipay::checkout_response::LakiCheckoutResponse;
+use crate::lakipay::laki_webhook::LakiWebhook;
+use crate::starpay::start_webhook::StarWebhook;
 
 #[derive(Clone)]
 pub struct LakiPayService {
@@ -49,6 +52,35 @@ impl LakiPayService {
         }
 
         Ok(body)
+    }
+    pub fn map_webhook(
+        &self,
+        webhook: serde_json::Value,
+    ) -> Result<LakiWebhook, PaymentGatewayError> {
+        let webhook: LakiWebhook = serde_json::from_value(webhook).map_err(|e| {
+            debug!(?e, "webhook parse error");
+            PaymentGatewayError::RequestFailed
+        })?;
+        Ok(webhook)
+    }
+
+    pub async fn send_webhook(
+        &self,
+        url: &str,
+        webhook: ArifWebhook,
+    ) -> Result<(), PaymentGatewayError> {
+        let response = self
+            .client
+            .post(url)
+            .json(&webhook)
+            .send()
+            .await
+            .map_err(|_| PaymentGatewayError::RequestFailed)?;
+        let status = response.status();
+        if !status.is_success() {
+            return Err(PaymentGatewayError::RequestFailed);
+        }
+        Ok(())
     }
 
 }

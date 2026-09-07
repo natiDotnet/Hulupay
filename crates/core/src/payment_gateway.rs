@@ -71,7 +71,7 @@ pub struct GatewayResponse {
     pub reference: String,
     pub row_response: Option<serde_json::Value>,
 }
-#[derive(Debug, Clone, Display)]
+#[derive(Debug, Clone, Display, Serialize, Deserialize)]
 #[strum(serialize_all = "UPPERCASE")]
 pub enum PaymentStatus {
     Success,
@@ -83,7 +83,7 @@ pub enum PaymentStatus {
     Reversed,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct WebhookInfo {
     pub status: PaymentStatus,
     pub provider_reference: String,

@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use hulu_core::claims::UserContext;
 use hulu_core::gateway_response::VerifyResponse;
 use hulu_core::payment_gateway::{GatewayResponse, PaymentGateway, PaymentStatus, WebhookInfo};
@@ -74,6 +75,28 @@ impl PaymentGateway for SimulationProvider {
         _apikey_header: &str,
         _config: Value,
     ) -> Result<GatewayResponse, PaymentGatewayError> {
+        // schedule call the request.callbacks.notify_url after two minutes with WebhookInfo body
+        let webhook = WebhookInfo {
+            status: PaymentStatus::Success,
+            provider_reference: request.payment.reference.clone(),
+            payment_method: PaymentMethod::from_str(request.payment.payment_methods.first().unwrap().as_str()).unwrap_or(
+                PaymentMethod::Telebirr),
+            amount: request.payment.amount,
+            charge: request.payment.amount,
+            client_reference: request.payment.reference.clone(),
+            txn_reference: request.payment.reference.clone(),
+            received_at: jiff::Timestamp::now(),
+        };
+        let url = request.callbacks.notify_url.clone();
+        tokio::spawn(async move {
+            tokio::time::sleep(tokio::time::Duration::from_secs(120)).await;
+            let client = reqwest::Client::new();
+            let _ = client
+                .post(&url)
+                .json(&webhook)
+                .send()
+                .await;
+        });
         match self.mode {
             SimulationMode::Timeout => Err(PaymentGatewayError::RequestFailed),
 
@@ -110,6 +133,8 @@ impl PaymentGateway for SimulationProvider {
     }
 
     fn webhook_info(&self, webhook: Value) -> Result<WebhookInfo, PaymentGatewayError> {
+        let webhook_info = serde_json::from_value::<WebhookInfo>(webhook.clone())
+            .map_err(|_| PaymentGatewayError::InvalidResponse)?;
         match self.mode {
             SimulationMode::Timeout => Err(PaymentGatewayError::RequestFailed),
 
@@ -120,38 +145,39 @@ impl PaymentGateway for SimulationProvider {
 
             SimulationMode::Success | SimulationMode::DuplicateWebhook => {
                 let status = PaymentStatus::Success;
-                Ok(WebhookInfo {
-                    status,
-                    provider_reference: webhook
-                        .get("provider_reference")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("sim_ref_success")
-                        .to_string(),
-                    payment_method: PaymentMethod::Telebirr,
-                    amount: webhook
-                        .get("amount")
-                        .and_then(|v| {
-                            Decimal::from_str_exact(&v.to_string().trim_matches('"')).ok()
-                        })
-                        .unwrap_or(Decimal::ZERO),
-                    charge: webhook
-                        .get("charge")
-                        .and_then(|v| {
-                            Decimal::from_str_exact(&v.to_string().trim_matches('"')).ok()
-                        })
-                        .unwrap_or(Decimal::ZERO),
-                    client_reference: webhook
-                        .get("client_reference")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("sim_client_ref")
-                        .to_string(),
-                    txn_reference: webhook
-                        .get("txn_reference")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("sim_txn_ref")
-                        .to_string(),
-                    received_at: jiff::Timestamp::now(),
-                })
+                Ok(webhook_info)
+                // Ok(WebhookInfo {
+                //     status,
+                //     provider_reference: webhook
+                //         .get("provider_reference")
+                //         .and_then(|v| v.as_str())
+                //         .unwrap_or("sim_ref_success")
+                //         .to_string(),
+                //     payment_method: PaymentMethod::Telebirr,
+                //     amount: webhook
+                //         .get("amount")
+                //         .and_then(|v| {
+                //             Decimal::from_str_exact(&v.to_string().trim_matches('"')).ok()
+                //         })
+                //         .unwrap_or(Decimal::ZERO),
+                //     charge: webhook
+                //         .get("charge")
+                //         .and_then(|v| {
+                //             Decimal::from_str_exact(&v.to_string().trim_matches('"')).ok()
+                //         })
+                //         .unwrap_or(Decimal::ZERO),
+                //     client_reference: webhook
+                //         .get("client_reference")
+                //         .and_then(|v| v.as_str())
+                //         .unwrap_or("sim_client_ref")
+                //         .to_string(),
+                //     txn_reference: webhook
+                //         .get("txn_reference")
+                //         .and_then(|v| v.as_str())
+                //         .unwrap_or("sim_txn_ref")
+                //         .to_string(),
+                //     received_at: jiff::Timestamp::now(),
+                // })
             }
 
             SimulationMode::InsufficientFunds => {

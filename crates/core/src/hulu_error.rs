@@ -25,6 +25,9 @@ pub enum HuluError {
 
     #[error("payment already completed")]
     PaymentAlreadyCompleted,
+
+    #[error("payment already exists with the same reference")]
+    PaymentOrderAlreadyExists,
 }
 
 impl From<PaymentGatewayError> for HuluError {

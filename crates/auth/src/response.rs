@@ -59,6 +59,11 @@ impl IntoResponse for ApiError {
                 "payment already completed".to_string(),
                 None,
             ),
+            HuluError::PaymentOrderAlreadyExists => (
+                StatusCode::BAD_REQUEST,
+                "payment order already exists".to_string(),
+                None,
+                )
         };
 
         (

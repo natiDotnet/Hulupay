@@ -62,6 +62,25 @@ impl CreateCheckout for CreateCheckoutHandler {
             .await
             .ok_or(PaymentGatewayError::MerchantNotFound)?;
 
+        //TODO: check if the reference already exists
+        let existing_order = PaymentOrder::filter(
+            PaymentOrder::fields()
+                .merchant_id()
+                .eq(merchant.id)
+                .and(PaymentOrder::fields().order_ref().eq(payload.payment.reference.clone()))
+                .and(PaymentOrder::fields().status().eq(PaymentStatus::Pending))
+        )
+        .first()
+        .exec(&mut self.db.clone())
+        .await
+        .map_err(|_| HuluError::InternalServerError)?;
+
+        if existing_order.is_some() {
+            return Err(HuluError::PaymentOrderAlreadyExists);
+        }
+
+
+
         // Smart routing: resolve an ordered list of providers, try each on failure.
         let provider_ids = self
             .routing_engine
@@ -133,7 +152,7 @@ impl CreateCheckout for CreateCheckoutHandler {
             amount: payload.payment.amount,
             currency: payload.payment.currency.clone(),
             status: PaymentStatus::Pending,
-            provider: Provider::ArifPay,
+            provider: Provider::from(gateway_provider.get_name()),
             idempotency_key: payload.payment.reference.clone(),
             retry_count: 0,
             created_at: now,

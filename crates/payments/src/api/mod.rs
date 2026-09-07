@@ -6,6 +6,7 @@ mod get_payment_provider_config_by_provider;
 mod initialize;
 mod list_merchant_webhooks;
 mod list_payment_provider_configs;
+pub mod list_payments;
 pub mod providers;
 pub mod request_context;
 pub mod routing;
@@ -35,7 +36,7 @@ use crate::application::{
     DeletePaymentProviderConfig, GetPaymentProvider, GetPaymentProviderConfig,
     GetPaymentProviderConfigByProvider, HandleProviderWebhook, ListMerchantWebhooks,
     ListPaymentProviderConfigs, ListPaymentProviders, ProviderEngine, RoutingEngine,
-    UpdatePaymentProvider, UpdatePaymentProviderConfig, WebhookHandler,
+    UpdatePaymentProvider, UpdatePaymentProviderConfig, WebhookHandler, ListPayments,
 };
 use crate::arifpay::arifpay_service::ArifpayService;
 use crate::chapa::chapa_service::ChapaService;
@@ -163,6 +164,12 @@ impl FromRef<PaymentsState> for RoutingEngine {
     }
 }
 
+impl FromRef<PaymentsState> for ListPayments {
+    fn from_ref(state: &PaymentsState) -> Self {
+        state.list_payments.clone()
+    }
+}
+
 impl FromRef<PaymentsState> for GetRoutingStrategy {
     fn from_ref(state: &PaymentsState) -> Self {
         state.get_routing_strategy.clone()
@@ -235,6 +242,9 @@ pub fn router(db: &toasty::Db) -> OpenApiRouter {
         .routes(routes!(
         get_payment_provider_config_by_provider::get_payment_provider_config_by_provider_handler,
     ))
+        .routes(routes!(
+            list_payments::list_payments_handler,
+        ))
         .routes(routes!(
             routing::strategy::get_strategy_handler,
             routing::strategy::upsert_strategy_handler,
@@ -330,6 +340,7 @@ fn build_state(db: &toasty::Db) -> PaymentsState {
         delete_payment_provider_config: DeletePaymentProviderConfig::new(db.clone()),
         list_payment_provider_configs: ListPaymentProviderConfigs::new(db.clone()),
         list_merchant_webhooks: ListMerchantWebhooks::new(db.clone()),
+        list_payments: ListPayments::new(db.clone()),
         get_routing_strategy: GetRoutingStrategy::new(db.clone()),
         upsert_routing_strategy: UpsertRoutingStrategy::new(db.clone()),
         list_routing_rules: ListRoutingRules::new(db.clone()),

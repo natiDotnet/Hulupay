@@ -1,9 +1,12 @@
 use std::collections::HashMap;
 use serde_json::json;
 use tracing::debug;
+use hulu_core::payment_gateway::WebhookInfo;
 use hulu_core::payment_gateway_error::PaymentGatewayError;
+use crate::arifpay::arif_webhook::ArifWebhook;
 use crate::starpay::checkout_request::StarCheckoutRequest;
 use crate::starpay::checkout_response::StarCheckoutResponse;
+use crate::starpay::start_webhook::StarWebhook;
 
 #[derive(Clone)]
 pub struct StarPayService {
@@ -50,6 +53,36 @@ impl StarPayService {
         }
 
         Ok(body)
+    }
+
+    pub fn map_webhook(
+        &self,
+        webhook: serde_json::Value,
+    ) -> Result<StarWebhook, PaymentGatewayError> {
+        let webhook: StarWebhook = serde_json::from_value(webhook).map_err(|e| {
+            debug!(?e, "webhook parse error");
+            PaymentGatewayError::RequestFailed
+        })?;
+        Ok(webhook)
+    }
+
+    pub async fn send_webhook(
+        &self,
+        url: &str,
+        webhook: ArifWebhook,
+    ) -> Result<(), PaymentGatewayError> {
+        let response = self
+            .client
+            .post(url)
+            .json(&webhook)
+            .send()
+            .await
+            .map_err(|_| PaymentGatewayError::RequestFailed)?;
+        let status = response.status();
+        if !status.is_success() {
+            return Err(PaymentGatewayError::RequestFailed);
+        }
+        Ok(())
     }
 
 }

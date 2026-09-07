@@ -15,7 +15,9 @@ mod provider_engine;
 mod repository;
 pub mod routing;
 mod transaction_repository;
+pub mod list_payments;
 
+pub use list_payments::ListPayments;
 pub use arif_webhook::ArifWebhook;
 pub use dto::InitializePaymentCommand;
 pub use gateways::arifpay::{ArifPayConfig, ArifPayProvider};
