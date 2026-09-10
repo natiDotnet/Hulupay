@@ -32,11 +32,11 @@ impl PaymentGateway for LakiPayProvider {
     }
 
     fn get_name(&self) -> GatewayProvider {
-        GatewayProvider::ArifPay
+        GatewayProvider::LakiPay
     }
 
     fn get_apikey_name(&self) -> &'static str {
-        "x-arifpay-key"
+        "x-api-key"
     }
 
     async fn checkout(

@@ -32,7 +32,7 @@ impl PaymentGateway for StarPayProvider {
     }
 
     fn get_name(&self) -> GatewayProvider {
-        GatewayProvider::ArifPay
+        GatewayProvider::StarPay
     }
 
     fn get_apikey_name(&self) -> &'static str {

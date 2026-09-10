@@ -22,7 +22,7 @@ use utoipa_axum::router::OpenApiRouter;
 /// keys). Then each provider's own API-key header is scanned — a request
 /// to `/v1/transaction/initialize` may arrive with `x-arifpay-key` or
 /// `x-simulation-key` instead of the Bearer scheme.
-const PROVIDER_APIKEY_HEADERS: &[&str] = &["x-arifpay-key", "x-simulation-key", "x-chapa-key"];
+const PROVIDER_APIKEY_HEADERS: &[&str] = &["x-arifpay-key", "x-simulation-key", "x-chapa-key", "x-api-key"];
 
 /// Extract the first credential we can find from the request headers.
 ///
