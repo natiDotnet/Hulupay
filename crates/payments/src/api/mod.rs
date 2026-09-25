@@ -7,6 +7,7 @@ mod initialize;
 mod list_merchant_webhooks;
 mod list_payment_provider_configs;
 pub mod list_payments;
+mod paybridge_webhook;
 pub mod providers;
 pub mod request_context;
 pub mod routing;
@@ -31,6 +32,7 @@ use crate::application::routing::routing_rules::{
     CreateRoutingRule, DeleteRoutingRule, ListRoutingRules, UpdateRoutingRule,
 };
 use crate::application::routing::routing_strategy::{GetRoutingStrategy, UpsertRoutingStrategy};
+use crate::application::gateways::paybridge::PayBridgeProvider;
 use crate::application::{
     ArifWebhook, CreatePaymentProvider, CreatePaymentProviderConfig, DeletePaymentProvider,
     DeletePaymentProviderConfig, GetPaymentProvider, GetPaymentProviderConfig,
@@ -40,6 +42,7 @@ use crate::application::{
 };
 use crate::arifpay::arifpay_service::ArifpayService;
 use crate::chapa::chapa_service::ChapaService;
+use crate::paybridge::paybridge_service::PayBridgeService;
 use crate::infrastructure::redis_service::RedisCacheService;
 use crate::{ArifPayProvider, domain};
 use auth::Role;
@@ -270,7 +273,9 @@ pub fn router(db: &toasty::Db) -> OpenApiRouter {
         // ))
         .require_auth();
 
-    let public_routes = OpenApiRouter::new().routes(routes!(webhook::webhook_payment_handler));
+    let public_routes = OpenApiRouter::new()
+        .routes(routes!(webhook::webhook_payment_handler))
+        .routes(routes!(paybridge_webhook::paybridge_webhook_handler));
     // .routes(routes!(
     //     arif::api::checkout::arifpay_checkout_handler,
     //     arif::chapa::checkout::chapa_checkout_handler,
@@ -399,6 +404,13 @@ fn build_provider_engine(db: &toasty::Db) -> ProviderEngine {
         provider::Provider::Chapa.to_string(),
         Arc::new(ChapaProvider::new(
             Arc::new(ChapaService::new(client.clone())),
+            db.clone(),
+        )),
+    );
+    providers.insert(
+        provider::Provider::PayBridge.to_string(),
+        Arc::new(PayBridgeProvider::new(
+            Arc::new(PayBridgeService::new(client.clone())),
             db.clone(),
         )),
     );

@@ -21,6 +21,7 @@ pub use list_payments::ListPayments;
 pub use arif_webhook::ArifWebhook;
 pub use dto::InitializePaymentCommand;
 pub use gateways::arifpay::{ArifPayConfig, ArifPayProvider};
+pub use gateways::paybridge::{PayBridgeConfig, PayBridgeProvider};
 pub use handle_webhook::HandleProviderWebhook;
 pub use merchant_webhook::ListMerchantWebhooks;
 pub use payment_gateway::{PaymentVerificationResult, WebhookHandler};

@@ -30,6 +30,7 @@ pub enum Provider {
     Simulator,
     LakiPay,
     StarPay,
+    PayBridge,
 }
 
 impl Provider {
@@ -39,6 +40,7 @@ impl Provider {
             Provider::Chapa => "CHAPA",
             Provider::Stripe => "STRIPE",
             Provider::Hulu => "HULU",
+            Provider::PayBridge => "PAYBRIDGE",
             Provider::Simulator => "SIMULATOR",
             Provider::LakiPay => "LAKIPAY",
             Provider::StarPay => "STARPAY"
@@ -54,10 +56,11 @@ impl Provider {
     // SLA window in seconds before the watchdog kicks in
     pub fn sla_timeout_secs(&self) -> i64 {
         match self {
-            Self::Stripe => 300,    //  5 min
-            Self::Chapa => 900,     // 15 min
-            Self::ArifPay => 1200,  // 20 min
-            Self::Hulu => 1800,     // 30 min
+            Self::Stripe => 300,       //  5 min
+            Self::Chapa => 900,        // 15 min
+            Self::ArifPay => 1200,     // 20 min
+            Self::Hulu => 1800,        // 30 min
+            Self::PayBridge => 1800,  // 30 min (customer needs time to pay + paste reference)
             Self::Simulator => 300, //  5 min (instant for testing)
             Self::LakiPay => 300,
             Self::StarPay => 300
@@ -71,6 +74,7 @@ impl From<GatewayProvider> for Provider {
             GatewayProvider::ArifPay => Provider::ArifPay,
             GatewayProvider::Chapa => Provider::Chapa,
             GatewayProvider::Hulu => Provider::Hulu,
+            GatewayProvider::PayBridge => Provider::PayBridge,
             GatewayProvider::Simulator => Provider::Simulator,
             GatewayProvider::LakiPay => Provider::LakiPay,
             GatewayProvider::StarPay => Provider::StarPay

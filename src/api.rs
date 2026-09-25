@@ -59,6 +59,8 @@ pub fn api_routes(toasty_db: &toasty::Db) -> Router {
         .layer(axum::middleware::from_fn(auth::api::authentication))
         .layer(axum::Extension(token_service.clone()))
         .layer(axum::Extension(toasty_db.clone()))
+        // Internal service-to-service endpoints (PayBridge key introspection)
+        .merge(auth::internal_router(toasty_db.clone()))
         .split_for_parts();
 
     app.merge(Scalar::with_url("/scalar", doc.clone()))

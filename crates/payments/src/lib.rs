@@ -8,6 +8,7 @@ pub mod domain;
 pub mod hulu;
 pub mod hulupay;
 pub mod infrastructure;
+pub mod paybridge;
 pub mod util;
 pub mod lakipay;
 pub mod starpay;

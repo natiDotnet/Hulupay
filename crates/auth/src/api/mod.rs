@@ -2,6 +2,7 @@ mod change_password;
 mod extractor;
 mod forgot_password;
 mod get_current_user;
+mod internal;
 mod login;
 mod logout;
 pub mod middleware;
@@ -14,6 +15,7 @@ mod verify_email;
 use crate::application::permission_service::PermissionService;
 use crate::infrastructure::SmtpMailService;
 pub use extractor::AuthUser;
+pub use internal::internal_router;
 pub use middleware::{AuthorizationPolicy, authentication, authorization};
 pub use state::AuthState;
 

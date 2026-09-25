@@ -180,9 +180,22 @@ impl DataSeeder {
         Ok(())
     }
 
-    async fn seed_providers(&self) -> anyhow::Result<()> {
+async fn seed_providers(&self) -> anyhow::Result<()> {
         let mut db = self.db.clone();
         let now = crate::util::now_jiff();
+
+        // Idempotent: `.ok()` swallows duplicate-key errors, so re-running
+        // the seeder (e.g. after adding a new provider) is safe.
+        let _ = toasty::create!(PaymentProvider {
+            name: crate::domain::provider::Provider::PayBridge.to_string(),
+            code: crate::domain::provider::Provider::PayBridge.to_string(),
+            logo: "https://paybridge.local/logo.png".to_string(),
+            is_active: true,
+            created_at: now,
+        })
+        .exec(&mut db)
+        .await
+        .ok();
 
         let _ = toasty::create!(PaymentProvider {
             name: crate::domain::provider::Provider::StarPay.to_string(),
@@ -191,8 +204,9 @@ impl DataSeeder {
             is_active: true,
             created_at: now,
         })
-            .exec(&mut db)
-            .await?;
+        .exec(&mut db)
+        .await
+        .ok();
 
         let _ = toasty::create!(PaymentProvider {
             name: crate::domain::provider::Provider::LakiPay.to_string(),
@@ -201,9 +215,10 @@ impl DataSeeder {
             is_active: true,
             created_at: now,
         })
-            .exec(&mut db)
-            .await?;
-        
+        .exec(&mut db)
+        .await
+        .ok();
+
         let _ = toasty::create!(PaymentProvider {
             name: crate::domain::provider::Provider::Simulator.to_string(),
             code: crate::domain::provider::Provider::Simulator.to_string(),
@@ -212,7 +227,8 @@ impl DataSeeder {
             created_at: now,
         })
         .exec(&mut db)
-        .await?;
+        .await
+        .ok();
 
         let _ = toasty::create!(PaymentProvider {
             name: crate::domain::provider::Provider::ArifPay.to_string(),
@@ -222,7 +238,8 @@ impl DataSeeder {
             created_at: now,
         })
         .exec(&mut db)
-        .await?;
+        .await
+        .ok();
 
         let _ = toasty::create!(PaymentProvider {
             name: crate::domain::provider::Provider::Chapa.to_string(),
@@ -232,7 +249,8 @@ impl DataSeeder {
             created_at: now,
         })
         .exec(&mut db)
-        .await?;
+        .await
+        .ok();
 
         Ok(())
     }

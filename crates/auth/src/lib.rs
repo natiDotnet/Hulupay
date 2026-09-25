@@ -5,7 +5,7 @@ pub mod infrastructure;
 pub mod response;
 pub mod util;
 
-pub use api::{AuthState, router};
+pub use api::{AuthState, internal_router, router};
 pub use application::{
     ChangePassword, ForgotPassword, GetCurrentUser, LoginRequest, LoginResponse, LoginUser,
     RefreshTokens, RegisterUser, RegisterUserRequest, RegisterUserResponse, ResetPassword,

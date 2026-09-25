@@ -29,6 +29,7 @@ pub enum Permission {
     PaymentRefund,
     #[column(variant = "payment.export")]
     PaymentExport,
+    CheckoutCreate,
 
     // ── Providers ───────────────────────────────────────────────
     #[column(variant = "provider.read")]
@@ -92,6 +93,7 @@ impl Permission {
             Self::PaymentRead => "payment.read",
             Self::PaymentRefund => "payment.refund",
             Self::PaymentExport => "payment.export",
+            Self::CheckoutCreate => "checkout.create",
             Self::ProviderRead => "provider.read",
             Self::ProviderUpdate => "provider.update",
             Self::ProviderDelete => "provider.delete",
@@ -133,6 +135,7 @@ impl FromStr for Permission {
             "payment.read" => Ok(Self::PaymentRead),
             "payment.refund" => Ok(Self::PaymentRefund),
             "payment.export" => Ok(Self::PaymentExport),
+            "checkout.create" => Ok(Self::CheckoutCreate),
             "provider.read" => Ok(Self::ProviderRead),
             "provider.update" => Ok(Self::ProviderUpdate),
             "provider.delete" => Ok(Self::ProviderDelete),

@@ -30,4 +30,5 @@ pub enum GatewayProvider {
     Simulator,
     LakiPay,
     StarPay,
+    PayBridge,
 }
