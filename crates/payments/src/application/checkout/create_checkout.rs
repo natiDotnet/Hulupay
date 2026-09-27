@@ -58,6 +58,7 @@ impl CreateCheckout for CreateCheckoutHandler {
         payload: PaymentRequest,
     ) -> Result<CheckoutResponse, HuluError> {
         debug!(?context, "Creating checkout");
+        debug!(?payload, "Paying payment");
         let merchant = get_merchant(&self.db, self.cache.as_ref(), context.merchant_id)
             .await
             .ok_or(PaymentGatewayError::MerchantNotFound)?;
